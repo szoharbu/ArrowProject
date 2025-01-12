@@ -1,7 +1,7 @@
 import time
 import traceback
 from pathlib import Path
-from Utils.arg_parser import parse_arguments
+from Utils.arg_parser.arg_parser import parse_arguments
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
 from Tool.Stages import input_stage, evaluation_stage, init_stage
