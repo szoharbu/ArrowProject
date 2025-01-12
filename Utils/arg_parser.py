@@ -7,6 +7,16 @@ from Utils.configuration_management import get_config_manager
 from Utils.seed_management import set_seed
 
 def parse_arguments(input_args=None):
+    """
+    Parses command-line arguments and updates configuration values.
+
+    Args:
+        input_args (list, optional): A list of arguments to parse. Defaults to None, which uses sys.argv.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
+
     logger = get_logger()
     logger.info("======================== parse_arguments")
 
@@ -15,7 +25,7 @@ def parse_arguments(input_args=None):
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description="Process a template with optional overrides.")
 
-    # Optional argument: --output (optional)
+    # Optional argument: --output (default: 'Output')
     parser.add_argument('--output', type=str, help='Path to the output directory.')
 
     # Optional argument: --seed (optional)
@@ -29,11 +39,10 @@ def parse_arguments(input_args=None):
     parser.add_argument('--env', choices=['sim', 'emu'], default='sim',
                         help="Environment to run in ('sim' or 'emu'). Default is 'sim'.")
 
-    if input_args is None:
-        args = parser.parse_args()
-    else:
-        args = parser.parse_args(input_args)
+    # Parse the arguments
+    args = parser.parse_args(input_args) if input_args else parser.parse_args()
 
+    # Update configurations based on arguments
     if args.output:
         logger.info(f"--------------- Output directory: {args.output}")
         config_manager.set_value('output_dir_path', args.output)
@@ -48,6 +57,7 @@ def parse_arguments(input_args=None):
     else:
         seed = set_seed(None)
         logger.info(f"--------------- seed: {seed} (random)")
+
     logger.info(f"--------------- Environment: {args.env}")
 
     if args.arch:

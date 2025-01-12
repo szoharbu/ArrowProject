@@ -1,21 +1,16 @@
-import os
 import time
 import traceback
+from pathlib import Path
 from Utils.arg_parser import parse_arguments
 from Utils.logger_management import get_logger
+from Utils.configuration_management import get_config_manager
 
 def main(args=None):
     start_time = time.time()
+    set_basedir_path()
 
     logger = get_logger()
-    #log_manager = get_logger(get_manager=True)
-
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    log_file = os.path.join(base_dir,'output','test.log')
-    #log_manager.setup_file_logging(log_file)
-
     parse_arguments(args)
-
     logger.info("==== Arrow main")
 
     try:
@@ -49,6 +44,32 @@ def dump_time(start_time, message_header):
     duration = current_time - start_time # Calculate duration
     logger.info(f'{message_header} took {duration:.2f} seconds')
 
+
+def set_basedir_path():
+    """
+    Sets the base directory and submodule content directory paths in the configuration manager.
+    - `base_dir_path`: The directory where the script resides.
+    - `submodule_content_path`: The resolved path to the submodule content directory.
+    The paths are stored in the configuration manager for easy access throughout the application.
+    """
+    logger = get_logger()
+    config_manager = get_config_manager()
+
+    try:
+        # Determine the base directory
+        base_dir = Path(__file__).resolve().parent
+        logger.debug(f"Base directory determined: {base_dir}")
+        config_manager.set_value('base_dir_path', str(base_dir))
+
+        # # Determine the submodule content path relative to the base directory
+        # submodule_content_path = base_dir / '..' / 'Submodules' / 'arrow_content'
+        # resolved_path = submodule_content_path.resolve()
+        # logger.debug(f"Submodule content path resolved: {resolved_path}")
+        # config_manager.set_value('submodule_content_path', str(resolved_path))
+
+    except Exception as e:
+        logger.error(f"Error setting base or submodule paths: {e}")
+        raise
 
 if __name__ == "__main__":
     main()
