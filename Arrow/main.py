@@ -1,6 +1,7 @@
 import os
 import time
 import traceback
+from Utils.arg_parser import parse_arguments
 from Utils.logger_management import get_logger
 
 def main(args=None):
@@ -12,6 +13,8 @@ def main(args=None):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     log_file = os.path.join(base_dir,'output','test.log')
     log_manager.setup_file_logging(log_file)
+
+    parse_arguments(args)
 
     logger.info("==== Arrow main")
 
