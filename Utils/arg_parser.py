@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
+from Utils.seed_management import set_seed
 
 def parse_arguments(input_args=None):
     logger = get_logger()
@@ -41,11 +42,21 @@ def parse_arguments(input_args=None):
         config_manager.set_value('output_dir_path', 'Output')
     setup_output_directory()
 
+    if args.seed:
+        logger.info(f"--------------- seed: {args.seed}")
+        set_seed(args.seed)
+    else:
+        seed = set_seed(None)
+        logger.info(f"--------------- seed: {seed} (random)")
+    logger.info(f"--------------- Environment: {args.env}")
+
     if args.arch:
         logger.info(f"--------------- architecture: {args.arch}")
+        config_manager.set_value('Architecture', args.arch)
     else:
         arch = 'riscv'
         logger.info(f"--------------- architecture: {arch} (default)")
+        config_manager.set_value('Architecture', arch)
 
     return args
 
