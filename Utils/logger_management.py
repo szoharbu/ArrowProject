@@ -12,7 +12,7 @@ class Logger:
                and subsequent logs are directly written to the file.
     """
 
-    def __init__(self, buffer_size=100):
+    def __init__(self, buffer_size: int = 100):
         """
         Initializes the Logger.
 
@@ -32,7 +32,7 @@ class Logger:
         stream_handler.emit = self._emit_to_memory  # Override 'emit' to store logs in memory
         self.logger.addHandler(stream_handler)
 
-    def _print_to_console(self, record):
+    def _print_to_console(self, record: logging.LogRecord):
         """
         Prints log messages selectively to the console based on log levels.
 
@@ -42,7 +42,7 @@ class Logger:
         if record.levelno >= logging.INFO:  # Only INFO, WARNING, ERROR, CRITICAL
             print(f"{record.levelname} - {record.msg}")
 
-    def _emit_to_memory(self, record):
+    def _emit_to_memory(self, record: logging.LogRecord):
         """
         Custom emit function to store log records in memory.
         Logs will also be printed selectively to the screen.
@@ -58,7 +58,7 @@ class Logger:
             raise BufferError("Log buffer capacity exceeded!")
         self.buffer.append(record)  # Store the raw record
 
-    def _emit_to_log_and_screen(self, record):
+    def _emit_to_log_and_screen(self, record: logging.LogRecord):
         """
         Custom emit function to log to both file and console.
 
@@ -72,7 +72,7 @@ class Logger:
         # Then print to the console for INFO level or higher
         self._print_to_console(record)
 
-    def setup_file_logging(self, log_file):
+    def setup_file_logging(self, log_file: str):
         """
         Configures the logger_management to write logs to a specified file.
 
@@ -109,7 +109,7 @@ class Logger:
         self.buffer = []  # Clear the memory buffer
 
 
-    def get_logger(self):
+    def get_logger(self) -> logging.Logger:
         """
         Retrieves the logger_management instance for use in the application.
 
@@ -131,7 +131,7 @@ class Logger:
 
 
 # Factory function to retrieve or create the logger instance
-def get_logger(get_manager=False):
+def get_logger(get_manager: bool = False):
     """
     Factory function to retrieve the logger instance.
 

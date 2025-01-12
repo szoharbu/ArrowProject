@@ -8,11 +8,11 @@ def main(args=None):
     start_time = time.time()
 
     logger = get_logger()
-    log_manager = get_logger(get_manager=True)
+    #log_manager = get_logger(get_manager=True)
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     log_file = os.path.join(base_dir,'output','test.log')
-    log_manager.setup_file_logging(log_file)
+    #log_manager.setup_file_logging(log_file)
 
     parse_arguments(args)
 
