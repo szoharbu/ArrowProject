@@ -26,7 +26,7 @@ class ConfigManager:
             self._logger.error(f"Attempt to modify existing key '{key}'.")
             raise ValueError(f"Configuration key '{key}' already exists and cannot be modified.")
         self._config[key] = value
-        self._logger.info(f"Configuration set: {key} = {value}")
+        self._logger.debug(f"Configuration set: {key} = {value}")
 
     def get_value(self, key: str) -> Any:
         """
