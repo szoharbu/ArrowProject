@@ -13,8 +13,9 @@ from Tool.frontend import choice
 class AR:
     logger = get_logger()
     logger.info("======================== AR_API")
-
     config_manager = get_config_manager()
+
+    from Tool.decorators.scenario_decorator import scenario_decorator
 
     @staticmethod
     def asm(asm_code:str, comment:str=None):
