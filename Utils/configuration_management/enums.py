@@ -29,3 +29,14 @@ class ByteSize(Enum):
     # Method to get size in bytes
     def in_bytes(self):
         return self.value
+
+class Tag(Enum):
+    SLOW = "slow"
+    FAST = "fast"
+    RECIPE = "recipe"
+    FEATURE_A = "feature_a"
+    FEATURE_B = "feature_b"
+    FEATURE_C = "feature_c"
+    MEMORY = "memory"
+    STACK = "stack"
+    REST = "rest"  # Special tag representing all available tags

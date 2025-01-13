@@ -21,7 +21,7 @@ def switch_state(state_id:str):
 
         state_manager.set_active_state(state_id)
         active_state = state_manager.get_active_state()
-        logger.info(f"Switching state: from {current_state} to {state_id}")
+        logger.debug(f"Switching state: from {current_state} to {state_id}")
 
     else:
         raise ValueError(f"State with ID {state_id} does not exist.")
@@ -46,5 +46,5 @@ def switch_code(new_code:CodeSegment):
     curr_state.current_code_block = new_code
 
     logger = get_logger()
-    logger.info(f"Switched to code block: {new_code.name} (start address: {hex(new_code.address)}, byte_size: {hex(new_code.byte_size)})")
+    logger.debug(f"Switched to code block: {new_code.name} (start address: {hex(new_code.address)}, byte_size: {hex(new_code.byte_size)})")
 

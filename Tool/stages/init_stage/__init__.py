@@ -16,7 +16,7 @@ def init_state():
     # Initialize the memory library with a 4GB space # TODO:: remove this hard-coded limitation
     region_intervals = IntervalLib(start_address=0, total_size=Configuration.ByteSize.SIZE_4G.in_bytes())
 
-    core_count = 4
+    core_count = Configuration.Knobs.Config.core_count.get_value()
     for i in range(core_count):
         # create a state singleton for thread i, and set it's values
         state_id = f'core_{i}'
@@ -41,8 +41,8 @@ def init_state():
 
         curr_state = State(
             state_name=state_id,
-            processor_mode="64bit",
-            privilege_level=random.randint(0,3),
+            processor_mode=Configuration.Knobs.Config.processor_mode,
+            privilege_level=Configuration.Knobs.Config.privilege_level,
             register_manager=register_manager.RegisterManager(),
             memory_range=core_memory_range,
             memory_manager=memory_manager.MemoryManager(memory_range=core_memory_range),
@@ -58,7 +58,7 @@ def init_state():
         curr_state = state_manager.get_active_state()
         # Preserving a register to be used as base_register
         curr_state.base_register = curr_state.register_manager.get_and_reserve()
-        print(curr_state)
+        #print(curr_state)
 
     state_manager.set_active_state('core_0')
 
@@ -87,12 +87,12 @@ def init_memory():
         boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"boot_block", byte_size=0x1000, memory_type=Configuration.Memory_types.BOOT_CODE)
         logger.debug(f"init_memory: allocating boot_block {boot_block}")
 
-        code_block_count = 3
+        code_block_count = Configuration.Knobs.Memory.code_block_count.get_value()
         for i in range(code_block_count):
             code_block = curr_state.memory_manager.allocate_memory_segment(name=f"code_block_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.CODE)
             logger.debug(f"init_memory: allocating code_block {code_block}")
 
-        data_block_count = 8
+        data_block_count = Configuration.Knobs.Memory.data_block_count.get_value()
         data_shared_count = data_block_count // 2  # First part is half of n (floored)
         data_preserve_count = data_block_count - data_shared_count  # Second part is the remainder
         for i in range(data_shared_count):

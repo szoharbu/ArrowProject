@@ -27,8 +27,7 @@ def do_boot():
 
         switch_code(boot_block) # switching from a None code block into boot
 
-        info_str = f"BODY:: Running boot code"
-        logger.info(info_str)
+        logger.debug(f"BODY:: Running boot code")
         AR.comment(f"========================= BOOT CODE - start =====================")
 
         execution_platform = config_manager.get_value('Execution_platform')
@@ -37,7 +36,7 @@ def do_boot():
             AR.comment(f"-- setting base_register {current_state.base_register} to address of {hex(current_state.base_register_value)}")
             #AR.store_value_into_register(register=current_state.base_register, value=current_state.base_register_value)
 
-        skip_boot = False
+        skip_boot = Configuration.Knobs.Config.skip_boot
         if not skip_boot:
              AR.generate(instruction_count=10)
 
