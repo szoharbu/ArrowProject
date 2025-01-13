@@ -3,6 +3,7 @@ import random
 from Utils.configuration_management import get_config_manager
 from Utils.logger_management import get_logger
 from Tool.state_management import get_state_manager, State
+from Tool.register_management import register_manager
 
 def init_state():
     logger = get_logger()
@@ -22,6 +23,13 @@ def init_state():
             register_manager=register_manager.RegisterManager(),
         )
         state_manager.add_state(state_id, curr_state)
+
+    cores = state_manager.list_states()
+    for core in cores:
+        state_manager.set_active_state(core)
+        state = state_manager.get_active_state()
+        print(state)
+
 
 
 def init_section():
