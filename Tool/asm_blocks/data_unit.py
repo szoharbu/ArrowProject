@@ -13,7 +13,7 @@ def get_last_user_context():
     config_manager = get_config_manager()
     content_dir_path = normalize_path(config_manager.get_value('content_dir_path'))
     template_file = normalize_path(config_manager.get_value('template_path'))
-    test_stage_path = normalize_path('Tool/stages/test_stage.py')
+    test_stage_path = normalize_path('Tool/stages/test_stage')
     memory_segments_path = normalize_path('Tool/memory_management/memory_segments.py') # initial code label is create there
 
     # Capture the stack once as the below code might go over it twice, and it has performance penalty
@@ -66,7 +66,7 @@ class DataUnit:
         self.init_value_byte_representation = init_value_byte_representation
 
         #extract context to generated data
-        #self.file_name, self.file_name_shortened_path, self.line_number = get_last_user_context()
+        self.file_name, self.file_name_shortened_path, self.line_number = get_last_user_context()
 
         config_manager = get_config_manager()
         execution_platform = config_manager.get_value('Execution_platform')
@@ -79,8 +79,7 @@ class DataUnit:
         self.data_unit_str = f"[name:{self.name}, memory_block:{self.memory_block_id}, memory_segment:{self.memory_segment_id}, "
         if address is not None:
             self.data_unit_str += f"address:{hex(self.address)}, "
-        #self.data_unit_str += f"byte_size:{self.byte_size}, init_value:{formatted_bytes}, file: {self.file_name_shortened_path}, line: {self.line_number}]"
-        self.data_unit_str += f"byte_size:{self.byte_size}, init_value:{formatted_bytes}]"
+        self.data_unit_str += f"byte_size:{self.byte_size}, init_value:{formatted_bytes}, file: {self.file_name_shortened_path}, line: {self.line_number}]"
         #print(self.data_unit_str)
         #logger = get_logger()
         #logger.debug(f"DataUnit generated: {self.data_unit_str}")

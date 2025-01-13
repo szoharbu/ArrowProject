@@ -1,6 +1,6 @@
 import argparse
 from Utils.logger_management import get_logger
-from Utils.configuration_management import get_config_manager
+from Utils.configuration_management import get_config_manager, get_knob_manager
 from Utils.seed_management import set_seed
 from Utils.arg_parser.utils import setup_template_and_content, setup_output_directory, setup_chosen_architecture
 
@@ -19,6 +19,7 @@ def parse_arguments(input_args=None):
     logger.info("======================== parse_arguments")
 
     config_manager = get_config_manager()
+    knob_manager = get_knob_manager()
 
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description="Process a template with optional overrides.")
@@ -39,12 +40,20 @@ def parse_arguments(input_args=None):
     parser.add_argument('--arch', choices=['x86', 'riscv', 'arm'],
                         help="Architecture to run with, ('x86', 'riscv', 'arm').")
 
-    parser.add_argument('--execution_platform', choices=['baremetal', 'linked_elf'],
-                        help="execution_platform to run with, ('baremetal', 'linked_elf').")
-
     # Optional argument: --env (optional, with choices sim/emu)
     parser.add_argument('--env', choices=['sim', 'emu'], default='sim',
                         help="Environment to run in ('sim' or 'emu'). Default is 'sim'.")
+
+    parser.add_argument('--cloud_mode', choices=['True', 'False'],
+                        help="is Cloud_mode enable, ('True', 'False').")
+
+    parser.add_argument('--execution_platform', choices=['baremetal', 'linked_elf'],
+                        help="execution_platform to run with, ('baremetal', 'linked_elf').")
+
+    # Optional argument: --define or -D (multiple key-value pairs)
+    parser.add_argument('-D', '--define', action='append',
+                        help="Define knobs in the format key=value. Can be used multiple times.")
+
 
     # Parse the arguments
     args = parser.parse_args(input_args) if input_args else parser.parse_args()
@@ -74,7 +83,7 @@ def parse_arguments(input_args=None):
         seed = set_seed(None)
         logger.info(f"--------------- seed: {seed} (random)")
 
-    logger.info(f"--------------- Environment: {args.env}")
+    #logger.info(f"--------------- Environment: {args.env}")
 
     if args.arch:
         logger.info(f"--------------- architecture: {args.arch}")
@@ -85,6 +94,15 @@ def parse_arguments(input_args=None):
         config_manager.set_value('Architecture', arch)
     setup_chosen_architecture()
 
+    if args.cloud_mode:
+        cloud_mode = True if (args.cloud_mode == "True") else False
+        logger.info(f"--------------- Cloud_mode: {cloud_mode}")
+        config_manager.set_value('Cloud_mode', cloud_mode)
+    else:
+        cloud_mode = False
+        logger.info(f"--------------- Cloud_mode: {cloud_mode} (default)")
+        config_manager.set_value('Cloud_mode', cloud_mode)
+
     if args.execution_platform:
         logger.info(f"--------------- execution_platform: {args.execution_platform}")
         config_manager.set_value('Execution_platform', args.execution_platform)
@@ -92,6 +110,17 @@ def parse_arguments(input_args=None):
         execution_platform = 'linked_elf'
         logger.info(f"--------------- execution_platform: {execution_platform} (default)")
         config_manager.set_value('Execution_platform', execution_platform)
+
+
+    # Process --define arguments
+    if args.define:
+        for item in args.define:
+            if '=' in item:
+                key, value = item.split('=', 1)
+                logger.info(f"--------------- defines: {key}={value}")
+                knob_manager.override_knob(key,value)
+            else:
+                raise ValueError(f"Invalid format for --define: {item}. Expected format is key=value.")
 
     return args
 

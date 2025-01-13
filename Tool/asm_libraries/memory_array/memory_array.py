@@ -1,8 +1,8 @@
-import Tool
-from Tool.frontend.asm_logger import AsmLogger
-from Utils.configuration_management import Configuration
-from Tool.TKL import memory_access
 
+from Utils.configuration_management import Configuration
+from Tool.frontend.sources_API import Sources
+from Tool.asm_libraries.asm_logger import AsmLogger
+from Tool.asm_libraries import memory_access
 
 class MemoryArray:
     def __init__(self, array_name, elements, element_size=4):
@@ -26,11 +26,11 @@ class MemoryArray:
             byte_rep = value.to_bytes(element_size, byteorder='little')  # or 'big' depending on endianness
             byte_representation.append(byte_rep)
 
-        self.array_block = Tool.MemoryBlock(name=f"{self.array_name}_array_memory_block", byte_size=self.array_size, init_value_byte_representation=byte_representation, shared=False)
-        self.offset_mem = Tool.Memory(name=f"{self.array_name}_index_memory", byte_size=2, init_value=0x0)
+        self.array_block = Sources.MemoryBlock(name=f"{self.array_name}_array_memory_block", byte_size=self.array_size, init_value_byte_representation=byte_representation, shared=False)
+        self.offset_mem = Sources.Memory(name=f"{self.array_name}_index_memory", byte_size=2, init_value=0x0)
 
         AsmLogger.print_comment_line(f"Set address of the array block ({self.array_block.name}) in the Index memory ({self.offset_mem.name})")
-        tmp_reg = Tool.RegisterManager.get_and_reserve()
+        tmp_reg = Sources.RegisterManager.get_and_reserve()
         comment1 = f"Load address of {self.array_block.name} into {tmp_reg}"
         comment2 = f"Store address of {self.array_block.name} into {self.offset_mem.name}"
         if Configuration.Architecture.x86:
@@ -44,7 +44,7 @@ class MemoryArray:
             AsmLogger.print_asm_line(f"sw {tmp_reg}, {self.offset_mem.unique_label}",comment=comment2)
         else:
             raise ValueError(f"Unsupported architecture")
-        Tool.RegisterManager.free(tmp_reg)
+        Sources.RegisterManager.free(tmp_reg)
 
     def load_element(self, output_register)->None:
         """
@@ -52,7 +52,7 @@ class MemoryArray:
         :param output_register: The register to store the loaded value.
         """
         AsmLogger.print_comment_line(f"Load the address from {self.offset_mem.name} to access an element value in {self.array_block.name} into {output_register}")
-        tmp_reg = Tool.RegisterManager.get_and_reserve()
+        tmp_reg = Sources.RegisterManager.get_and_reserve()
         comment1 = f"Load address from {self.offset_mem.name}"
         comment2 = f"Dereference address in {tmp_reg} and load the value into {output_register}"
         if Configuration.Architecture.x86:
@@ -67,7 +67,7 @@ class MemoryArray:
         else:
             raise ValueError(f"Unsupported architecture")
 
-        Tool.RegisterManager.free(tmp_reg)
+        Sources.RegisterManager.free(tmp_reg)
 
     def store_element(self, output_register)->None:
         """
@@ -76,7 +76,7 @@ class MemoryArray:
         """
 
         AsmLogger.print_comment_line(f"Store the value in {output_register} to the address in {self.offset_mem.name} to store an element value in {self.array_block.name}")
-        tmp_reg = Tool.RegisterManager.get_and_reserve()
+        tmp_reg = Sources.RegisterManager.get_and_reserve()
         comment1 = f"Load address from {self.offset_mem.name} into {tmp_reg}"
         comment2 = f"Store value from {tmp_reg} into the address in {output_register}"
         if Configuration.Architecture.x86:
@@ -91,7 +91,7 @@ class MemoryArray:
         else:
             raise ValueError(f"Unsupported architecture")
 
-        Tool.RegisterManager.free(tmp_reg)
+        Sources.RegisterManager.free(tmp_reg)
 
 
     def next_element(self, num_elements)->None:
@@ -114,11 +114,11 @@ class MemoryArray:
         elif Configuration.Architecture.arm:
             AsmLogger.print_asm_line(f"add [{self.offset_mem.name}], {self.element_size}")
         elif Configuration.Architecture.riscv:
-            tmp_reg = Tool.RegisterManager.get_and_reserve()
+            tmp_reg = Sources.RegisterManager.get_and_reserve()
             AsmLogger.print_asm_line(f"lw {tmp_reg}, {self.offset_mem.unique_label}")
             AsmLogger.print_asm_line(f"addi {tmp_reg}, {tmp_reg}, {self.element_size}")
             AsmLogger.print_asm_line(f"sw {tmp_reg}, {self.offset_mem.name}")
-            Tool.RegisterManager.free(tmp_reg)
+            Sources.RegisterManager.free(tmp_reg)
         else:
             raise ValueError(f"Unsupported architecture")
 

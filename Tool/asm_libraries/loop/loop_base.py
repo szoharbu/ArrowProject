@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-import Tool
 from Tool.frontend.choice import choice
+from Tool.asm_libraries.label import Label
+from Tool.frontend.sources_API import Sources
 
 class LoopBase(ABC):
     def __init__(
@@ -39,9 +40,9 @@ class LoopBase(ABC):
             raise ValueError("Counter direction must be 'increment' or 'decrement'.")
 
         if label is None:
-            label = Tool.TKL.label.Label(postfix="loop_label")
+            label = Label(postfix="loop_label")
         else:
-            if not isinstance(label, Tool.TKL.label.Label):
+            if not isinstance(label, Label):
                 raise ValueError("Label must be of type Label. please use Tool.Label() to create a label.")
 
         self.counter = counter
@@ -50,7 +51,7 @@ class LoopBase(ABC):
         self.label = label
 
         if self.counter_type == 'register':
-            self.counter_operand = Tool.RegisterManager.get_and_reserve()
+            self.counter_operand = Sources.RegisterManager.get_and_reserve()
         else:  # counter_type == 'memory':
             raise ValueError("Counter type Memory is not yet supported in this beta version.")
 

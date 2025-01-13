@@ -1,8 +1,6 @@
 from Tool.asm_libraries.loop.loop_base import LoopBase
 from Tool.asm_libraries.asm_logger import AsmLogger
 
-import Tool
-
 
 class Loop_x86(LoopBase):
 

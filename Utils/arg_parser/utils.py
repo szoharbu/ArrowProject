@@ -53,7 +53,7 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
     else:
         # Fallback to base_dir/submodules/content
         base_dir = config_manager.get_value('base_dir_path')
-        content_base_path = Path(base_dir).resolve() / ".." / 'Submodules' / 'content'
+        content_base_path = Path(base_dir).resolve() / ".." / 'Submodules' / 'arrow_content'/ 'content_repo' / 'content'
         content_base_path = content_base_path.resolve()
         logger.debug(f"Derived submodule content path from base_dir: {content_base_path}")
     # Ensure the content directory exists
