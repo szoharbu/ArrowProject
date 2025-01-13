@@ -1,7 +1,7 @@
 from abc import ABC
 from Tool.asm_blocks import DataUnit, AsmUnit
 from Utils.configuration_management import Configuration
-from Tool.frontend.label import Label
+from asm_libraries.label import Label
 from Tool.memory_management import interval_lib
 from Tool.memory_management.memory_block import MemoryBlock
 

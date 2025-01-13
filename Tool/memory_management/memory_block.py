@@ -120,7 +120,7 @@ class MemoryBlock:
         else:
             formatted_bytes = "None"
 
-        self.memory_block_str = (f"MemoryBlock: name={self.name}, "
+        self.memory_block_str = (f"[MemoryBlock: name={self.name}, "
                                  f"mem_segment={self.memory_segment_name}, "
                                  f"unique_label={self.unique_label}, "
                                  f"shared={self.shared}, "
