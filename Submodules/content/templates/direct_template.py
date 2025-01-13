@@ -12,7 +12,7 @@ def content():
         Sources.RegisterManager.free(reg)
 
         mem = Sources.Memory()
-        AR.asm(f"mov {mem}, {number}", comment=f"moving {number} into {mem}")
+        print(mem)
 
     print('--------------------------------------------------------------------')
 

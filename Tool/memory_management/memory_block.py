@@ -1,14 +1,14 @@
 import random
 from typing import Optional
-from Tool.asm_blocks.data_unit import DataUnit
+from Tool.asm_blocks import DataUnit
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
 from Tool.state_management import get_state_manager
 
 '''
 #class MemoryBlock:
-    #goal is to decouple Memory_block from memory operand, and allow requests of larger scope and at any side from memory requests that will be used as instructions operands
-    #usage example: request a 256b memory_block, and inside request 2 memory operands with overlapping offsets
+    Goal is to decouple Memory_block from memory operand, and allow requests of larger scope and at any side from memory requests that will be used as instructions operands
+    usage example: request a 256b memory_block, and inside request 2 memory operands with overlapping offsets
     block = MemoryBlock(size_in_bits=256)
     mem1 = Memory(byte_size=8, , memory_block=block, memory_block_offset=0x0)
     mem1 = Memory(byte_size=8, , memory_block=block, memory_block_offset=0x7)
