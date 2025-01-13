@@ -23,6 +23,9 @@ class AR:
 
     from Tool.decorators.scenario_decorator import scenario_decorator
 
+    # Instruction query
+    from Tool.db_manager.models import Instruction
+
     @staticmethod
     def asm(asm_code:str, comment:str=None):
         # Calls the internal Tool.asm yet expose to users as TG.asm API
