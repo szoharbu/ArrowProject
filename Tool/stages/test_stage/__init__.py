@@ -2,9 +2,10 @@ import random
 from typing import Optional
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
-from state_management import get_state_manager
-from state_management.switch_state import switch_state, switch_code
+from Tool.state_management import get_state_manager
+from Tool.state_management.switch_state import switch_state, switch_code
 from Tool.frontend.AR_API import AR
+from Tool.asm_libraries.end_test import end_test_asm_convention
 
 def do_boot():
     logger = get_logger()

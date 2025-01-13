@@ -45,11 +45,6 @@ def generate_instruction_riscv(
         else:
             memory_operand = Sources.Memory(shared=True)
 
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzz {memory_operand}")
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzz {memory_operand.unique_label}")
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzz {memory_operand.memory_block}")
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzz {memory_operand.memory_block.unique_label}")
-
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
         dynamic_init_memory_address_reg = Sources.RegisterManager.get_and_reserve()
 

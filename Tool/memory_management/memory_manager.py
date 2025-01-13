@@ -188,13 +188,13 @@ class MemoryManager:
 
         data_shared_segments = self.get_segments(Configuration.Memory_types.DATA_SHARED)
         for segment in data_shared_segments:
-            for data_unit in segment.data_units_list:
-                if data_unit.byte_size >= byte_size:
-                    valid_memory_blocks.append(data_unit)
+            for mem_block in segment.memory_block_list:
+                if mem_block.byte_size >= byte_size:
+                    valid_memory_blocks.append(mem_block)
 
         if not valid_memory_blocks:
             return None
 
-        selected_data_unit = random.choice(valid_memory_blocks)
+        selected_memory_block = random.choice(valid_memory_blocks)
 
-        return selected_data_unit
+        return selected_memory_block
