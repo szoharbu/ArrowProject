@@ -4,7 +4,7 @@ from pathlib import Path
 from Utils.arg_parser.arg_parser import parse_arguments
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
-from Tool.Stages import input_stage, evaluation_stage, init_stage, test_stage
+from Tool.stages import input_stage, evaluation_stage, init_stage, test_stage, final_stage
 
 def main(args=None):
     start_time = time.time()
@@ -23,7 +23,7 @@ def main(args=None):
         logger.info("Test generated successful :)")
         dump_time(start_time, "Test generation")
 
-        #final_section()         # post flows?
+        final_stage.final_section()         # post flows?
 
     except Exception as e:
         logger.warning("Test failed :(")
