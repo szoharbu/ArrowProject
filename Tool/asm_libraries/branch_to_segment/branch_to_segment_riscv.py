@@ -1,7 +1,7 @@
 
-import Tool
 from asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegmentBase
+from Tool.state_management import get_state_manager
 from Tool.state_management.switch_state import switch_code
 
 class BranchToSegment_riscv(BranchToSegmentBase):
@@ -9,8 +9,8 @@ class BranchToSegment_riscv(BranchToSegmentBase):
         """
         Called at the start of the 'with' block. setting the code block and jump there.
         """
-
-        curr_state = Tool.state_manager.get_active_state()
+        state_manager = get_state_manager()
+        curr_state = state_manager.get_active_state()
         current_code_block = curr_state.current_code_block
 
         AsmLogger.print_comment_line(f"Call `label` by jumping from '{current_code_block.name}' to '{self.code_block.name}' code segment and storing the return address in `ra` (return_address) register")

@@ -1,8 +1,10 @@
 import random
+from Utils.configuration_management import Configuration
 from Tool.frontend.AR_API import AR
 from Tool.frontend.sources_API import Sources
 
-def content():
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
+def direct_scenario():
     print('-------------------------------------------------------------------- direct content start')
     AR.comment(comment="Direct test start here")
     for _ in range(20):

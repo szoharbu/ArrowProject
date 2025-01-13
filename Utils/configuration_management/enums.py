@@ -40,3 +40,18 @@ class Tag(Enum):
     MEMORY = "memory"
     STACK = "stack"
     REST = "rest"  # Special tag representing all available tags
+
+
+class Priority(Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    RARE = "rare"
+
+# Global priority weight mapping
+PRIORITY_WEIGHTS = {
+    Priority.HIGH: 20,    # High priority gets the highest weight
+    Priority.MEDIUM: 10,  # Medium priority gets medium weight
+    Priority.LOW: 5,      # Low priority gets a low weight
+    Priority.RARE: 1,     # Rare priority gets the lowest weight
+}
