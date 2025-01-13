@@ -26,20 +26,39 @@ def init_state():
         core_memory_region_start, core_memory_region_size = region_intervals.allocate(Configuration.ByteSize.SIZE_2M.in_bytes())
         core_memory_range = MemoryRange(core=state_id, address=core_memory_region_start, byte_size= core_memory_region_size)
 
+        if Configuration.Architecture.x86:
+            base_register_value = core_memory_range.address
+        elif Configuration.Architecture.riscv:
+            # setting base_reg to point to the middle of the memory_range, to support negative offsets
+            base_register_value = core_memory_range.address + (core_memory_range.byte_size // 2)
+            base_register_value = base_register_value & ~0b11  # Round Down (to the nearest multiple of 4) to make it 4-byte aligned
+        elif Configuration.Architecture.arm:
+            # setting base_reg to point to the middle of the memory_range, to support negative offsets
+            base_register_value = core_memory_range.address + (core_memory_range.byte_size // 2)
+            base_register_value = base_register_value & ~0b11  # Round Down (to the nearest multiple of 4) to make it 4-byte aligned
+        else:
+            raise ValueError(f"Unknown Architecture requested")
+
         curr_state = State(
             state_name=state_id,
             processor_mode="64bit",
             privilege_level=random.randint(0,3),
             register_manager=register_manager.RegisterManager(),
-            memory_manager=memory_manager.MemoryManager(memory_range=core_memory_range)
+            memory_range=core_memory_range,
+            memory_manager=memory_manager.MemoryManager(memory_range=core_memory_range),
+            current_code=None,
+            base_register=None,
+            base_register_value=None,
         )
         state_manager.add_state(state_id, curr_state)
 
     cores = state_manager.list_states()
     for core in cores:
         state_manager.set_active_state(core)
-        state = state_manager.get_active_state()
-        print(state)
+        curr_state = state_manager.get_active_state()
+        # Preserving a register to be used as base_register
+        curr_state.base_register = curr_state.register_manager.get_and_reserve()
+        print(curr_state)
 
     state_manager.set_active_state('core_0')
 

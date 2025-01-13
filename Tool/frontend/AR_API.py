@@ -1,6 +1,9 @@
+from peewee import Expression
 from typing import Union, List, Dict, Any, Optional
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
+from Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
+
 from Tool.frontend import choice, asm_logger
 
 class AR:
@@ -26,3 +29,13 @@ class AR:
     ) -> Any:
         # Calls the internal Tool choice yet expose to users as TG.choice API
         return choice.choice(values, name)
+
+    # @staticmethod
+    def generate(
+            instruction_count: Optional[int] = 1,
+            query: Optional[Expression|Dict] = None,
+            src: Any = None,
+            dest: Any = None,
+            comment: Optional[str] = None,
+    ) -> List[GeneratedInstruction]:
+        return generate_wrapper(instruction_count, query, src, dest, comment)
