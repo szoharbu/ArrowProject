@@ -1,0 +1,3 @@
+[submodule "Submodules/arrow_content/content_repo"]
+	path = Submodules/arrow_content/content_repo
+	url = https://github.com/szoharbu/ArrowProject.Content.git
