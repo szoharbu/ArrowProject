@@ -14,5 +14,9 @@ def content():
         mem = Sources.Memory()
         print(mem)
 
+        AR.generate()
+
+        AR.generate(src=mem)
+
     print('--------------------------------------------------------------------')
 

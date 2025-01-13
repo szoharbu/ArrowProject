@@ -1,6 +1,6 @@
 from Utils.singleton_management import SingletonManager
-from Tool.register_management.register_manager import RegisterManager
-from Tool.memory_management.memory_manager import MemoryManager
+from Tool.register_management.register_manager import RegisterManager, Register
+from Tool.memory_management.memory_manager import MemoryManager, MemorySegment, MemoryRange
 
 
 class State:
@@ -10,19 +10,27 @@ class State:
     """
 
     def __init__(self, state_name: str, privilege_level: int, processor_mode: str, register_manager: RegisterManager,
-                 memory_manager: MemoryManager):
+                 memory_manager: MemoryManager, current_code: MemorySegment, base_register: Register, base_register_value: int, memory_range: MemoryRange):
         self.state_name: str = state_name
         self.privilege_level: int = privilege_level
         self.processor_mode: str = processor_mode
         self.register_manager: RegisterManager = register_manager
         self.memory_manager: MemoryManager = memory_manager
+        self.current_code_block:MemorySegment = current_code
+        self.base_register: Register = base_register
+        self.base_register_value:int = base_register_value
+        self.memory_range:MemoryRange = memory_range
 
     def __repr__(self):
         return (f"State(name={self.state_name}, "
                 f"privilege_level={self.privilege_level}, "
                 f"processor_mode={self.processor_mode}, "
                 f"register_manager={self.register_manager}, "
-                f"memory_manager={self.memory_manager}, ")
+                f"memory_manager={self.memory_manager}, "
+                f"current_code={self.current_code_block}, "
+                f"base_register={self.base_register}, "
+                f"base_register_value={self.base_register_value}, "
+                f"memory_range={self.memory_range}, ")
 
 
 class State_manager:
