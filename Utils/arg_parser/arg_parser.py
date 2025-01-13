@@ -39,6 +39,9 @@ def parse_arguments(input_args=None):
     parser.add_argument('--arch', choices=['x86', 'riscv', 'arm'],
                         help="Architecture to run with, ('x86', 'riscv', 'arm').")
 
+    parser.add_argument('--execution_platform', choices=['baremetal', 'linked_elf'],
+                        help="execution_platform to run with, ('baremetal', 'linked_elf').")
+
     # Optional argument: --env (optional, with choices sim/emu)
     parser.add_argument('--env', choices=['sim', 'emu'], default='sim',
                         help="Environment to run in ('sim' or 'emu'). Default is 'sim'.")
@@ -81,6 +84,14 @@ def parse_arguments(input_args=None):
         logger.info(f"--------------- architecture: {arch} (default)")
         config_manager.set_value('Architecture', arch)
     setup_chosen_architecture()
+
+    if args.execution_platform:
+        logger.info(f"--------------- execution_platform: {args.execution_platform}")
+        config_manager.set_value('Execution_platform', args.execution_platform)
+    else:
+        execution_platform = 'linked_elf'
+        logger.info(f"--------------- execution_platform: {execution_platform} (default)")
+        config_manager.set_value('Execution_platform', execution_platform)
 
     return args
 

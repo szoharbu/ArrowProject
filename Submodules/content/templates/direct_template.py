@@ -10,5 +10,9 @@ def content():
         number = AR.choice(values={7:30, random.randint(2,40):70})
         AR.asm(f"mov {reg}, {number}", comment=f"moving {number} into {reg}")
         Sources.RegisterManager.free(reg)
+
+        mem = Sources.Memory()
+        AR.asm(f"mov {mem}, {number}", comment=f"moving {number} into {mem}")
+
     print('--------------------------------------------------------------------')
 
