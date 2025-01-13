@@ -3,7 +3,7 @@ from Tool.frontend.AR_API import AR
 from Tool.frontend.sources_API import Sources
 
 def content():
-    print('--------------------------------------------------------------------')
+    print('-------------------------------------------------------------------- direct content start')
     AR.comment(comment="Direct test start here")
     for _ in range(20):
         reg = Sources.RegisterManager.get_and_reserve()
@@ -15,5 +15,5 @@ def content():
         AR.generate()
         AR.generate(src=mem)
 
-    print('--------------------------------------------------------------------')
+    print('-------------------------------------------------------------------- direct content end')
 
