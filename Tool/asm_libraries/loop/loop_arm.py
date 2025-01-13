@@ -1,8 +1,7 @@
 
 from Tool.asm_libraries.loop.loop_base import LoopBase
 from Tool.asm_libraries.asm_logger import AsmLogger
-import Tool
-
+from Tool.frontend.sources_API import Sources
 
 class Loop_arm(LoopBase):
 
@@ -34,6 +33,6 @@ class Loop_arm(LoopBase):
         AsmLogger.print_comment_line(f"Ending loop")
 
         if self.counter_type == 'register':
-            Tool.RegisterManager.free(self.counter_operand)
+            Sources.RegisterManager.free(self.counter_operand)
 
         return False  # False means exceptions are not suppressed

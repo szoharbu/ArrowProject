@@ -1,5 +1,6 @@
-import random
-
+import os
+import importlib.util
+import sys
 from Utils.configuration_management import get_config_manager, Configuration
 from Utils.logger_management import get_logger
 from Tool.state_management import get_state_manager
@@ -48,7 +49,7 @@ def init_state():
             memory_manager=memory_manager.MemoryManager(memory_range=core_memory_range),
             current_code=None,
             base_register=None,
-            base_register_value=None,
+            base_register_value=base_register_value,
         )
         state_manager.add_state(state_id, curr_state)
 
@@ -102,6 +103,33 @@ def init_memory():
             data_block = curr_state.memory_manager.allocate_memory_segment(name=f"data_preserve_block_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.DATA_PRESERVE)
             logger.debug(f"init_memory: allocating data_preserve_block {data_block}")
 
+def init_scenarios():
+    logger = get_logger()
+    logger.info("============ init_scenarios")
+    config_manager = get_config_manager()
+    content_dir = config_manager.get_value('content_dir_path')
+    content_path = os.path.join(content_dir,"__init__.py")
+
+    # Normalize the path to ensure it's correct for the operating system
+    normalized_path = os.path.normpath(content_path)
+
+    cloud_mode = config_manager.get_value('Cloud_mode')
+    if cloud_mode:
+        '''
+        When deploy an app on Community Cloud, the only thing that gets cloned during deployment is the source repo for your app. 
+        To access the content_repo submodule we need to execute a 'git submodule update' within the Python code of your app to query your second repo and copy additional files.
+        '''
+        ensure_submodule_initialized()
+
+        # TODO:: failing on Streamlit cloud, need to fix. at the moment blocking this capability
+        logger.warning("Skipping Content initialization, using only scenarios from main template.")
+        return
+
+    spec = importlib.util.spec_from_file_location("scenarios_path", normalized_path)
+    foo = importlib.util.module_from_spec(spec)
+    sys.modules["scenarios_path"] = foo
+    spec.loader.exec_module(foo)
+
 def init_section():
     logger = get_logger()
     logger.info("======== init_section")
@@ -113,6 +141,45 @@ def init_section():
     init_state()
     init_registers()
     init_memory()
+
+    init_scenarios()
     # Add additional needed initialization here
     # Instruction loader
     # ...
+
+
+
+
+def ensure_submodule_initialized():
+
+    """
+    Ensures that the submodule is initialized and updated.
+    If the submodule directory doesn't exist, it initializes and updates the submodule.
+
+    :param submodule_path: Path to the submodule directory.
+    """
+    import subprocess
+
+    config_manager = get_config_manager()
+    #submodule_path = config_manager.get_value("submodule_content_path")
+    submodule_path = config_manager.get_value("content_dir_path")
+
+    if not os.path.isdir(submodule_path):
+        Tool.logger.info(f"Submodule directory '{submodule_path}' not found. Initializing submodule...")
+
+        try:
+            # Run the git submodule command
+            subprocess.run(
+                ["git", "submodule", "update", "--init", "--recursive"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            Tool.logger.info(f"Submodule at '{submodule_path}' has been initialized and updated.")
+        except subprocess.CalledProcessError as e:
+            Tool.logger.info(f"Failed to initialize the submodule: {e.stderr.decode('utf-8')}")
+            raise
+    else:
+        Tool.logger.info(f"Submodule directory '{submodule_path}' already exists. No action needed.")
+
+

@@ -1,5 +1,4 @@
 
-import Tool
 from Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
 from Tool.register_management.register import Register
 from Tool.asm_libraries.asm_logger import AsmLogger
@@ -30,6 +29,6 @@ class EventTrigger_arm(EventTriggerBase):
 
         if isinstance(self.operand, Register):
             # freeing the reserved register
-            Tool.RegisterManager.free(self.operand)
+            Sources.RegisterManager.free(self.operand)
 
         return False  # False means exceptions are not suppressed

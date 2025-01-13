@@ -1,6 +1,7 @@
-import Tool
+
 from Tool.asm_libraries.loop.loop_base import LoopBase
 from Tool.asm_libraries.asm_logger import AsmLogger
+from Tool.frontend.sources_API import Sources
 
 
 class Loop_riscv(LoopBase):
@@ -10,7 +11,7 @@ class Loop_riscv(LoopBase):
         Called at the start of the 'with' block. Prepares for the loop logic.
         """
 
-        self.counter_operand = Tool.RegisterManager.get_and_reserve()
+        self.counter_operand = Sources.RegisterManager.get_and_reserve()
 
         AsmLogger.print_comment_line(f"Starting loop with {self.counter} iterations. using a {self.counter_operand} operand and a {self.label} label")
         if self.counter_direction == 'increment':
@@ -27,7 +28,7 @@ class Loop_riscv(LoopBase):
         """
 
         if self.counter_direction == 'increment':
-            limit_register = Tool.RegisterManager.get_and_reserve()
+            limit_register = Sources.RegisterManager.get_and_reserve()
             AsmLogger.print_asm_line(f"addi {self.counter_operand}, {self.counter_operand}, 1", comment="increment the counter by 1")
             AsmLogger.print_asm_line(f"li {limit_register}, {self.counter+1}", comment=f"Load immediate value {self.counter+1} as loop limit")
             AsmLogger.print_asm_line(f"blt {self.counter_operand}, {limit_register}, {self.label}  # Branch back if {self.counter_operand} < {self.counter+1}")
@@ -38,6 +39,6 @@ class Loop_riscv(LoopBase):
         AsmLogger.print_comment_line(f"Ending loop")
 
         if self.counter_type == 'register':
-            Tool.RegisterManager.free(self.counter_operand)
+            Sources.RegisterManager.free(self.counter_operand)
 
         return False  # False means exceptions are not suppressed

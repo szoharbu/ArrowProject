@@ -55,3 +55,10 @@ PRIORITY_WEIGHTS = {
     Priority.LOW: 5,      # Low priority gets a low weight
     Priority.RARE: 1,     # Rare priority gets the lowest weight
 }
+
+# Define the frequency enum with corresponding probability ranges
+class Frequency(Enum):
+    RARE = (0.001, 0.001)
+    LOW = (0.05, 0.01)
+    MED = (0.2, 0.05)
+    HIGH = (0.4, 0.2)
