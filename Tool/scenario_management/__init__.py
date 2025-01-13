@@ -183,8 +183,7 @@ class ScenarioManager:
         raise RuntimeError("Failed to find a suitable scenario after multiple retries.")
 
 
-# Initialization logic inside a factory function, to ensure that it is only called when needed (lazy initialization).
-# This way, even when we import the module, the scenario_manager instance won’t be reinitialized unnecessarily.
+# Factory function to retrieve the ScenarioManager instance
 def get_scenario_manager():
     # Access or initialize the singleton variable
     scenario_manager_instance = SingletonManager.get("scenario_manager_instance", default=None)
@@ -192,4 +191,3 @@ def get_scenario_manager():
         scenario_manager_instance = ScenarioManager()
         SingletonManager.set("scenario_manager_instance", scenario_manager_instance)
     return scenario_manager_instance
-

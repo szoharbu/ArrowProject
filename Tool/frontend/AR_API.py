@@ -22,6 +22,8 @@ class AR:
     config_manager = get_config_manager()
 
     from Tool.decorators.scenario_decorator import scenario_decorator
+    from Tool.ingredient_management.ingredient import Ingredient
+    from Tool.decorators.ingredient_decorator import ingredient_decorator
 
     # Instruction query
     from Tool.db_manager.models import Instruction
