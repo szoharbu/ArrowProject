@@ -13,9 +13,18 @@ def direct_scenario():
         AR.asm(f"mov {reg}, {number}", comment=f"moving {number} into {reg}")
         Sources.RegisterManager.free(reg)
 
-        mem = Sources.Memory()
         AR.generate()
-        AR.generate(src=mem)
+        AR.generate(src=reg)
 
-    print('-------------------------------------------------------------------- direct content end')
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
+def direct_memory_stress_scenario():
+    print('-------------------------------------------------------------------- direct_memory_stress_scenario')
+    AR.comment(comment="Direct test start here")
+    for _ in range(20):
+        mem = Sources.Memory()
+        action = AR.choice(values=["src","dest"])
+        if action == "src":
+            AR.generate(src=mem)
+        else:
+            AR.generate(dest=mem)
 
