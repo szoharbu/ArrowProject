@@ -6,3 +6,9 @@ class Architecture:
     riscv = False
     arm = False
     arch_str = False
+
+class Memory_types(Enum):
+    BOOT_CODE = "boot_code"
+    CODE = "code"
+    DATA_SHARED = "data_shared"
+    DATA_PRESERVE = "data_reserved"
