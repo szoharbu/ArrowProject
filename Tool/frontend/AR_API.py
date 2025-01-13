@@ -3,8 +3,12 @@ from typing import Union, List, Dict, Any, Optional
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
 from Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
+from Tool.memory_management.memory_segments import CodeSegment
+from Tool.asm_libraries import label, asm_logger
+from Tool.asm_libraries.branch_to_segment.branch_to_segment_base import BranchToSegmentBase
+from Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegment as BranchToSegment_wrapper
+from Tool.frontend import choice
 
-from Tool.frontend import choice, asm_logger
 
 class AR:
     logger = get_logger()
@@ -23,6 +27,11 @@ class AR:
         return asm_logger.AsmLogger.print_comment_line(comment)
 
     @staticmethod
+    def Label(postfix: str):
+        # Calls the internal Tool.Label yet expose to users as TG.Label API
+        return label.Label(postfix)
+
+    @staticmethod
     def choice(
             values: Union[Dict[Any, int], List[Any]],
             name: Optional[str] = None,
@@ -39,3 +48,7 @@ class AR:
             comment: Optional[str] = None,
     ) -> List[GeneratedInstruction]:
         return generate_wrapper(instruction_count, query, src, dest, comment)
+
+    @staticmethod
+    def BranchToSegment(code_block: CodeSegment) -> BranchToSegmentBase:
+        return BranchToSegment_wrapper(code_block)  # Return an instance of the branch_to_segment class

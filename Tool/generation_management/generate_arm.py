@@ -2,7 +2,7 @@ import random
 from typing import Optional, Any, List
 from Tool.db_manager.models import Instruction
 from Tool.memory_management.memory import Memory
-from Tool.frontend.label import Label
+from asm_libraries.label import Label
 from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
 from Tool.frontend.choice import choice

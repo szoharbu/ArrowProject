@@ -45,12 +45,17 @@ def generate_instruction_riscv(
         else:
             memory_operand = Sources.Memory(shared=True)
 
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzz {memory_operand}")
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzz {memory_operand.unique_label}")
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzz {memory_operand.memory_block}")
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzz {memory_operand.memory_block.unique_label}")
+
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
-        dynamic_init_memory_address_reg = Tool.RegisterManager.get_and_reserve()
+        dynamic_init_memory_address_reg = Sources.RegisterManager.get_and_reserve()
 
         comment = f"dynamic init: loading {dynamic_init_memory_address_reg} for next instruction"
         if memory_operand.reused_memory:
-            comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} for next instruction"
+            comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.memory_block.unique_label} for next instruction"
 
         dynamic_init_instruction = GeneratedInstruction(mnemonic='la', operands=[dynamic_init_memory_address_reg, memory_operand.memory_block.unique_label], comment=comment)
         instruction_list.append(dynamic_init_instruction)
@@ -96,7 +101,7 @@ def generate_instruction_riscv(
     instruction_list.append(gen_instruction)
 
     if memory_usage:
-        Tool.RegisterManager.free(dynamic_init_memory_address_reg)
+        Sources.RegisterManager.free(dynamic_init_memory_address_reg)
 
     return instruction_list
 
