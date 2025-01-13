@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
-from Utils.enums import Architecture
+from Utils.configuration_management.enums import Architecture
 
 def setup_chosen_architecture():
     config_manager = get_config_manager()
