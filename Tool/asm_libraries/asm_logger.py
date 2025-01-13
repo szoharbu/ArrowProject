@@ -11,7 +11,6 @@ class AsmLogger:
         current_state = state_meneger.get_active_state()
         current_code_block = current_state.current_code_block
         current_code_block.asm_units_list.append(asm_unit)
-        print(asm_unit)
 
     @staticmethod
     def print_comment_line(comment: str, add_print:bool = False):
@@ -20,4 +19,3 @@ class AsmLogger:
         current_state = state_meneger.get_active_state()
         current_code_block = current_state.current_code_block
         current_code_block.asm_units_list.append(asm_unit)
-        print(asm_unit)

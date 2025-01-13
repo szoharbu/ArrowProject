@@ -30,7 +30,7 @@ class DataUnit:
         if address is not None:
             self.data_unit_str += f"address:{hex(self.address)}, "
         self.data_unit_str += f"byte_size:{self.byte_size}, init_value:{formatted_bytes}]"
-        print(self.data_unit_str)
+        #print(self.data_unit_str)
         #logger = get_logger()
         #logger.debug(f"DataUnit generated: {self.data_unit_str}")
 

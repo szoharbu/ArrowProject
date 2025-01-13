@@ -12,10 +12,7 @@ def content():
         Sources.RegisterManager.free(reg)
 
         mem = Sources.Memory()
-        print(mem)
-
         AR.generate()
-
         AR.generate(src=mem)
 
     print('--------------------------------------------------------------------')
