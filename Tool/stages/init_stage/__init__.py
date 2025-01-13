@@ -160,12 +160,13 @@ def ensure_submodule_initialized():
     """
     import subprocess
 
+    logger = get_logger()
     config_manager = get_config_manager()
     #submodule_path = config_manager.get_value("submodule_content_path")
     submodule_path = config_manager.get_value("content_dir_path")
 
     if not os.path.isdir(submodule_path):
-        Tool.logger.info(f"Submodule directory '{submodule_path}' not found. Initializing submodule...")
+        logger.info(f"Submodule directory '{submodule_path}' not found. Initializing submodule...")
 
         try:
             # Run the git submodule command
@@ -175,11 +176,11 @@ def ensure_submodule_initialized():
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            Tool.logger.info(f"Submodule at '{submodule_path}' has been initialized and updated.")
+            logger.info(f"Submodule at '{submodule_path}' has been initialized and updated.")
         except subprocess.CalledProcessError as e:
-            Tool.logger.info(f"Failed to initialize the submodule: {e.stderr.decode('utf-8')}")
+            logger.info(f"Failed to initialize the submodule: {e.stderr.decode('utf-8')}")
             raise
     else:
-        Tool.logger.info(f"Submodule directory '{submodule_path}' already exists. No action needed.")
+        logger.info(f"Submodule directory '{submodule_path}' already exists. No action needed.")
 
 

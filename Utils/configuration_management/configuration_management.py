@@ -60,7 +60,7 @@ class ConfigManager:
         """
         return f"{self.__class__.__name__}({self._config})"
 
-# Factory function to retrieve the singleton ConfigManager instance
+# Factory function to retrieve the ConfigManager instance
 def get_config_manager() -> ConfigManager:
     # Access or initialize the singleton variable
     config_manager_instance = SingletonManager.get("config_manager_instance", default=None)
