@@ -1,7 +1,5 @@
-
-'''
------------------ Arrow hierarchy:
-Arrow/
+''' ----------------- Arrow hierarchy:
+ArrowProject/
 ├── Arrow/                      # Main package for the tool
 │   ├── main.py                 # Entry point for the tool
 │   └── TODOs                   # Endless list of TODOs
@@ -35,13 +33,11 @@ Arrow/
 
 '''
 
+
 # TODO:: refactor User interface and importing!!!!
 
-# Done:: create a memoryBlock, and allow each Memory to be part of a memory block, if Memory is generate without a memoryBlock auto define a block of that size
-# Done:: reuse bigger blocks, and take partial blocks to reuse label with preserved registers
-# Done:: refactor DataUnit to work with Byte_representation instead on huge integer.
-# TODO:: If someone if printing me it should print all the information, and provide an api for mem.label_reg(reg) that will print the memory operand like 0(reg).
-        # Also replace all such previous usages when in baremetal we need different logic
+# TODO:: Mem.str - If someone if printing it should print all the information, and provide an api for mem.label_reg(reg) that will print the memory operand like 0(reg).
+#         # Also replace all such previous usages when in baremetal we need different logic
 # TODO:: NEED TO MAKE SURE DATAUNIT AND ASM GENERATION TREAT THE MEMORY BLOCK AND ALL ITS SIZES CORRECTLY AND SEQUENTIALLY!!!!!!!!!!!!!!!!
 # TODO:: implement an array function, that user can set values in X elements, and access they via next, and the memory will get mem + offset
 # TODO:: enhance C code function, allow them to receive parameter, and protect all registers usage (or provide a list of allowed GPR which will be the free ones)
@@ -285,6 +281,11 @@ RISCV learning
 # Done:: Memory : use dynamic init when memory get generated
 # Done:: Memory : add unique name to each of the requested memory, also when name is provided (maybe have 2 attributes name and unique_name)
 # TODO:: currently memory always uses dynamic_init and later [reg] , need to add offset capabilities
+# Done:: create a memoryBlock, and allow each Memory to be part of a memory block, if Memory is generate without a memoryBlock auto define a block of that size
+# Done:: reuse bigger blocks, and take partial blocks to reuse label with preserved registers
+# Done:: refactor DataUnit to work with Byte_representation instead on huge integer.
+# TODO:: If someone if printing it should print all the information, and provide an api for mem.label_reg(reg) that will print the memory operand like 0(reg).
+        # Also replace all such previous usages when in baremetal we need different logic
 
 
 # TODO:: scenario manager
@@ -320,19 +321,3 @@ RISCV learning
 # Done:: seed consistency
 # Done:: create a mini_regression wrapper
 # TODO:: rename tool, cookbook, ...
-
-# TODO:: Open resource?
-'''
-    monetize on for:
-        - Tgmix? Probably not
-        - Scheduler
-        - Vmx
-        - Multi core
-        - Mem mgr
-        - Run on OS
-        - Cloud statistics 
-
-    Initial charge for support and development, So we can start paying for insurance, vendors,... 
-
-    In the tool, specific knobs setting (like core_count=2) will return error "feature only supported with licenses"  
-    '''

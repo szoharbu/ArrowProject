@@ -4,7 +4,6 @@ from pathlib import Path
 from Utils.arg_parser.arg_parser import parse_arguments
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
-from Tool.stages import input_stage, evaluation_stage, init_stage, test_stage, final_stage
 
 def main(args=None):
     start_time = time.time()
@@ -15,6 +14,8 @@ def main(args=None):
     logger.info("==== Arrow main")
 
     try:
+        from Tool.stages import input_stage, evaluation_stage, init_stage, test_stage, final_stage
+
         input_stage.read_inputs()          # Read inputs, read template, read configuration, ARM/riscv, ...
         evaluation_stage.evaluate_section() # review all configs and knobs, set them according to some logic and seal them ...
         init_stage.init_section()           # initialize the state, register, memory and other managers.
