@@ -4,6 +4,7 @@ from Tool.asm_blocks import DataUnit
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
 from Tool.state_management import get_state_manager
+from Tool.memory_management.utils import convert_int_value_to_bytes
 
 '''
 #class MemoryBlock:
@@ -78,7 +79,7 @@ class MemoryBlock:
             if init_value.bit_length() // 8 + 1 > self.byte_size:
                 raise ValueError(f"init_value is too large for the specified block size ({self.byte_size} bytes).")
             # Convert the large init_value into smaller byte chunks, padding if necessary
-            self.init_value_byte_representation = self.convert_init_value_to_bytes(init_value, self.byte_size)
+            self.init_value_byte_representation = convert_int_value_to_bytes(init_value, self.byte_size)
         if init_value_byte_representation is not None:
             self.init_value_byte_representation = init_value_byte_representation
 
@@ -115,8 +116,7 @@ class MemoryBlock:
             self.offset = None
 
         if self.init_value_byte_representation is not None:
-            formatted_bytes = ", ".join(
-                f"0x{byte:02x}" for sublist in self.init_value_byte_representation for byte in sublist)
+            formatted_bytes = ", ".join(f"0x{byte:02x}" for byte in self.init_value_byte_representation)
         else:
             formatted_bytes = "None"
 
@@ -138,25 +138,3 @@ class MemoryBlock:
 
     def __str__(self):
         return self.memory_block_str
-
-    def convert_init_value_to_bytes(self, init_value, element_size):
-        """Convert a large init_value into smaller byte chunks, ensuring the block size is respected."""
-        byte_representation = []
-        num_bytes = (init_value.bit_length() + 7) // 8  # Calculate the number of bytes needed for init_value
-
-        # Collect bytes into a list
-        for i in range(num_bytes):
-            byte_representation.append((init_value >> (i * 8)) & 0xFF)
-
-        # Pad with zeros if the init_value is smaller than element_size
-        while len(byte_representation) < element_size:
-            byte_representation.append(0)
-
-        # Convert byte_representation into a list of bytes objects (chunks of 4 bytes)
-        bytes_per_chunk = 4
-        chunked_representation = [
-            bytes(byte_representation[i:i + bytes_per_chunk])
-            for i in range(0, len(byte_representation), bytes_per_chunk)
-        ]
-
-        return chunked_representation
