@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from Tool.frontend.choice import choice
 from Tool.asm_libraries.label import Label
-# from Tool.frontend.sources_API import Sources
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_current_state
 
 class LoopBase(ABC):
     def __init__(
@@ -24,8 +23,7 @@ class LoopBase(ABC):
 
         Initializes and validates the input parameters.
         """
-        state_manager = get_state_manager()
-        current_state = state_manager.get_active_state()
+        current_state = get_current_state()
 
         # Validation for the inputs
         if not isinstance(counter, int) or counter < 0:

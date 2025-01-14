@@ -12,3 +12,10 @@ def get_state_manager():
         state_manager_instance = State_manager()
         SingletonManager.set("state_manager_instance", state_manager_instance)
     return state_manager_instance
+
+def get_current_state():
+    """
+    Utility for a very common usage
+    """
+    state_manager = get_state_manager()
+    return state_manager.get_active_state()

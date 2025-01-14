@@ -3,7 +3,7 @@ from Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
 from Tool.register_management.register import Register
 from Tool.asm_libraries.asm_logger import AsmLogger
 # from Tool.frontend.sources_API import Sources
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_current_state
 
 
 class EventTrigger_arm(EventTriggerBase):
@@ -27,8 +27,7 @@ class EventTrigger_arm(EventTriggerBase):
         """
         Called at the end of the 'with' block. Cleans up any resources or finalizes logic.
         """
-        state_manager = get_state_manager()
-        current_state = state_manager.get_active_state()
+        current_state = get_current_state()
 
         AsmLogger.asm(f"{self.label}:") # Assembly label for exiting the block
 
