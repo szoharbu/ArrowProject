@@ -194,14 +194,14 @@ class IngredientManager:
 
         if have_boot_section:
             switch_code(boot_block)
-            AsmLogger.print_comment_line(f"== Ingredient <TBD_ingredient_name> boot code start")
+            AsmLogger.comment(f"== Ingredient <TBD_ingredient_name> boot code start")
 
             for ing in ingredients:
                 if hasattr(self._ingredients_instances_pool[ing], 'boot'):
-                    AsmLogger.print_comment_line(f"== Ingredient boot:: taken from ingredient {ing}")
+                    AsmLogger.comment(f"== Ingredient boot:: taken from ingredient {ing}")
                     self._ingredients_instances_pool[ing].boot()
 
-            AsmLogger.print_comment_line(f"== Ingredient <TBD_ingredient_name> boot code ends")
+            AsmLogger.comment(f"== Ingredient <TBD_ingredient_name> boot code ends")
             switch_code(current_code_block)
 
         for ing in ingredients:
@@ -217,10 +217,10 @@ class IngredientManager:
                 stage = staged_tuple[1]
 
                 if first_call:
-                    AsmLogger.print_comment_line(f"== Ingredient init:: starting with ingredient {ing}")
+                    AsmLogger.comment(f"== Ingredient init:: starting with ingredient {ing}")
                     first_call = False
                 else:
-                    AsmLogger.print_comment_line(f"== Ingredient init:: switching to next ingredient {ing}")
+                    AsmLogger.comment(f"== Ingredient init:: switching to next ingredient {ing}")
 
                 try:
                     next(stage)
@@ -229,7 +229,7 @@ class IngredientManager:
 
                     init_stages.remove(staged_tuple)
 
-        AsmLogger.print_comment_line(f"== Ingredient init:: finished all ingredients")  # Notify that all ingredients are done finished
+        AsmLogger.comment(f"== Ingredient init:: finished all ingredients")  # Notify that all ingredients are done finished
 
     # Call Body Phase
     def call_ingredients_body(self, ingredients):
@@ -253,10 +253,10 @@ class IngredientManager:
                 stage = staged_tuple[1]
 
                 if first_call:
-                    AsmLogger.print_comment_line(f"== Ingredient body:: starting with ingredient {ing}")
+                    AsmLogger.comment(f"== Ingredient body:: starting with ingredient {ing}")
                     first_call = False
                 else:
-                    AsmLogger.print_comment_line(f"== Ingredient body:: switching to next ingredient {ing}")
+                    AsmLogger.comment(f"== Ingredient body:: switching to next ingredient {ing}")
 
                 try:
                     next(stage)
@@ -264,7 +264,7 @@ class IngredientManager:
                     check_and_remove_comment_from_asmunit_list(ingredient_name=str(ing))
                     stages.remove(staged_tuple)
 
-        AsmLogger.print_comment_line(f"== Ingredient body:: finished all ingredients")  # Notify that all ingredients are done finished
+        AsmLogger.comment(f"== Ingredient body:: finished all ingredients")  # Notify that all ingredients are done finished
 
     # Call final Phase
     def call_ingredients_final(self, ingredients):
@@ -288,17 +288,17 @@ class IngredientManager:
                 stage = staged_tuple[1]
 
                 if first_call:
-                    AsmLogger.print_comment_line(f"== Ingredient final:: starting with ingredient {ing}")
+                    AsmLogger.comment(f"== Ingredient final:: starting with ingredient {ing}")
                     first_call = False
                 else:
-                    AsmLogger.print_comment_line(f"== Ingredient final:: switching to next ingredient {ing}")
+                    AsmLogger.comment(f"== Ingredient final:: switching to next ingredient {ing}")
 
                 try:
                     next(stage)
                 except StopIteration:
                     check_and_remove_comment_from_asmunit_list(ingredient_name=str(ing))
                     stages.remove(staged_tuple)
-        AsmLogger.print_comment_line(f"== Ingredient final:: finished all ingredients")  # Notify that all ingredients are done finished
+        AsmLogger.comment(f"== Ingredient final:: finished all ingredients")  # Notify that all ingredients are done finished
 
 def check_and_remove_comment_from_asmunit_list(ingredient_name:str):
     # For cases the ingredient ends with a 'yield', the flow will go an additional step, and will end of commenting "switching to ing_i" followed by "Finished ing_i"

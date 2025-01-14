@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from Tool.frontend.choice import choice
 from Tool.asm_libraries.label import Label
-from Tool.frontend.sources_API import Sources
+# from Tool.frontend.sources_API import Sources
+from Tool.state_management import get_state_manager
 
 class LoopBase(ABC):
     def __init__(
@@ -23,6 +24,8 @@ class LoopBase(ABC):
 
         Initializes and validates the input parameters.
         """
+        state_manager = get_state_manager()
+        current_state = state_manager.get_active_state()
 
         # Validation for the inputs
         if not isinstance(counter, int) or counter < 0:
@@ -51,7 +54,7 @@ class LoopBase(ABC):
         self.label = label
 
         if self.counter_type == 'register':
-            self.counter_operand = Sources.RegisterManager.get_and_reserve()
+            self.counter_operand = current_state.register_manager.get_and_reserve()
         else:  # counter_type == 'memory':
             raise ValueError("Counter type Memory is not yet supported in this beta version.")
 
