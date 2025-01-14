@@ -30,8 +30,9 @@ def create_home_layout():
             value="""# Write your code here
             
 from Utils.configuration_management import Configuration
-from Tool.frontend.AR_API import AR
-from Tool.frontend.sources_API import Sources
+from Arrow_API import AR
+from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
+from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
 Configuration.Knobs.Template.scenario_count.set_value(3)
 Configuration.Knobs.Template.scenario_query.set_value({"basic_loop_scenario":50,"load_store_stress_scenario":49,Configuration.Tag.REST:1})
@@ -48,14 +49,14 @@ def basic_loop_scenario():
 def load_store_stress_scenario():
     AR.comment("inside load_store_stress_scenario")
 
-    mem = Sources.Memory(init_value=0x456)
-    reg = Sources.RegisterManager.get_and_reserve()
+    mem = MemoryManager.Memory(init_value=0x456)
+    reg = RegisterManager.get_and_reserve()
     AR.generate(dest=mem, comment=f"store to mem")
     AR.generate(dest=reg, src=mem, comment=f"load from mem to reg")
     AR.generate(comment=f"random instruction")
     AR.generate(dest=reg, comment=f"randomly modify reg")
     AR.generate(dest=mem, src=reg, comment=f"store to mem")
-    Sources.RegisterManager.free(reg)
+    RegisterManager.free(reg)
 
 """,
             height=500,
