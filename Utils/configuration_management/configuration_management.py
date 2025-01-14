@@ -15,7 +15,7 @@ class ConfigManager:
     def __init__(self):
         self._config = {} # Private dictionary to store configuration values
         self._logger = get_logger()
-        self._logger.info("======================== ConfigManager - initialized")
+        self._logger.info("======================== ConfigManager")
 
     def set_value(self, key: str, value: Any) -> None:
         """

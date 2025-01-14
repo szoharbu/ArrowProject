@@ -101,6 +101,7 @@ def generate_data_from_DataUnits(data_blocks):
         tmp_data_code += get_output(location="data_block_header", block_name=block_name)
 
         data_unit_list = memory_manager.get_segment_dataUnit_list(block.name)
+        first_data_unit = True
         for data_unit in data_unit_list:
             name = data_unit.name if data_unit.name is not None else 'no-name'
             #unique_label = data_dict.get('unique_label', 'None')
@@ -113,29 +114,31 @@ def generate_data_from_DataUnits(data_blocks):
                 data_code_counter += 1
 
                 words_tuple = convert_bytes_to_words(init_value)
-                break_lines = "\n" if len(words_tuple)>1 else ""
-                tmp_data_code += f"{unique_label}:"
+                break_lines_between_same_data_unit = "\n" if len(words_tuple)>1 else ""
+                break_lines_between_different_data_units = "" if first_data_unit else "\n"
+                first_data_unit = False
+                tmp_data_code += f"{break_lines_between_different_data_units}{unique_label}:"
                 if Configuration.Architecture.x86:
                     # x86 Assembly: Use `.long` for 4-byte values
                     for value, value_type in words_tuple:
                         if value_type == "word":
-                            tmp_data_code += f"{break_lines}    .long 0x{value:08x}"  # 4 bytes
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .long 0x{value:08x}  {get_comment_mark()} 4 bytes"
                         elif value_type == "byte":
-                            tmp_data_code+= f"{break_lines}    .byte 0x{value:02x}"  # 1 byte
+                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 bytes"
                 elif Configuration.Architecture.arm:
                     # ARM Assembly: Use `.word` for 4-byte values
                     for value, value_type in words_tuple:
                         if value_type == "word":
-                            tmp_data_code+= f"{break_lines}    .word 0x{value:08x}  // 4 bytes"
+                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .word 0x{value:08x}  {get_comment_mark()} 4 bytes"
                         elif value_type == "byte":
-                            tmp_data_code+= f"{break_lines}    .byte 0x{value:02x}  // 1 byte"
+                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte"
                 elif Configuration.Architecture.riscv:
                     # RISC-V Assembly: Use `.dword` for 8-byte values and `.byte` for smaller chunks
                     for value, value_type in words_tuple:
                         if value_type == "word":
-                            tmp_data_code+= f"{break_lines}    .dword 0x{value:08x}"  # 4 bytes (adjust if architecture supports larger)
+                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .dword 0x{value:08x}  {get_comment_mark()} 4 bytes"  # 4 bytes (adjust if architecture supports larger)
                         elif value_type == "byte":
-                            tmp_data_code+= f"{break_lines}    .byte 0x{value:02x}  // 1 byte"
+                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte"
                 else:
                     raise ValueError('Unsupported Architecture')
 

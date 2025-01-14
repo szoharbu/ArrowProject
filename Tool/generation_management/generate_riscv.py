@@ -63,14 +63,12 @@ def generate_instruction_riscv(
     for operand in selected_instruction.operands:
         if src_location == op_location:
             if isinstance(src, Memory):
-                offset = memory_operand.memory_block_offset
-                eval_operand = f'{offset}({dynamic_init_memory_address_reg})'
+                eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
             else:
                 eval_operand = src
         elif dest_location == op_location:
             if isinstance(dest, Memory):
-                offset = memory_operand.memory_block_offset
-                eval_operand = f'{offset}({dynamic_init_memory_address_reg})'
+                eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
             else:
                 eval_operand = dest
         elif operand['type'] == "reg":
@@ -82,8 +80,7 @@ def generate_instruction_riscv(
             # For every memory usage, we will plant a dynamic_init instruction to place that memory address in a temp register
             # this is done to avoid using memories offset due to their formatting requirements and my lack of knowledge.
             # TODO:: need to improve that logic and integrate offset allocation and avoid dynamic_init where possible!
-            offset = memory_operand.memory_block_offset
-            eval_operand = f'{offset}({dynamic_init_memory_address_reg})'
+            eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
         elif operand['type'] == "offset_imm":
             eval_operand = random.randint(0, 100)
         else:

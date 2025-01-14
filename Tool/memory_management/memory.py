@@ -4,6 +4,7 @@ from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
 from Tool.frontend import choice
 from Tool.memory_management.memory_block import MemoryBlock
+from Tool.register_management.register import Register
 from Tool.state_management import get_state_manager
 
 
@@ -154,6 +155,32 @@ class Memory:
         logger.debug(self.memory_str)
         #print(self.memory_str)
 
+    def format_reg_as_label(self, register:Register):
+        '''
+        print out the memory representation of label + offset, while assuming the register ALREADY holds the need label.
+        This function is useful for dynamically formatting memory access instructions where the memory address is defined by a label and offset, rather than a raw address.
+        '''
+
+        config_manager = get_config_manager()
+        memory_offset = self.memory_block_offset
+        execution_platform = config_manager.get_value('Execution_platform')
+        # if execution_platform is 'baremetal':
+        #     if Configuration.Architecture.x86:
+
+        if Configuration.Architecture.x86:
+            op_size_prefix = byte_to_operand_size(self.byte_size)
+            offset_str = f" + {memory_offset:#x}" if memory_offset != 0x0 else ""
+            return f"{op_size_prefix} [{register}{offset_str}]"
+        elif Configuration.Architecture.riscv:
+            return f"{memory_offset:#x}({register})"
+            # offset_str = f"{memory_offset:#x}" if memory_offset != 0x0 else ""
+            # return f"{offset_str}({register})"
+        elif Configuration.Architecture.arm:
+            offset_str = f",#{memory_offset:#x}" if memory_offset != 0x0 else ""
+            return f"[{register}{offset_str}]"
+        else:
+            raise ValueError(f"Unknown Architecture requested")
+
 
     def get_partial(self, byte_size:int, offset:int=0):
         # Check that the requested size is within bounds
@@ -179,6 +206,9 @@ class Memory:
         # TODO:: need to replace the string with a per Arch code.
         # TODO:: need to replace the string with a per Arch code. the problem is that in arm or riscv, we need an additional instruction to set the label in a register
         # TODO:: need to replace the string with a per Arch code.
+
+        # TODO:: Mem.str - If someone if printing it should print all the information, and provide an api for mem.label_reg(reg) that will print the memory operand like 0(reg).
+        #         # Also replace all such previous usages when in baremetal we need different logic
 
         # config_manager = get_config_manager()
         # execution_platform = config_manager.get_value('Execution_platform')

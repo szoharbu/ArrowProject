@@ -85,22 +85,22 @@ def init_memory():
         state_manager.set_active_state(state_id)
         curr_state = state_manager.get_active_state()
 
-        boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"boot_block", byte_size=0x1000, memory_type=Configuration.Memory_types.BOOT_CODE)
+        boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"boot_segment", byte_size=0x1000, memory_type=Configuration.Memory_types.BOOT_CODE)
         logger.debug(f"init_memory: allocating boot_block {boot_block}")
 
         code_block_count = Configuration.Knobs.Memory.code_block_count.get_value()
         for i in range(code_block_count):
-            code_block = curr_state.memory_manager.allocate_memory_segment(name=f"code_block_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.CODE)
+            code_block = curr_state.memory_manager.allocate_memory_segment(name=f"code_segment_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.CODE)
             logger.debug(f"init_memory: allocating code_block {code_block}")
 
         data_block_count = Configuration.Knobs.Memory.data_block_count.get_value()
         data_shared_count = data_block_count // 2  # First part is half of n (floored)
         data_preserve_count = data_block_count - data_shared_count  # Second part is the remainder
         for i in range(data_shared_count):
-            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"data_shared_block_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.DATA_SHARED)
+            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"data_shared_segment_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.DATA_SHARED)
             logger.debug(f"init_memory: allocating data_shared_block {data_block}")
         for i in range(data_preserve_count):
-            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"data_preserve_block_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.DATA_PRESERVE)
+            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"data_preserve_segment_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.DATA_PRESERVE)
             logger.debug(f"init_memory: allocating data_preserve_block {data_block}")
 
 def init_scenarios():
