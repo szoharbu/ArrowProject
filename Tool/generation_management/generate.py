@@ -2,9 +2,9 @@ import random
 from typing import Optional, Any, List, Dict
 from Tool.generation_management.utils import get_operand_type
 from Tool.generation_management.generated_instruction import GeneratedInstruction
-from Tool.generation_management.generate_x86 import generate_instruction_x86
-from Tool.generation_management.generate_riscv import generate_instruction_riscv
-from Tool.generation_management.generate_arm import generate_instruction_arm
+from Tool.generation_management.generate_x86 import generate_x86
+from Tool.generation_management.generate_riscv import generate_riscv
+from Tool.generation_management.generate_arm import generate_arm
 from Utils.configuration_management import Configuration
 from Tool.db_manager.models import get_instruction_db
 from peewee import Expression, fn
@@ -88,11 +88,11 @@ def generate(
         #print_instruction(selected_instruction)
 
         if Configuration.Architecture.x86:
-            gen_instructions = generate_instruction_x86(selected_instruction, src, dest, comment=comment)
+            gen_instructions = generate_x86(selected_instruction, src, dest, comment=comment)
         elif Configuration.Architecture.riscv:
-            gen_instructions = generate_instruction_riscv(selected_instruction, src, dest, comment=comment)
+            gen_instructions = generate_riscv(selected_instruction, src, dest, comment=comment)
         elif Configuration.Architecture.arm:
-            gen_instructions = generate_instruction_arm(selected_instruction, src, dest, comment=comment)
+            gen_instructions = generate_arm(selected_instruction, src, dest, comment=comment)
         else:
             raise ValueError(f"Unknown Architecture requested")
 

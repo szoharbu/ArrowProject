@@ -10,13 +10,13 @@ class EventTrigger_riscv(EventTriggerBase):
         """
         Called at the start of the 'with' block. Prepares for the loop logic.
         """
-        AsmLogger.print_comment_line(f"Setting event trigger flow with {self.frequency} frequency ")
+        AsmLogger.comment(f"Setting event trigger flow with {self.frequency} frequency ")
 
         if isinstance(self.operand, Register):
             # TODO:: the memory operand here need to be replaced with two operands base_reg + offset
-            AsmLogger.print_asm_line(f"lw {self.operand}, {self.memory_with_pattern}")  # loading the pattern from a memory operand
-        AsmLogger.print_asm_line(f"ror {self.operand}, {self.operand}, 1") # Rotate bits to influence chance
-        AsmLogger.print_asm_line(f"bnez {self.operand}, {self.label}") # If reg != 0 (non-zero), jump to skip_label
+            AsmLogger.asm(f"lw {self.operand}, {self.memory_with_pattern}")  # loading the pattern from a memory operand
+        AsmLogger.asm(f"ror {self.operand}, {self.operand}, 1") # Rotate bits to influence chance
+        AsmLogger.asm(f"bnez {self.operand}, {self.label}") # If reg != 0 (non-zero), jump to skip_label
 
         return self  # Return self to be used in the 'with' block
 
@@ -24,6 +24,6 @@ class EventTrigger_riscv(EventTriggerBase):
         """
         Called at the end of the 'with' block. Cleans up any resources or finalizes logic.
         """
-        AsmLogger.print_asm_line(f"{self.label}:") # Assembly label for exiting the block
+        AsmLogger.asm(f"{self.label}:") # Assembly label for exiting the block
 
         return False  # False means exceptions are not suppressed

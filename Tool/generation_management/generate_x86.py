@@ -3,15 +3,20 @@ from typing import Optional, Any, List
 from Tool.db_manager.models import Instruction
 from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
-from Tool.frontend.sources_API import Sources
+from Tool.state_management import get_state_manager
+from Tool.memory_management.memory import Memory
+
 import ast
 
-def generate_instruction_x86(
+def generate_x86(
         selected_instruction: Instruction,
         src: Any = None,
         dest: Any = None,
         comment: Optional[str] = None,
 ) -> List[GeneratedInstruction]: # some instances might require dynamic init
+
+    state_manager = get_state_manager()
+    current_state = state_manager.get_active_state()
 
     instruction_comment = comment
     instruction_list = [] # some instances might require dynamic init
@@ -31,11 +36,11 @@ def generate_instruction_x86(
         elif dest_location == op_location:
             eval_operand = dest
         elif operand['type'] == "reg":
-            eval_operand = Sources.RegisterManager.get()
+            eval_operand = current_state.register_manager.get()
         elif operand['type'] == "imm":
             eval_operand = random.randint(0, 100000)
         elif operand['type'] == "mem":
-            eval_operand = Sources.Memory(shared=True)
+            eval_operand = Memory(shared=True)
         else:
             raise ValueError(f"invalid operand type {operand['type']} at selected instruction {selected_instruction.mnemonic}")
 

@@ -2,7 +2,9 @@ from abc import ABC, abstractmethod
 import random
 from Tool.asm_libraries.label import Label
 from Utils.configuration_management import Configuration
-from Tool.frontend.sources_API import Sources
+# from Tool.frontend.sources_API import Sources
+from Tool.state_management import get_state_manager
+from Tool.memory_management.memory import Memory
 
 class EventTriggerBase(ABC):
     def __init__(
@@ -17,6 +19,8 @@ class EventTriggerBase(ABC):
 
         Initializes and validates the input parameters.
         """
+        state_manager = get_state_manager()
+        current_state = state_manager.get_active_state()
 
         self.frequency = frequency
         self.probability = random.uniform(*self.frequency.value)
@@ -27,11 +31,11 @@ class EventTriggerBase(ABC):
         if Configuration.Architecture.arm:
             operand_type = "reg"
 
-        self.memory_with_pattern = Sources.Memory(init_value=self.pattern) # initializing memory with pattern value
+        self.memory_with_pattern = Memory(init_value=self.pattern) # initializing memory with pattern value
         if operand_type == "mem":
             self.operand = self.memory_with_pattern
         else: # reg
-            self.operand = Sources.RegisterManager.get_and_reserve()
+            self.operand = current_state.register_manager.get_and_reserve()
 
     def bit_pattern(self):
         # Create a bit vector with the probability of bits being set according to frequency

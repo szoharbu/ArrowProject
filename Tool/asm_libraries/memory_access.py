@@ -13,16 +13,16 @@ def load_value(memory: Memory, register: Register) -> None:
     """
 
     if Configuration.Architecture.x86:
-        AsmLogger.print_asm_line(f"mov {register}, [{memory.unique_label}]",comment=f"Load value from {memory.name} into {register}")
+        AsmLogger.asm(f"mov {register}, [{memory.unique_label}]", comment=f"Load value from {memory.name} into {register}")
     elif Configuration.Architecture.arm:
         tmp_reg = Tool.RegisterManager.get_and_reserve()
-        AsmLogger.print_asm_line(f"ldr {tmp_reg}, ={memory.unique_label}",comment=f"Load address from {memory.name} into {register}")
-        AsmLogger.print_asm_line(f"ldr {register}, [{tmp_reg}]",comment=f"Dereference to load value")
+        AsmLogger.asm(f"ldr {tmp_reg}, ={memory.unique_label}", comment=f"Load address from {memory.name} into {register}")
+        AsmLogger.asm(f"ldr {register}, [{tmp_reg}]", comment=f"Dereference to load value")
         Tool.RegisterManager.free(tmp_reg)
     elif Configuration.Architecture.riscv:
         tmp_reg = Tool.RegisterManager.get_and_reserve()
-        AsmLogger.print_asm_line(f"la {tmp_reg}, {memory.unique_label}",comment=f"Load address from {memory.name} into {register}")
-        AsmLogger.print_asm_line(f"lw {register}, 0({tmp_reg})",comment=f"Dereference to load value")
+        AsmLogger.asm(f"la {tmp_reg}, {memory.unique_label}", comment=f"Load address from {memory.name} into {register}")
+        AsmLogger.asm(f"lw {register}, 0({tmp_reg})", comment=f"Dereference to load value")
         Tool.RegisterManager.free(tmp_reg)
     else:
         raise ValueError(f"Unsupported architecture")
@@ -37,16 +37,16 @@ def store_value(memory: Memory, register: str) -> None:
     """
 
     if Configuration.Architecture.x86:
-        AsmLogger.print_asm_line(f"mov [{memory.unique_label}], {register}", comment=f"Store value from {register} into {memory.name}")
+        AsmLogger.asm(f"mov [{memory.unique_label}], {register}", comment=f"Store value from {register} into {memory.name}")
     elif Configuration.Architecture.arm:
         tmp_reg = Tool.RegisterManager.get_and_reserve()
-        AsmLogger.print_asm_line(f"ldr {tmp_reg}, ={memory.unique_label}",comment=f"Load address of {memory.name} into temporary register {tmp_reg} ")
-        AsmLogger.print_asm_line(f"str {register}, [{tmp_reg}]",comment=f"Store value from {register} into memory")
+        AsmLogger.asm(f"ldr {tmp_reg}, ={memory.unique_label}", comment=f"Load address of {memory.name} into temporary register {tmp_reg} ")
+        AsmLogger.asm(f"str {register}, [{tmp_reg}]", comment=f"Store value from {register} into memory")
         Tool.RegisterManager.free(tmp_reg)
     elif Configuration.Architecture.riscv:
         tmp_reg = Tool.RegisterManager.get_and_reserve()
-        AsmLogger.print_asm_line(f"la {tmp_reg}, {memory.unique_label}",comment=f"Load address from {memory.name} into temporary {tmp_reg}")
-        AsmLogger.print_asm_line(f"sw {register}, 0({tmp_reg})",comment=f"Store value from {register} into memory")
+        AsmLogger.asm(f"la {tmp_reg}, {memory.unique_label}", comment=f"Load address from {memory.name} into temporary {tmp_reg}")
+        AsmLogger.asm(f"sw {register}, 0({tmp_reg})", comment=f"Store value from {register} into memory")
         Tool.RegisterManager.free(tmp_reg)
     else:
         raise ValueError(f"Unsupported architecture")

@@ -4,10 +4,11 @@ from Tool.db_manager.models import Instruction
 from Tool.memory_management.memory import Memory
 from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
-from Tool.frontend.sources_API import Sources
+from Tool.state_management import get_state_manager
+from Tool.memory_management.memory import Memory
 import ast
 
-def generate_instruction_riscv(
+def generate_riscv(
         selected_instruction: Instruction,
         src: Any = None,
         dest: Any = None,
@@ -28,6 +29,10 @@ def generate_instruction_riscv(
         Instructions like ADD and ADDW determine how much of the register's data to operate on, but they always store the result in the full register.
         There are no sub-registers or overlapping regions like RAX/EAX/AX/AL in x86.
     '''
+
+    state_manager = get_state_manager()
+    current_state = state_manager.get_active_state()
+
     instruction_comment = comment
     instruction_list = [] # some instances might require dynamic init
 
@@ -43,10 +48,10 @@ def generate_instruction_riscv(
         elif dest is not None and isinstance(dest, Memory):
             memory_operand = dest
         else:
-            memory_operand = Sources.Memory(shared=True)
+            memory_operand = Memory(shared=True)
 
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
-        dynamic_init_memory_address_reg = Sources.RegisterManager.get_and_reserve()
+        dynamic_init_memory_address_reg = current_state.register_manager.get_and_reserve()
 
         comment = f"dynamic init: loading {dynamic_init_memory_address_reg} for next instruction"
         if memory_operand.reused_memory:
@@ -72,7 +77,7 @@ def generate_instruction_riscv(
             else:
                 eval_operand = dest
         elif operand['type'] == "reg":
-            eval_operand = Sources.RegisterManager.get()
+            eval_operand = current_state.register_manager.get()
         elif operand['type'] == "imm":
             random_imm = generate_random_imm_with_size(operand['size'])
             eval_operand = random_imm
@@ -93,7 +98,7 @@ def generate_instruction_riscv(
     instruction_list.append(gen_instruction)
 
     if memory_usage:
-        Sources.RegisterManager.free(dynamic_init_memory_address_reg)
+        current_state.register_manager.free(dynamic_init_memory_address_reg)
 
     return instruction_list
 

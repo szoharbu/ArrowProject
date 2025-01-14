@@ -5,7 +5,7 @@ from state_management import get_state_manager
 class AsmLogger:
 
     @staticmethod
-    def print_asm_line(asm_code:str, comment:str=None):
+    def asm(asm_code:str, comment:str=None):
         state_meneger = get_state_manager()
         asm_unit = AsmUnit(asm_string=asm_code, comment=comment)
         current_state = state_meneger.get_active_state()
@@ -13,7 +13,7 @@ class AsmLogger:
         current_code_block.asm_units_list.append(asm_unit)
 
     @staticmethod
-    def print_comment_line(comment: str, add_print:bool = False):
+    def comment(comment: str, add_print:bool = False):
         state_meneger = get_state_manager()
         asm_unit = AsmUnit(comment=comment)
         current_state = state_meneger.get_active_state()

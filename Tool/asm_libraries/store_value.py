@@ -9,7 +9,7 @@ def store_value_into_register(register:Register, value:int) -> None:
         # Ensure the value is a 64-bit integer (to fit into a 64-bit register)
         if value < 0 or value > 0xFFFFFFFFFFFFFFFF:
             raise ValueError("The value must be a 64-bit integer (0 to 0xFFFFFFFFFFFFFFFF)")
-        AsmLogger.print_asm_line(f"mov {register}, {value:X}", comment=f"Load {value} into {register}")
+        AsmLogger.asm(f"mov {register}, {value:X}", comment=f"Load {value} into {register}")
     elif Configuration.Architecture.riscv:
         # Ensure the value is a 32-bit integer (to fit into 32-bit register)
         if value < 0 or value > 0xFFFFFFFF:
@@ -20,13 +20,13 @@ def store_value_into_register(register:Register, value:int) -> None:
         lower_12_bits = value & 0xFFF  # Extract lower 12 bits
 
         # Step 2: Generate the LUI instruction for the upper 20 bits
-        AsmLogger.print_asm_line(f"lui {register}, 0x{upper_20_bits:X}", comment=f"Load upper 20 bits into {register}")
+        AsmLogger.asm(f"lui {register}, 0x{upper_20_bits:X}", comment=f"Load upper 20 bits into {register}")
 
         # Step 3: Handle the lower 12 bits with ADDI
         if lower_12_bits != 0:
             # If lower 12 bits are within the signed 12-bit range, use ADDI directly
             if lower_12_bits >= -2048 and lower_12_bits <= 2047:
-                AsmLogger.print_asm_line(f"addi {register}, {register}, 0x{lower_12_bits:X}",comment=f"Add lower 12 bits into {register}")
+                AsmLogger.asm(f"addi {register}, {register}, 0x{lower_12_bits:X}", comment=f"Add lower 12 bits into {register}")
             else:
                 while lower_12_bits != 0:
                     # If the lower 12 bits are positive and fit within the range, subtract them
@@ -36,10 +36,10 @@ def store_value_into_register(register:Register, value:int) -> None:
                         # If it's negative, use the negative range
                         add_value = max(-2048, lower_12_bits)
 
-                    AsmLogger.print_asm_line(f"addi {register}, {register}, 0x{add_value:X}", comment="Add the largest chunk that fits within signed 12-bit range")
+                    AsmLogger.asm(f"addi {register}, {register}, 0x{add_value:X}", comment="Add the largest chunk that fits within signed 12-bit range")
                     lower_12_bits -= add_value  # Subtract the added part
         else:
-            AsmLogger.print_comment_line("No need for ADDI, the value is already handled by LUI.")
+            AsmLogger.comment("No need for ADDI, the value is already handled by LUI.")
     elif Configuration.Architecture.arm:
         # Ensure the value is a 64-bit integer (to fit into a 64-bit register)
         if value < 0 or value > 0xFFFFFFFFFFFFFFFF:
@@ -53,10 +53,10 @@ def store_value_into_register(register:Register, value:int) -> None:
 
         # Step 2: Check if the high and low parts can be loaded directly using MOVZ/MOVK
         if high_32 != 0:
-            AsmLogger.print_asm_line(f"movz {register}, 0x{high_32:X}, LSL #32", comment="Load the high 32 bits")
-            AsmLogger.print_asm_line(f"movk {register}, 0x{low_32:X}, LSL #0", comment="Load the low 32 bits")
+            AsmLogger.asm(f"movz {register}, 0x{high_32:X}, LSL #32", comment="Load the high 32 bits")
+            AsmLogger.asm(f"movk {register}, 0x{low_32:X}, LSL #0", comment="Load the low 32 bits")
         else:
             # If only low part exists, load using MOVZ
-            AsmLogger.print_asm_line(f"movz {register}, 0x{low_32:X}, LSL #0", comment="Load the low 32 bits directly")
+            AsmLogger.asm(f"movz {register}, 0x{low_32:X}, LSL #0", comment="Load the low 32 bits directly")
     else:
         raise ValueError(f"Unsupported architecture")

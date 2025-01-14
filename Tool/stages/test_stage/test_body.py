@@ -3,12 +3,14 @@ from Utils.logger_management import get_logger
 from Utils.configuration_management import Configuration, get_config_manager
 from Tool.state_management import get_state_manager
 from Tool.state_management.switch_state import switch_code, switch_state
-from Tool.frontend.AR_API import AR
 from Tool.scenario_management import ScenarioWrapper, get_scenario_manager
+from Tool.asm_libraries.asm_logger import AsmLogger
+from Tool.frontend import choice
+from Tool.asm_libraries.branch_to_segment import branch_to_segment
 
 
 def execute_scenario(scenario_instance):
-    AR.comment(f"========================== Start scenario {scenario_instance} ====================")
+    AsmLogger.comment(f"========================== Start scenario {scenario_instance} ====================")
 
     # Check if we got a ScenarioWrapper instance
     if not isinstance(scenario_instance, ScenarioWrapper):
@@ -16,7 +18,7 @@ def execute_scenario(scenario_instance):
 
     scenario_instance.func()  # Call the wrapped function
 
-    AR.comment(f"========================== End scenario {scenario_instance} ====================")
+    AsmLogger.comment(f"========================== End scenario {scenario_instance} ====================")
 
 def do_scenario(current_scenario: Optional[int], max_scenario:Optional[int]):
     logger = get_logger()
@@ -28,20 +30,20 @@ def do_scenario(current_scenario: Optional[int], max_scenario:Optional[int]):
     # Filter the list to exclude the current code block
     available_blocks_without_current = [block for block in available_blocks if block != current_state.current_code_block]
     # Randomly select from the filtered list
-    selected_block = AR.choice(values=available_blocks_without_current)
+    selected_block = choice.choice(values=available_blocks_without_current)
 
     selected_scenario = scenario_manager.get_random_scenario(tags=dict(Configuration.Knobs.Template.scenario_query.get_value()))
 
     info_str = f"BODY:: Running {current_state.state_name}, scenario {current_scenario}(:{max_scenario}), scenario {selected_scenario}"
     logger.info(info_str)
-    AR.comment(info_str)
+    AsmLogger.comment(info_str)
 
-    two_way_branch = AR.choice(values=[True,False])
+    two_way_branch = choice.choice(values=[True,False])
     if two_way_branch:
-        with AR.BranchToSegment(selected_block):
+        with branch_to_segment.BranchToSegment(selected_block):
             execute_scenario(selected_scenario)
     else:
-        AR.BranchToSegment(selected_block).one_way_branch()
+        branch_to_segment.BranchToSegment(selected_block).one_way_branch()
         execute_scenario(selected_scenario)
 
 
@@ -60,7 +62,7 @@ def do_body():
         #Tool.switch_state(core)
         current_state = state_manager.get_active_state()
         switch_code(current_state.current_code_block)
-        AR.comment(f"========================= core {core} - TEST BODY - start =====================")
+        AsmLogger.comment(f"========================= core {core} - TEST BODY - start =====================")
 
     available_cores = list(available_states.keys())
     while available_cores:
@@ -80,5 +82,5 @@ def do_body():
     for core in available_cores:
         switch_state(core)
         current_state = state_manager.get_active_state()
-        AR.comment(f"========================= core {core} - TEST BODY - end =====================")
+        AsmLogger.comment(f"========================= core {core} - TEST BODY - end =====================")
 

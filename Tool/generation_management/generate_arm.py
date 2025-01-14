@@ -6,10 +6,13 @@ from asm_libraries.label import Label
 from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
 from Tool.frontend.choice import choice
-from Tool.frontend.sources_API import Sources
+# from Tool.frontend.sources_API import Sources
+from Tool.state_management import get_state_manager
+from Tool.memory_management.memory import Memory
+
 import ast
 
-def generate_instruction_arm(
+def generate_arm(
         selected_instruction: Instruction,
         src: Any = None,
         dest: Any = None,
@@ -35,10 +38,10 @@ def generate_instruction_arm(
         elif dest is not None and isinstance(dest, Memory):
             memory_operand = dest
         else:
-            memory_operand = Sources.Memory(shared=True)
+            memory_operand = Memory(shared=True)
 
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
-        dynamic_init_memory_address_reg = Sources.RegisterManager.get_and_reserve()
+        dynamic_init_memory_address_reg = RegisterManager.get_and_reserve()
         comment = f"dynamic init: loading {dynamic_init_memory_address_reg} for next instruction"
         if memory_operand.reused_memory:
             comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} for next instruction"
@@ -64,7 +67,7 @@ def generate_instruction_arm(
             else:
                 eval_operand = dest
         elif operand['type'] == "reg":
-            eval_operand = Sources.RegisterManager.get()
+            eval_operand = RegisterManager.get()
         elif operand['type'] == "imm":
             optional_number = generate_random_immediate_for_instruction(selected_instruction.mnemonic)
             if optional_number is None:
@@ -98,7 +101,7 @@ def generate_instruction_arm(
     instruction_list.append(gen_instruction)
 
     if memory_usage:
-        Sources.RegisterManager.free(dynamic_init_memory_address_reg)
+        RegisterManager.free(dynamic_init_memory_address_reg)
 
     return instruction_list
 
