@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 import random
 from Tool.asm_libraries.label import Label
 from Utils.configuration_management import Configuration
-# from Tool.frontend.sources_API import Sources
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_current_state
 from Tool.memory_management.memory import Memory
 
 class EventTriggerBase(ABC):
@@ -19,8 +18,7 @@ class EventTriggerBase(ABC):
 
         Initializes and validates the input parameters.
         """
-        state_manager = get_state_manager()
-        current_state = state_manager.get_active_state()
+        current_state = get_current_state()
 
         self.frequency = frequency
         self.probability = random.uniform(*self.frequency.value)

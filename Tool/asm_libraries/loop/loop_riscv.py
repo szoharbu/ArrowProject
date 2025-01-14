@@ -1,8 +1,7 @@
 
 from Tool.asm_libraries.loop.loop_base import LoopBase
 from Tool.asm_libraries.asm_logger import AsmLogger
-# from Tool.frontend.sources_API import Sources
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_current_state
 
 
 class Loop_riscv(LoopBase):
@@ -11,8 +10,7 @@ class Loop_riscv(LoopBase):
         """
         Called at the start of the 'with' block. Prepares for the loop logic.
         """
-        state_manager = get_state_manager()
-        current_state = state_manager.get_active_state()
+        current_state = get_current_state()
 
         self.counter_operand = current_state.register_manager.get_and_reserve()
 
@@ -29,8 +27,7 @@ class Loop_riscv(LoopBase):
         """
         Called at the end of the 'with' block. Cleans up any resources or finalizes logic.
         """
-        state_manager = get_state_manager()
-        current_state = state_manager.get_active_state()
+        current_state = get_current_state()
 
         if self.counter_direction == 'increment':
             limit_register = current_state.register_manager.get_and_reserve()

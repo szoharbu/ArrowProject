@@ -1,6 +1,6 @@
 
 from Utils.configuration_management import Configuration
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_current_state
 from Tool.memory_management.memory import Memory
 from Tool.asm_libraries.asm_logger import AsmLogger
 
@@ -14,8 +14,7 @@ class MemoryArray:
         :param elements: List of elements to populate the array.
         :param element_size: Size of each element in bytes (default 4 for word).
         """
-        state_manager = get_state_manager()
-        current_state = state_manager.get_active_state()
+        current_state = get_current_state()
 
         self.array_name = array_name
         self.elements = elements
@@ -55,8 +54,10 @@ class MemoryArray:
         Generate assembly code to load the memory based on the current offset and store value into output_register
         :param output_register: The register to store the loaded value.
         """
+        current_state = get_current_state()
+
         AsmLogger.comment(f"Load the address from {self.offset_mem.name} to access an element value in {self.array_block.name} into {output_register}")
-        tmp_reg = RegisterManager.get_and_reserve()
+        tmp_reg = current_state.register_manager.get_and_reserve()
         comment1 = f"Load address from {self.offset_mem.name}"
         comment2 = f"Dereference address in {tmp_reg} and load the value into {output_register}"
         if Configuration.Architecture.x86:
@@ -71,16 +72,17 @@ class MemoryArray:
         else:
             raise ValueError(f"Unsupported architecture")
 
-        RegisterManager.free(tmp_reg)
+        current_state.register_manager.free(tmp_reg)
 
     def store_element(self, output_register)->None:
         """
         Generate assembly code to store the memory based on the current offset and store value into output_register
         :param output_register: The register that get stored.
         """
+        current_state = get_current_state()
 
         AsmLogger.comment(f"Store the value in {output_register} to the address in {self.offset_mem.name} to store an element value in {self.array_block.name}")
-        tmp_reg = RegisterManager.get_and_reserve()
+        tmp_reg = current_state.register_manager.get_and_reserve()
         comment1 = f"Load address from {self.offset_mem.name} into {tmp_reg}"
         comment2 = f"Store value from {tmp_reg} into the address in {output_register}"
         if Configuration.Architecture.x86:
@@ -95,7 +97,7 @@ class MemoryArray:
         else:
             raise ValueError(f"Unsupported architecture")
 
-        RegisterManager.free(tmp_reg)
+        current_state.register_manager.free(tmp_reg)
 
 
     def next_element(self, num_elements)->None:
@@ -104,6 +106,7 @@ class MemoryArray:
 
         :param num_elements: Total number of elements in the array.
         """
+        current_state = get_current_state()
 
         print("TODO:::: need to make sure we are resting the value once reached array end, at the moment the below only increment index")
 
@@ -118,11 +121,11 @@ class MemoryArray:
         elif Configuration.Architecture.arm:
             AsmLogger.asm(f"add [{self.offset_mem.name}], {self.element_size}")
         elif Configuration.Architecture.riscv:
-            tmp_reg = RegisterManager.get_and_reserve()
+            tmp_reg = current_state.register_manager.get_and_reserve()
             AsmLogger.asm(f"lw {tmp_reg}, {self.offset_mem.unique_label}")
             AsmLogger.asm(f"addi {tmp_reg}, {tmp_reg}, {self.element_size}")
             AsmLogger.asm(f"sw {tmp_reg}, {self.offset_mem.name}")
-            RegisterManager.free(tmp_reg)
+            current_state.register_manager.free(tmp_reg)
         else:
             raise ValueError(f"Unsupported architecture")
 

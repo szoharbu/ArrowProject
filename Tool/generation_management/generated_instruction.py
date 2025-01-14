@@ -1,7 +1,7 @@
 from Tool.memory_management.memory import Memory
 from Tool.asm_blocks import AsmUnit
 from Utils.configuration_management import Configuration
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_current_state
 
 class GeneratedInstruction:
     def __init__(
@@ -12,8 +12,7 @@ class GeneratedInstruction:
             operands: list,
             comment: str,
     ):
-        state_manager = get_state_manager()
-        current_state = state_manager.get_active_state()
+        current_state = get_current_state()
 
         self.prefix = prefix
         self.mnemonic = mnemonic
