@@ -46,6 +46,7 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
 
     config_manager = get_config_manager()
 
+
     # Step 1: Determine the content path
     if submodule_content_path:
         content_base_path = Path(submodule_content_path).resolve()
@@ -58,8 +59,17 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
         logger.debug(f"Derived submodule content path from base_dir: {content_base_path}")
     # Ensure the content directory exists
     if not content_base_path.exists() or not content_base_path.is_dir():
-        logger.error(f"Content path '{content_base_path}' does not exist or is not a directory.")
-        raise FileNotFoundError(f"Content path '{content_base_path}' does not exist or is not a directory.")
+        cloud_mode = config_manager.get_value('Cloud_mode')
+        if cloud_mode:
+            '''
+                When in Streamlit 'cloud mode',  the Submodules/content is not uploaded, and so not in use.
+                # TODO:: need to fix this eventually. for now ignoring Content_path as a WA    
+                Scenarios should be written locally on the template
+            '''
+            content_base_path = f"Not-available-in-cloud-mode"
+        else:
+            logger.error(f"Content path '{content_base_path}' does not exist or is not a directory.")
+            raise FileNotFoundError(f"Content path '{content_base_path}' does not exist or is not a directory.")
     config_manager.set_value('content_dir_path', content_base_path)
 
     # Step 2: Check if the file exists relative to the content path
