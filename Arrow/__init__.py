@@ -3,7 +3,7 @@
 # Metadata
 __version__ = "0.1.0"
 __author__ = "Zohar Buchris"
-__description__ = "A tool for XYZ functionality."
+__description__ = "An Architecture Agnostic Test Generator."
 
 # # Expose key modules or functions
 # from .core import manager, config

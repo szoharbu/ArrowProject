@@ -12,7 +12,7 @@ from Tool.memory_management import interval_lib
 class MemoryManager:
     def __init__(self, memory_range:MemoryRange):
         """
-        Memory manager class to manage a pool of memory blocks.
+        Memory manager class to manage a pool of memory segments.
         """
         logger = get_logger()
         logger.info("======================== MemoryManager")
@@ -21,39 +21,39 @@ class MemoryManager:
 
         # Initialize the memory library with the provided memory_range
         self.interval_lib = interval_lib.IntervalLib(start_address=self.memory_range.address, total_size=self.memory_range.byte_size)
-        self.memory_blocks: List[MemorySegment] = []
+        self.memory_segments: List[MemorySegment] = []
         self.pool_type_mapping: Dict[Configuration.Memory_types, List[MemorySegment]] = {}  # To map pool types to blocks
 
 
     def allocate_memory_segment(self, name: str, byte_size:int, memory_type:Configuration.Memory_types)->MemorySegment:
         """
-        Allocate a block of memory for either code or data
-        :param name:ste: name of the block
-        :param byte_size: Size of the block.
-        :param memory_type:Memory_types: type of the block.
+        Allocate a segment of memory for either code or data
+        :param name:ste: name of the segment
+        :param byte_size: Size of the segment.
+        :param memory_type:Memory_types: type of the segment.
 
-        :return: Allocated memory block.
+        :return: Allocated memory segment.
         """
 
-        for block in self.memory_blocks:
-            if block.name == name:
-                raise ValueError(f"Memory block with name '{name}' already exists.")
+        for segment in self.memory_segments:
+            if segment.name == name:
+                raise ValueError(f"Memory segment with name '{name}' already exists.")
 
-        block_start, block_size = self.interval_lib.allocate(byte_size)
+        segment_start, segment_size = self.interval_lib.allocate(byte_size)
 
         if (memory_type == Configuration.Memory_types.CODE) or (memory_type == Configuration.Memory_types.BOOT_CODE) :
-            memory_block = CodeSegment(name=name, address=block_start, byte_size=block_size, memory_type=memory_type)
+            memory_segment = CodeSegment(name=name, address=segment_start, byte_size=segment_size, memory_type=memory_type)
         else:
-            memory_block = DataSegment(name=name, address=block_start, byte_size=block_size, memory_type=memory_type)
+            memory_segment = DataSegment(name=name, address=segment_start, byte_size=segment_size, memory_type=memory_type)
 
-        self.memory_blocks.append(memory_block)
+        self.memory_segments.append(memory_segment)
 
-        # Map the block to the pool type
+        # Map the segment to the pool type
         if memory_type not in self.pool_type_mapping:
             self.pool_type_mapping[memory_type] = []
-        self.pool_type_mapping[memory_type].append(memory_block)
+        self.pool_type_mapping[memory_type].append(memory_segment)
 
-        return memory_block
+        return memory_segment
 
 
     # def add_block_to_pools(self, block: MemoryBlock, pool_type: Memory_types):
@@ -80,13 +80,13 @@ class MemoryManager:
 
     def get_segments(self, pool_type:[Configuration.Memory_types | list[Configuration.Memory_types]]) -> List[MemorySegment]:
         """
-        Retrieve memory blocks based on specific attributes.
+        Retrieve memory segments based on specific attributes.
 
         Args:
-            pool_type [Memory_types|list[Memory_types]]: Filter blocks by pool type, can receive one or list of many.
+            pool_type [Memory_types|list[Memory_types]]: Filter segments by pool type, can receive one or list of many.
 
         Returns:
-            List[MemorySegment]: A list of memory blocks that match the criteria.
+            List[MemorySegment]: A list of memory segments that match the criteria.
         """
         logger = get_logger()
         # If `pool_type` is not a list, wrap it in a single-element list
@@ -95,7 +95,7 @@ class MemoryManager:
         else:
             pool_types = pool_type
 
-        filtered_blocks = []
+        filtered_segmentss = []
         for pool_type in pool_types:
             if not isinstance(pool_type, Configuration.Memory_types):
                 logger.warning("ID of pool_type's type:", id(type(pool_type)))
@@ -103,26 +103,38 @@ class MemoryManager:
                 raise ValueError(f"Invalid pool type {pool_type}.")
             # Filter blocks based on pool_type
             if pool_type in self.pool_type_mapping:
-                filtered_blocks = filtered_blocks + [block for block in self.memory_blocks if block in self.pool_type_mapping[pool_type]]
+                filtered_segmentss = filtered_segmentss + [segment for segment in self.memory_segments if segment in self.pool_type_mapping[pool_type]]
 
-        if not filtered_blocks:
-                raise ValueError("No blocks available to match the query request.")
+        if not filtered_segmentss:
+                raise ValueError("No segments available to match the query request.")
 
-        return filtered_blocks
+        return filtered_segmentss
 
-    def get_segment(self, block_name:str) -> MemorySegment:
+    def get_segment(self, segment_name:str) -> MemorySegment:
         """
-        Retrieve a memory block based on given block name.
+        Retrieve a memory segment based on given segment name.
 
         Returns:
-            MemorySegment: A memory blocks that match the criteria.
+            MemorySegment: A memory segments that match the criteria.
         """
 
-        for block in self.memory_blocks:
-            if block.name == block_name:
-                return block
-        raise ValueError(f"No block available to match the name requested {block_name}.")
+        for segment in self.memory_segments:
+            if segment.name == segment_name:
+                return segment
+        raise ValueError(f"No segment available to match the name requested {segment_name}.")
 
+
+    def get_segment_dataUnit_list(self, segments_name:str) -> list[DataUnit]:
+        """
+        Retrieve DataUnit list of memory segment based on given segment name.
+
+        Returns:
+            list[DataUnit]: A list of the memory segment DataUnits
+        """
+        segment = self.get_segment(segments_name)
+        if segment.memory_type is not Configuration.Memory_types.DATA_SHARED and segment.memory_type is not Configuration.Memory_types.DATA_PRESERVE:
+            raise ValueError(f"Invalid segment type {segment.memory_type}. Segment need to be of type DATA_SHARED or DATA_PRESERVE.")
+        return segment.data_units_list
 
     def allocate_data_memory(self, name:str, memory_block_id:str, pool_type:Configuration.Memory_types, byte_size:int=8, init_value_byte_representation:list[int]=None) -> DataUnit:
         """

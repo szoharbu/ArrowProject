@@ -72,7 +72,7 @@ class DataUnit:
         execution_platform = config_manager.get_value('Execution_platform')
 
         if self.init_value_byte_representation is not None:
-            formatted_bytes = ", ".join(f"0x{byte:02x}" for sublist in self.init_value_byte_representation for byte in sublist)
+            formatted_bytes = ", ".join(f"0x{byte:02x}" for byte in self.init_value_byte_representation)
         else:
             formatted_bytes = "None"
 

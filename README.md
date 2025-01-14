@@ -58,14 +58,31 @@ The current open-source version and its license will remain unaffected. Future v
 
 ## FAQ
 
-### Can my company use this tool internally without sharing modifications?
-Yes. The GPL-3.0 license allows private/internal use without requiring you to share your modifications.
+### Understanding the GPL License and Its Impact on Your Project
+### 1. Can I use this tool in my project without sharing my code?
+      Yes, absolutely! The GNU General Public License (GPL-3.0) does not impose any restrictions on private/internal use.
+      You can freely use this tool, modify it, and even integrate it into your workflows without sharing your modifications, as long as you are not distributing the tool or its modified versions to others.
+### 2. Are there any usage limitations?
+      No, the GPL license imposes no restrictions on how you use the tool or the outputs it generates.
+      You are free to use the tool for testing, development, or any other business need without any additional obligations.
+### 3. What happens if I want to modify the tool?
+      You can modify the tool for your internal purposes without any requirement to share your changes.
+      The only scenario where you need to share your modifications is if you distribute the modified tool to others (e.g., clients, partners, or the public).
+### 4. Why is this tool licensed under GPL instead of MIT?
+      The GPL license ensures that the tool remains an open, collaborative project by:
+      Preventing others from cloning, modifying, and releasing proprietary versions that could compete with the original.
+      Encouraging shared contributions while protecting the openness of the tool.
+      In contrast, permissive licenses like MIT allow anyone to repackage the tool as a closed-source product, potentially fragmenting the community and undermining collaborative growth.
 
-### What if we distribute the tool or a modified version to others?
-If you distribute the tool (or a modified version) externally, you must release the source code under GPL-3.0.
+### 5. Does the GPL license affect my internal extensions or workflows?
+      No, the GPL license does not affect your internal extensions, workflows, or proprietary IP.
+      You can create proprietary extensions or workflows using the tool, as long as you do not distribute the modified core tool externally.
 
-### Can we extend the tool with proprietary content?
-Yes. You can create proprietary extensions or use the tool in confidential workflows, as long as you do not distribute the modified core tool to others.
+### 6. What if we distribute the tool or a modified version to others?
+      If you distribute the tool (or a modified version) externally, you must release the source code under GPL-3.0.
+
+### 7. Can we extend the tool with proprietary content?
+      Yes. You can create proprietary extensions or use the tool in confidential workflows, as long as you do not distribute the modified core tool to others.
 
 ## Contact
 

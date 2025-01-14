@@ -1,35 +1,45 @@
 
-# TODO:: RENAME ALL STRUCTURES LIKE: TG, TKL, ...
-
-# TODO:: Tool restructure
 '''
+----------------- Arrow hierarchy:
 Arrow/
 ├── Arrow/                      # Main package for the tool
-│   ├── core/                   # Core logic of the tool
-│   ├── flows/                  # Outer workflows
-│   ├── io/                     # Input/output operations
-│   ├── utils/                  # Utility functions
 │   ├── main.py                 # Entry point for the tool
-│   └── cli.py                  # Command-line interface
+│   └── TODOs                   # Endless list of TODOs
+├── Tool/                       # Core logic of the tool
+│   ├── asm_blocks/             # Basic asm building blocks - AsmUnit and DataUnit
+│   ├── asm_libraries/          # Native assembly flows, like Loop, EventTrigger, Branch...
+│   ├── db_manager/             # Per-Arch instruction DB
+│   ├── frontend/               # FE operations and interface
+│   ├── stages/                 # Tool stages of pre,body and post generation
+│   └── ...MGMs                 # Tool managers for generation, ingredient, scenario, memory, register,...
+├── Utils/                      # Utility logic of the tool, like Argparse, logger, Configs, Knobs
+│   ├── arg_parser/             # Command-line interface
+│   ├── configuration_mgm/      # Another standalone repository
+│   └── ...                     # Additional files like: logger, seed, singleton
 ├── external/                   # External repositories
-│   ├── content/                # External content repository
-│   ├── instruction_db/         # Another standalone repository
-│   └── ...                     # Additional external repos
-├── front_end/                  # Front-end files for the tool
-│   ├── __init__.py             # Optional if you use Python here
-│   ├── static/                 # Static files (CSS, JS, images)
-│   ├── templates/              # HTML templates (if using frameworks like Flask)
-│   └── streamlit/              # Streamlit-specific front-end logic
+│   ├── binary_generation/      # Per-Arch binary generation
+│   ├── streamlit/              # Streamlit-specific front-end logic
+│   └── run_tool.py             # External entry point for the tool
+├── Submodules/                 # External repositories
+│   ├── arrow_content/          # External content repository
+│   │   ├── content/            # Content directories, including Templates, Scenarios, Ingredients
+│   │   ├── regressions/        # Content directories, including Templates, Scenarios, Ingredients
+│   └── ...                     # TBD - Additional external repos
 ├── tests/                      # Unit and integration tests
 ├── scripts/                    # Utility scripts
 ├── requirements.txt            # Dependencies for the project
 ├── setup.py                    # Setup script for packaging
+├── LICENSE                     # GPL-3.0 open source licensing
 └── README.md                   # Overview and usage instructions
+
+
 '''
+
+# TODO:: refactor User interface and importing!!!!
 
 # Done:: create a memoryBlock, and allow each Memory to be part of a memory block, if Memory is generate without a memoryBlock auto define a block of that size
 # Done:: reuse bigger blocks, and take partial blocks to reuse label with preserved registers
-# TODO:: refactor DataUnit to work with Byte_representation instead on huge integer.
+# Done:: refactor DataUnit to work with Byte_representation instead on huge integer.
 # TODO:: If someone if printing me it should print all the information, and provide an api for mem.label_reg(reg) that will print the memory operand like 0(reg).
         # Also replace all such previous usages when in baremetal we need different logic
 # TODO:: NEED TO MAKE SURE DATAUNIT AND ASM GENERATION TREAT THE MEMORY BLOCK AND ALL ITS SIZES CORRECTLY AND SEQUENTIALLY!!!!!!!!!!!!!!!!
