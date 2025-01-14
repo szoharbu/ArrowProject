@@ -34,23 +34,19 @@ ArrowProject/
 '''
 
 
-# TODO:: refactor User interface and importing!!!!
+# TODO:: refactor User interface and importing!!!! replace usage of AR, Sources, StateManager, Tool imports
 
-# TODO:: Mem.str - If someone if printing it should print all the information, and provide an api for mem.label_reg(reg) that will print the memory operand like 0(reg).
-#         # Also replace all such previous usages when in baremetal we need different logic
-# TODO:: NEED TO MAKE SURE DATAUNIT AND ASM GENERATION TREAT THE MEMORY BLOCK AND ALL ITS SIZES CORRECTLY AND SEQUENTIALLY!!!!!!!!!!!!!!!!
 # TODO:: implement an array function, that user can set values in X elements, and access they via next, and the memory will get mem + offset
 # TODO:: enhance C code function, allow them to receive parameter, and protect all registers usage (or provide a list of allowed GPR which will be the free ones)
 # Done:: Reuse memory in some probability instead of generating new ones
 
 # TODO:: extract arm and x86 instruction set
-# TODO:: reduce usage of print_asm and instead use generateInstruction
-# TODO:: add another layer on top of AsmUnit called Instruction, that hold the string as well as the AsmUnit inside. not sure its a good idea to use raw AsmUnit. yet how will it work with TG.asm?
 
 # TODO:: add API to extract queries, should be similar to generate logic
 # TODO:: Add API and package under wrapper to upload info to a generic cloud
 
-# TODO:: rename Tool to Arrow? what about inner concepts like TG, ings/scenario?
+# TODO:: have a scenario wrapper, later place free_GPR checks there to error when a register wasn't free
+
 '''
 Directions:
 - Architecture agnostic TG, simple, lite and fast
@@ -84,18 +80,18 @@ RISCV learning
 '''
 
 # Done:: remove op1,op2, and enhance query to understand src/dest reg/mem types
-# TODO:: integrate streamlit and deploy it to Adwin
+# TODO:: integrate streamlit and deploy it
 # TODO:: in riscv add I (integer content) , R, arithmetic  and pesudo stress bursts
 # Done :: RISCV ending convention
 
 # TODO:: Arch-Agnostic content writing
 # TODO:: Implement a function to store values into operands! will make code arch-agnostic
-###TG.asm(f'li {reg}, {recursive_count}', comment=f"set the value of {recursive_count} into {reg}")
+###AR.asm(f'li {reg}, {recursive_count}', comment=f"set the value of {recursive_count} into {reg}")
 # Done:: Implement a function to push/pop values to stack! will make code arch-agnostic
-###TG.asm(f'addi, sp, sp, -4', comment=f"Decrement stack pointer (allocate space)")
-###TG.asm(f'sw {reg}, 0(sp)', comment=f"Store the value of t0 at the top of the stack")
+###AR.asm(f'addi, sp, sp, -4', comment=f"Decrement stack pointer (allocate space)")
+###AR.asm(f'sw {reg}, 0(sp)', comment=f"Store the value of t0 at the top of the stack")
 # TODO:: Implement a function to branch to different locations! will make code arch-agnostic
-###TG.asm(f'jal ra, {self.fibonacci_block.code_label}', comment=f"Call fib(n)")
+###AR.asm(f'jal ra, {self.fibonacci_block.code_label}', comment=f"Call fib(n)")
 # Done:: add capability to ask for specific register base on enumeration, like SP, RA in riscv , to use reg object instead of string
 # TODO:: add "push {r1, r2}" and "pop {reglist} into arm.json and support it cd
 
@@ -251,73 +247,74 @@ RISCV learning
 # DONE:: add control from command line
 
 # TODO:: event-manager
-# TODO:: need to create an event-manager with publish and registers, ...
+    # TODO:: need to create an event-manager with publish and registers, ...
 
 # Done:: add a wrapper script to run regression
-# TODO:: have a scenario wrapper, later place free_GPR checks there to error when a register wasn't free
+
 
 # TODO:: ingredinet manager
-# Done:: need to add priority weight logic to scenario selection. at the moment it only check tags and precondition
-# Done:: need to add priority weight logic to ingredient selection. at the moment it only check tags and precondition
-# TODO:: need to figure out pros-cons of using ScenarioDecorator and ScenarioWrapper VS using just IngredientDecorator
-# TODO:: add an ingredientWrapper with add_precond logic, and add the return type List[IngsWrapper] to get_random_ingredients
-# Done:: Add boot section as part of ingredients. That will be pushed to the json
+    # Done:: need to add priority weight logic to scenario selection. at the moment it only check tags and precondition
+    # Done:: need to add priority weight logic to ingredient selection. at the moment it only check tags and precondition
+    # TODO:: need to figure out pros-cons of using ScenarioDecorator and ScenarioWrapper VS using just IngredientDecorator
+    # TODO:: add an ingredientWrapper with add_precond logic, and add the return type List[IngsWrapper] to get_random_ingredients
+    # Done:: Add boot section as part of ingredients. That will be pushed to the json
 
 # TODO:: register manager
-# Done:: refactor register_manager to support both x86 and riscv registers !
-# Done:: in riscv, when using get try providing t_registers, and when using get_and_preserve try providing s_registers
-# TODO:: enhance riscv register manager, to better allocate temp, saved, and other register types
-# TODO:: preserve a base_register, need to be per scenario, stored as a state field
+    # Done:: refactor register_manager to support both x86 and riscv registers !
+    # Done:: in riscv, when using get try providing t_registers, and when using get_and_preserve try providing s_registers
+    # TODO:: enhance riscv register manager, to better allocate temp, saved, and other register types
+    # TODO:: preserve a base_register, need to be per scenario, stored as a state field
 
 # TODO:: memory manager
-# DONE:: create a memlib with interval logic, and use it at Memory_block initialization
-# Done:: preserve a base_register, need to be per scenario, store as a state field. and ensure memory access are using it
-# TODO:: improve heuristics to allocate memory per core, and maintain linear and physical separation
-# Done:: create memory manager with code and data blocks, separation between code, data, boot
-# Done:: create memory pools for shared and reserved, add shared=true logic
-# TODO:: add heuristics to understand initial logic, take forbiden_range into consideration
-# Done:: enhance Memory operand returned object
-# Done:: in Memory, when in x86, add qword/dword and other hints to assembler
-# Done:: Memory : use dynamic init when memory get generated
-# Done:: Memory : add unique name to each of the requested memory, also when name is provided (maybe have 2 attributes name and unique_name)
-# TODO:: currently memory always uses dynamic_init and later [reg] , need to add offset capabilities
-# Done:: create a memoryBlock, and allow each Memory to be part of a memory block, if Memory is generate without a memoryBlock auto define a block of that size
-# Done:: reuse bigger blocks, and take partial blocks to reuse label with preserved registers
-# Done:: refactor DataUnit to work with Byte_representation instead on huge integer.
-# TODO:: If someone if printing it should print all the information, and provide an api for mem.label_reg(reg) that will print the memory operand like 0(reg).
-        # Also replace all such previous usages when in baremetal we need different logic
+    # DONE:: create a memlib with interval logic, and use it at Memory_block initialization
+    # Done:: preserve a base_register, need to be per scenario, store as a state field. and ensure memory access are using it
+    # TODO:: improve heuristics to allocate memory per core, and maintain linear and physical separation
+    # Done:: create memory manager with code and data blocks, separation between code, data, boot
+    # Done:: create memory pools for shared and reserved, add shared=true logic
+    # TODO:: add heuristics to understand initial logic, take forbiden_range into consideration
+    # Done:: enhance Memory operand returned object
+    # Done:: in Memory, when in x86, add qword/dword and other hints to assembler
+    # Done:: Memory : use dynamic init when memory get generated
+    # Done:: Memory : add unique name to each of the requested memory, also when name is provided (maybe have 2 attributes name and unique_name)
+    # TODO:: currently memory always uses dynamic_init and later [reg] , need to add offset capabilities
+    # Done:: create a memoryBlock, and allow each Memory to be part of a memory block, if Memory is generate without a memoryBlock auto define a block of that size
+    # Done:: reuse bigger blocks, and take partial blocks to reuse label with preserved registers
+    # Done:: refactor DataUnit to work with Byte_representation instead on huge integer.
+    # TODO:: If someone if printing it should print all the information, and provide an api for mem.label_reg(reg) that will print the memory operand like 0(reg).
+            # Also replace all such previous usages when in baremetal we need different logic
+    # Done:: NEED TO MAKE SURE DATAUNIT AND ASM GENERATION TREAT THE MEMORY BLOCK AND ALL ITS SIZES CORRECTLY AND SEQUENTIALLY!!!!!!!!!!!!!!!!
 
 
 # TODO:: scenario manager
-# TODO:: review the way the manager get initiated
-# DONE:: need to check scenario distribution, in some cases it doesn't seem like its calculate logic right
-# DONE:: need to add priority logic in place, at the moment its looking at tags only!
+    # TODO:: review the way the manager get initiated
+    # DONE:: need to check scenario distribution, in some cases it doesn't seem like its calculate logic right
+    # DONE:: need to add priority logic in place, at the moment its looking at tags only!
 
 # TODO:: APIs
-# TODO:: UX:: create Event Trigger
-# TODO:: separate Memory from MemoryBlock
-# Done:: implement rangeWithPeak
-# TODO:: add more APIs, like event_trigger, Branch, function, safe_regs,...
-# Done:: add comment into TG.asm("nop",comment="nop instruction")
+    # Done:: UX:: create Event Trigger
+    # Done:: separate Memory from MemoryBlock
+    # Done:: implement rangeWithPeak
+    # TODO:: add more APIs, like event_trigger, Branch, function, safe_regs,...
+    # Done:: add comment into AR.asm("nop",comment="nop instruction")
 
 
-# TODO:: TG API
-# DONE:: decouple FE from Tool, create additional TG class from the Tool class, and all init will be there
-# TODO:: migrate more APIs to be under TG. migrate content toward it
-# TODO:: need to think what to do with decorators and such?
+# TODO:: AR API
+    # DONE:: decouple FE from Tool, create additional TG class from the Tool class, and all init will be there
+    # TODO:: migrate more APIs to be under AR. migrate content toward it
+    # TODO:: need to think what to do with decorators and such?
 
 # TODO:: Instructions
     # Done:: take care of ISA DB queries to enhance generate
     # Done:: enhance generation based on query results
     # TODO:: have an instruction object, to append either instruction object with mnemonics,operands,... or pure string and later asm print it
+    # TODO:: reduce usage of print_asm and instead use generateInstruction
+    # TODO:: add another layer on top of AsmUnit called Instruction, that hold the string as well as the AsmUnit inside. not sure its a good idea to use raw AsmUnit. yet how will it work with TG.asm?
 
-# Done:: Tagging
-# Done:: add tagging and precondition logic to scenarios
-# Done:: add tagging and precondition logic to ingredient as well
-# Done:: in tags query, support both dict and list
+# TODO:: Tagging
+    # Done:: add tagging and precondition logic to scenarios
+    # Done:: add tagging and precondition logic to ingredient as well
+    # Done:: in tags query, support both dict and list
 
-# Done:: once I solved the arg_parse issue, place the output folder inside a configuration_manager
 
 # Done:: seed consistency
 # Done:: create a mini_regression wrapper
-# TODO:: rename tool, cookbook, ...
