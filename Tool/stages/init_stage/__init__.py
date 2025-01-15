@@ -119,7 +119,7 @@ def init_scenarios():
         When deploy an app on Community Cloud, the only thing that gets cloned during deployment is the source repo for your app. 
         To access the content_repo submodule we need to execute a 'git submodule update' within the Python code of your app to query your second repo and copy additional files.
         '''
-        ensure_submodule_initialized()
+        #ensure_submodule_initialized()
 
         # TODO:: failing on Streamlit cloud, need to fix. at the moment blocking this capability
         logger.warning("Skipping Content initialization, using only scenarios from main template.")
