@@ -85,15 +85,19 @@ def create_isa_info_layout():
 
 
     # base_dir_path = config_manager.get_value('base_dir_path')
-    base_dir_path = os.path.join(os.path.dirname(__file__), "..", "..", )
+    base_dir_path = os.path.join(os.path.dirname(__file__) )
     architecture = st.session_state["architecture"]
     if architecture == "arm":
         db_file_name = 'arm_instructions.json'
     elif architecture == "x86":
         db_file_name = 'x86_instructions.json'
     else:  # RISC-V
-        db_file_name = 'riscv_instructions_ver6.json'
-    db_path = os.path.join(base_dir_path, 'Tool', 'db_manager',db_file_name)
+        db_file_name = 'riscv_instructions.json'
+    db_path = os.path.join(base_dir_path, '..', 'db_manager', 'instruction_jsons' ,db_file_name)
+
+    # Normalize the path to remove mixed separators
+    db_path = os.path.normpath(db_path)
+
     # Check if the log file exists
     if os.path.exists(db_path):
         with open(db_path, "r") as log_file:
