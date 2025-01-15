@@ -6,7 +6,7 @@ from Tool.generation_management.generate_x86 import generate_x86
 from Tool.generation_management.generate_riscv import generate_riscv
 from Tool.generation_management.generate_arm import generate_arm
 from Utils.configuration_management import Configuration
-from Tool.db_manager.models import get_instruction_db
+from Externals.db_manager.models import get_instruction_db
 from peewee import Expression, fn
 
 # @staticmethod
