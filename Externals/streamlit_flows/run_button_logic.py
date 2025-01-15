@@ -52,39 +52,39 @@ def handle_run_button(code_input):
             try:
                 # run main application logic
 
-                from Utils.singleton_management import SingletonManager
-                SingletonManager.reset()  # Reset all singletons
-
-                import Utils
-                import Tool
-                from Utils.logger_management import Logger
-                from Utils.arg_parser import arg_parser
-                from Utils.configuration_management import configuration_management
-                from Tool.generation_management import generate
-                from Tool.memory_management import memory_manager
-                Logger.clean_logger()
-                reload(Utils.arg_parser.arg_parser)
-                reload(Utils.logger_management)
-                reload(Utils.configuration_management.configuration_management)
-                reload(Utils.configuration_management.knob_manager)
-                reload(Utils.configuration_management.knobs)
-                reload(Tool.memory_management.memory_manager)
-
-
-                # reload(Tool.ingredient_management)
-                # from Utils.configuration_management import tags_and_enums
-                # reload(tags_and_enums)
-                # from Tool.db_manager import models
-                # reload(models)
-                # from Tool.generation import generate
-                # reload(generate)
+                # from Utils.singleton_management import SingletonManager
+                # SingletonManager.reset()  # Reset all singletons
+                #
+                # import Utils
+                # import Tool
+                # from Utils.logger_management import Logger
+                # from Utils.arg_parser import arg_parser
+                # from Utils.configuration_management import configuration_management
+                # from Tool.generation_management import generate
+                # from Tool.memory_management import memory_manager
+                # Logger.clean_logger()
+                # reload(Utils.arg_parser.arg_parser)
+                # reload(Utils.logger_management)
+                # reload(Utils.configuration_management.configuration_management)
+                # reload(Utils.configuration_management.knob_manager)
+                # reload(Utils.configuration_management.knobs)
+                # reload(Tool.memory_management.memory_manager)
+                #
+                #
+                # # reload(Tool.ingredient_management)
+                # # from Utils.configuration_management import tags_and_enums
+                # # reload(tags_and_enums)
+                # # from Tool.db_manager import models
+                # # reload(models)
+                # # from Tool.generation import generate
+                # # reload(generate)
 
                 success = main.main(command)
 
                 if not success:
                     raise RuntimeError("Failed to run tool")
 
-                Logger.clean_logger()
+                # Logger.clean_logger()
 
             except Exception as e:
                 # Catch any exception and display the full traceback
@@ -94,16 +94,17 @@ def handle_run_button(code_input):
                     st.code(traceback.format_exc(), language="python")  # Display the full traceback
 
                 # Read and display the tool's log file
-                stdout_path = os.path.join(output_dir, "test.log")
+                stdout_path = os.path.join(output_dir, "debug.log")
                 with open(stdout_path, "r") as log_file:
                     logs = log_file.read()
 
                 with st.expander("View Tool Logs"):
                     st.code(logs, language="python")  # Show the log content in an expander
 
+                return
 
             # Read the content of the std_out file
-            stdout_path = os.path.join(output_dir, "test.log")
+            stdout_path = os.path.join(output_dir, "summary.log")
             with open(stdout_path, "r") as f:
                 stdout_file = f.read()
             st.session_state["stdout_output"] = stdout_file
@@ -129,7 +130,7 @@ def handle_run_button(code_input):
                 st.code(traceback.format_exc(), language="python")  # Display the full traceback
 
             # Read and display the tool's log file
-            stdout_path = os.path.join(output_dir, "test.log")
+            stdout_path = os.path.join(output_dir, "debug.log")
             with open(stdout_path, "r") as log_file:
                 logs = log_file.read()
 

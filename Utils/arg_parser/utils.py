@@ -76,7 +76,6 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
     relative_template_path = content_base_path / template_file_path
     if relative_template_path.exists() and relative_template_path.is_file():
         logger.debug(f"Template file found relative to content directory: {relative_template_path.resolve()}")
-        config_manager.set_value('template_file', template_file_path)
         config_manager.set_value('template_path', relative_template_path)
         return
 
@@ -84,7 +83,6 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
     full_template_path = Path(template_file_path).resolve()
     if full_template_path.exists() and full_template_path.is_file():
         logger.debug(f"Template file found at full path: {full_template_path}")
-        config_manager.set_value('template_file', full_template_path)
         config_manager.set_value('template_path',full_template_path)
         return
 
@@ -104,15 +102,9 @@ def setup_output_directory():
     """
     logger = get_logger()
     config_manager = get_config_manager()
+    output_dir = config_manager.get_value('output_dir_path')
 
     logger.debug("============================ setup_output_directory")
-
-    # Retrieve the output directory path from the configuration manager
-    try:
-        output_dir = config_manager.get_value('output_dir_path')
-    except KeyError:
-        logger.error("Configuration 'output_dir_path' is missing.")
-        raise ValueError("The configuration key 'output_dir_path' must be set.") from None
 
     # Clean up the output directory if it exists
     try:
@@ -130,10 +122,9 @@ def setup_output_directory():
 
     # Set up logging to a file within the output directory
     try:
-        log_file = os.path.join(output_dir, 'test.log')
         log_manager = get_logger(get_manager=True)
-        log_manager.setup_file_logging(log_file)
-        logger.debug(f"Logging configured to file: {log_file}")
+        log_manager.setup_output_dir(output_dir)
+        logger.debug(f"Logging configured with output_dir: {output_dir}")
     except Exception as e:
         logger.error(f"Failed to configure logging: {e}")
         raise

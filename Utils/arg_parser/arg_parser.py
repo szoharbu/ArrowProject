@@ -62,7 +62,7 @@ def parse_arguments(input_args=None):
 
     # Logic based on the parsed arguments
     setup_template_and_content(args.template, args.content)
-    template = config_manager.get_value('template_file')
+    template = config_manager.get_value('template_path')
     content_path = config_manager.get_value('content_dir_path')
     logger.info(f"--------------- Template: {template}")
     logger.info(f"--------------- Content directory: {content_path}")

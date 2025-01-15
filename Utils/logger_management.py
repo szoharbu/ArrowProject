@@ -23,7 +23,8 @@ class Logger:
         self.buffer_size = buffer_size  # Capacity of the memory buffer
         self.logger = logging.getLogger("Logger")  # Create a logger_management instance
         self.logger.setLevel(logging.DEBUG)  # Set the default log level to DEBUG
-        self.file_handler = None  # Placeholder for the file handler (to be set later)
+        self.file_handler = None  # Placeholder for the filed handler (to be set later)
+        self.file_handler2 = None
 
         # Set up a memory-only handler for Stage 1
         stream_handler = logging.StreamHandler()
@@ -72,7 +73,7 @@ class Logger:
         # Then print to the console for INFO level or higher
         self._print_to_console(record)
 
-    def setup_file_logging(self, log_file: str):
+    def setup_output_dir(self, output_dir: str):
         """
         Configures the logger_management to write logs to a specified file.
 
@@ -80,31 +81,43 @@ class Logger:
         - Replaces the memory handler with a file handler.
 
         Args:
-            log_file (str): Path to the log file.
+            output_dir (str): Path to the output directory.
         """
         # If file logging is already set up, do nothing
         if self.file_handler:
             return
 
-        # Ensure the log file's directory exists
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        # Ensure the  directory exists
+        os.makedirs(output_dir, exist_ok=True)
 
-        # Create a file handler to write logs to the file
+        # Detailed log file at DEBUG level
+        log_file = os.path.join(output_dir, 'debug.log')
         self.file_handler = logging.FileHandler(log_file, mode='w')
         self.file_handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         self.file_handler.setFormatter(formatter)
-
-        # Replace the memory handler with the custom file handler that logs to both file and console
-        self.logger.handlers = [self.file_handler]
-
         # Attach the custom emit method to log to both file and console
         self.file_handler.emit = self._emit_to_log_and_screen # Override 'emit' to store logs into both file and screen
 
-        # Flush all buffered memory logs to the file and print selectively to the screen
+        # Summarized log file at INFO level
+        log_file2 = os.path.join(output_dir, 'summary.log')
+        self.file_handler2 = logging.FileHandler(log_file2, mode='w')
+        self.file_handler2.setLevel(logging.INFO)
+        summary_formatter = logging.Formatter('%(asctime)s - %(message)s')
+        self.file_handler2.setFormatter(summary_formatter)
+
+        # Remove "stream_handler"
+        self.logger.handlers = []
+        # Attach both handlers to the logger
+        self.logger.addHandler(self.file_handler)
+        self.logger.addHandler(self.file_handler2)
+
+
+        # Flush all buffered memory logs to both handlers
         for record in self.buffer:
             self.file_handler.emit(record)  # Write to file with the correct format
-            #self._print_to_console(record)  # Print selectively to the console
+            if record.levelno >= logging.INFO:
+                self.file_handler2.emit(record)
 
         self.buffer = []  # Clear the memory buffer
 
@@ -124,6 +137,7 @@ class Logger:
         remove all handlers associated with the logger.
         """
         logger = logging.getLogger("Logger")
+        logger.buffer = []
         handlers = logger.handlers[:]
         for handler in handlers:
             handler.close()
