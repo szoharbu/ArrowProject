@@ -6,7 +6,6 @@ ArrowProject/
 ├── Tool/                       # Core logic of the tool
 │   ├── asm_blocks/             # Basic asm building blocks - AsmUnit and DataUnit
 │   ├── asm_libraries/          # Native assembly flows, like Loop, EventTrigger, Branch...
-│   ├── db_manager/             # Per-Arch instruction DB
 │   ├── frontend/               # FE operations and interface
 │   ├── stages/                 # Tool stages of pre,body and post generation
 │   └── ...MGMs                 # Tool managers for generation, ingredient, scenario, memory, register,...
@@ -15,6 +14,7 @@ ArrowProject/
 │   ├── configuration_mgm/      # Another standalone repository
 │   └── ...                     # Additional files like: logger, seed, singleton
 ├── external/                   # External repositories
+│   ├── db_manager/             # Per-Arch instruction DB
 │   ├── binary_generation/      # Per-Arch binary generation
 │   ├── streamlit/              # Streamlit-specific front-end logic
 │   └── run_tool.py             # External entry point for the tool
@@ -33,7 +33,7 @@ ArrowProject/
 
 '''
 
-
+# Done:: move db_manager into External repos
 # TODO:: refactor User interface and importing!!!! replace usage of AR, Sources, StateManager, Tool imports
 
 # TODO:: implement an array function, that user can set values in X elements, and access they via next, and the memory will get mem + offset
