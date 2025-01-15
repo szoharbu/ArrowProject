@@ -1,6 +1,7 @@
 import sys
 import os
 import streamlit as st
+import traceback
 
 # # needed to avoid Streamlit cloud matching issues
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
@@ -22,14 +23,11 @@ def handle_run_button(code_input):
         # Create an output directory
         run_dir = "StreamLit"  # StreamLit output directory
         output_dir = os.path.join(run_dir, "output")
+        os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
 
         try:
 
             st.session_state["progress_line"] = "Processing..."
-
-            # Ensure the output directory exists
-            if not os.path.exists(run_dir):
-                os.makedirs(run_dir)
 
             # Create a template file to save user-provided code
             template_file = os.path.join(run_dir, "template.py")
@@ -57,17 +55,21 @@ def handle_run_button(code_input):
                 from Utils.singleton_management import SingletonManager
                 SingletonManager.reset()  # Reset all singletons
 
-                from Utils.logger_management import Logger
-                from Tool.generation_management import generate
-                from Tool.memory_management import memory_manager
                 import Utils
                 import Tool
+                from Utils.logger_management import Logger
+                from Utils.arg_parser import arg_parser
+                from Utils.configuration_management import configuration_management
+                from Tool.generation_management import generate
+                from Tool.memory_management import memory_manager
                 # Logger.clean_logger()
+                reload(Utils.arg_parser.arg_parser)
                 reload(Utils.logger_management)
                 reload(Utils.configuration_management.configuration_management)
                 reload(Utils.configuration_management.knob_manager)
                 reload(Utils.configuration_management.knobs)
                 reload(Tool.memory_management.memory_manager)
+
 
                 # reload(Tool.ingredient_management)
                 # from Utils.configuration_management import tags_and_enums
@@ -78,6 +80,9 @@ def handle_run_button(code_input):
                 # reload(generate)
 
                 success = main.main(command)
+
+                if not success:
+                    raise RuntimeError("Failed to run tool")
 
                 Logger.clean_logger()
 
@@ -94,15 +99,12 @@ def handle_run_button(code_input):
                     st.code(logs, language="plaintext")  # Show the log content in an expander
 
 
-
             # Read the content of the std_out file
             stdout_path = os.path.join(output_dir, "test.log")
             with open(stdout_path, "r") as f:
                 stdout_file = f.read()
             st.session_state["stdout_output"] = stdout_file
 
-            if not success:
-                raise RuntimeError("Failed to run tool")
 
             # Read the content of the asm file
             arch = st.session_state["architecture"]
