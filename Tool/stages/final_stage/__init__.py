@@ -1,8 +1,8 @@
 
 from Utils.logger_management import get_logger
-from Utils.configuration_management import Configuration, get_config_manager
+from Utils.configuration_management import get_config_manager
 from stages.final_stage.json_dump import generation_json_dump, memory_usage_json_dump
-from Tool.db_manager.models import get_instruction_db
+from Externals.db_manager.models import get_instruction_db
 
 from Externals.binary_generation.asm_generation import generate_assembly
 from Externals.binary_generation.binary_generation import generate_binary

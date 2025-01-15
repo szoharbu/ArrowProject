@@ -1,10 +1,11 @@
 import json
 from peewee import SqliteDatabase, OperationalError
-from Tool.db_manager.models import get_instruction_db
+from Externals.db_manager.models import get_instruction_db
+from Utils.logger_management import get_logger
 import os
 
 """
-Script: create_db_riscv.py
+Script: create_db_arm.py
 
 Description:
 This script creates and populates an SQLite database (instructions.db) from JSON data 
@@ -20,24 +21,23 @@ Functionality:
 
 Usage:
 Run this script from the project root to refresh the database with the latest JSON data:
-    python Tool/scripts/create_db_riscv.py
+    python Tool/scripts/create_db_arm.py
 """
 
 
 # Initialize the database
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-db_path = os.path.join(BASE_DIR, 'db_manager', 'db', 'x86_instructions.db')
+db_path = os.path.join(BASE_DIR, 'db_manager', 'db', 'arm_instructions.db')
 # Check and deleter if the file exists
 if os.path.exists(db_path):
     os.remove(db_path)  # Delete the file
 db = SqliteDatabase(db_path)
 
 
-
 def load_json_to_db():
     # Open and read the JSON data
 
-    json_path = os.path.join(BASE_DIR, 'instruction_jsons', 'x86_instructions.json')
+    json_path = os.path.join(BASE_DIR, 'instruction_jsons', 'arm_instructions.json')
 
     # Check if the template file exists
     if not os.path.exists(json_path):
@@ -49,7 +49,7 @@ def load_json_to_db():
 
 
     try:
-        Instruction = get_instruction_db("x86")
+        Instruction = get_instruction_db(architecture="arm")
         db = Instruction._meta.database
         # Connect to the database
         db.connect()
@@ -66,7 +66,7 @@ def load_json_to_db():
                 group=entry['group'],
                 architecture_modes=json.dumps(entry['architecture_modes']),  # Store as JSON string
                 description=entry['description'],
-                syntax=entry['syntax']
+                syntax=entry['syntax'],
             )
             if entry.get('random_generate') == "False":
                 instruction.random_generate = False
@@ -75,12 +75,13 @@ def load_json_to_db():
             instruction.save()  # Save the change
 
     except OperationalError as e:
+        logger = get_logger()
         # Check if the error message indicates a missing column
         if "no column named" in str(e):
             # Get the missing column name from the error message
             missing_column = str(e).split("no column named ")[-1]
-            print(f"Error: The '{missing_column}' field is missing in the database.")
-            print("Please delete your existing database file and create a new one to add the latest fields.")
+            logger.error(f"Error: The '{missing_column}' field is missing in the database.")
+            logger.error("Please delete your existing database file and create a new one to add the latest fields.")
         else:
             # Raise other operational errors that are not related to missing columns
             raise

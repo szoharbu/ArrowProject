@@ -1,6 +1,6 @@
 import json
 from peewee import SqliteDatabase, OperationalError
-from Tool.db_manager.models import get_instruction_db
+from Externals.db_manager.models import get_instruction_db
 import os
 
 """
