@@ -3,10 +3,10 @@ import os
 import streamlit as st
 import traceback
 
-# # # needed to avoid Streamlit cloud matching issues
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Tool")))
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Externals")))
+# # needed to avoid Streamlit cloud matching issues
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Tool")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Externals")))
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Submodeles","arrow_content")))
 from Arrow import main
 from importlib import reload
@@ -62,7 +62,7 @@ def handle_run_button(code_input):
                 from Utils.configuration_management import configuration_management
                 from Tool.generation_management import generate
                 from Tool.memory_management import memory_manager
-                # Logger.clean_logger()
+                Logger.clean_logger()
                 reload(Utils.arg_parser.arg_parser)
                 reload(Utils.logger_management)
                 reload(Utils.configuration_management.configuration_management)
@@ -90,7 +90,8 @@ def handle_run_button(code_input):
                 # Catch any exception and display the full traceback
                 st.error("An error occurred while running the tool! Check the logs for more details.")
 
-                st.code(traceback.format_exc(), language="python")  # Display the full traceback
+                with st.expander("View Error Log"):
+                    st.code(traceback.format_exc(), language="python")  # Display the full traceback
 
                 # Read and display the tool's log file
                 stdout_path = os.path.join(output_dir, "test.log")
@@ -98,7 +99,7 @@ def handle_run_button(code_input):
                     logs = log_file.read()
 
                 with st.expander("View Tool Logs"):
-                    st.code(logs, language="plaintext")  # Show the log content in an expander
+                    st.code(logs, language="python")  # Show the log content in an expander
 
 
             # Read the content of the std_out file
@@ -124,7 +125,8 @@ def handle_run_button(code_input):
             # Catch any exception and display the full traceback
             st.error(f"Error while running the tool: {e}")
 
-            st.code(traceback.format_exc(), language="python")  # Display the full traceback
+            with st.expander("View Error log"):
+                st.code(traceback.format_exc(), language="python")  # Display the full traceback
 
             # Read and display the tool's log file
             stdout_path = os.path.join(output_dir, "test.log")
@@ -132,4 +134,4 @@ def handle_run_button(code_input):
                 logs = log_file.read()
 
             with st.expander("View Tool Logs"):
-                st.code(logs, language="plaintext")  # Show the log content in an expander
+                st.code(logs, language="python")  # Show the log content in an expander
