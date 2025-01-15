@@ -26,7 +26,7 @@ class AR:
     from Tool.decorators.ingredient_decorator import ingredient_decorator
 
     # Instruction query
-    from Tool.db_manager.models import Instruction
+    from Externals.db_manager.models import Instruction
 
     @staticmethod
     def asm(asm_code:str, comment:str=None):
