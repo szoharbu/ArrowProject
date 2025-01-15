@@ -19,12 +19,13 @@ def handle_run_button(code_input):
     if not code_input.strip():
         st.error("Please enter some code or a template before running.")
     else:
+        # Create an output directory
+        run_dir = "StreamLit"  # StreamLit output directory
+        output_dir = os.path.join(run_dir, "output")
+
         try:
 
             st.session_state["progress_line"] = "Processing..."
-
-            # Create an output directory
-            run_dir = "StreamLit"  # StreamLit output directory
 
             # Ensure the output directory exists
             if not os.path.exists(run_dir):
@@ -35,7 +36,6 @@ def handle_run_button(code_input):
             with open(template_file, "w") as f:
                 f.write(code_input)
 
-            output_dir = os.path.join(run_dir, "output")
 
             # Run the tool's main function with the template input
             print(f"Template created at: `{template_file}`")
@@ -51,32 +51,49 @@ def handle_run_button(code_input):
             # st.write(f"Test command line is : `{command_str}`")
             #success = run_tool(template_file, output_dir, command_line=command, run_str="StreamLit_run")
 
-            from Utils.singleton_management import SingletonManager
-            SingletonManager.reset()  # Reset all singletons
+            try:
+                # run main application logic
 
-            from Utils.logger_management import Logger
-            from Tool.generation_management import generate
-            from Tool.memory_management import memory_manager
-            import Utils
-            import Tool
-            #Logger.clean_logger()
-            reload(Utils.logger_management)
-            reload(Utils.configuration_management.configuration_management)
-            reload(Utils.configuration_management.knob_manager)
-            reload(Utils.configuration_management.knobs)
-            reload(Tool.memory_management.memory_manager)
+                from Utils.singleton_management import SingletonManager
+                SingletonManager.reset()  # Reset all singletons
 
-            # reload(Tool.ingredient_management)
-            # from Utils.configuration_management import tags_and_enums
-            # reload(tags_and_enums)
-            # from Tool.db_manager import models
-            # reload(models)
-            # from Tool.generation import generate
-            # reload(generate)
+                from Utils.logger_management import Logger
+                from Tool.generation_management import generate
+                from Tool.memory_management import memory_manager
+                import Utils
+                import Tool
+                # Logger.clean_logger()
+                reload(Utils.logger_management)
+                reload(Utils.configuration_management.configuration_management)
+                reload(Utils.configuration_management.knob_manager)
+                reload(Utils.configuration_management.knobs)
+                reload(Tool.memory_management.memory_manager)
 
-            success = main.main(command)
+                # reload(Tool.ingredient_management)
+                # from Utils.configuration_management import tags_and_enums
+                # reload(tags_and_enums)
+                # from Tool.db_manager import models
+                # reload(models)
+                # from Tool.generation import generate
+                # reload(generate)
 
-            Logger.clean_logger()
+                success = main.main(command)
+
+                Logger.clean_logger()
+
+            except Exception as e:
+                # Catch any exception and display the full traceback
+                st.error("An error occurred while running the tool! Check the logs for more details.")
+
+                # Read and display the tool's log file
+                stdout_path = os.path.join(output_dir, "test.log")
+                with open(stdout_path, "r") as log_file:
+                    logs = log_file.read()
+
+                with st.expander("View Tool Logs"):
+                    st.code(logs, language="plaintext")  # Show the log content in an expander
+
+
 
             # Read the content of the std_out file
             stdout_path = os.path.join(output_dir, "test.log")
@@ -100,4 +117,15 @@ def handle_run_button(code_input):
             st.session_state["progress_line"] = "Finished"
 
         except Exception as e:
+            # Catch any exception and display the full traceback
             st.error(f"Error while running the tool: {e}")
+            # Read and display the tool's log file
+            stdout_path = os.path.join(output_dir, "test.log")
+            with open(stdout_path, "r") as log_file:
+                logs = log_file.read()
+
+            with st.expander("View Tool Logs"):
+                st.code(logs, language="plaintext")  # Show the log content in an expander
+
+            #st.code(traceback.format_exc(), language="python")  # Display the full traceback
+
