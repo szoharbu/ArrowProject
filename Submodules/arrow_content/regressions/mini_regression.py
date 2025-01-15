@@ -10,8 +10,7 @@ def main():
     summary = []  # To store the results of each run
 
     # Ensure the output directory exists
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
 
     print(f"=== Starting mini regression runs")
     for i in range(5):
@@ -23,8 +22,7 @@ def main():
                 subdir = os.path.join(output_dir, run_str )
 
                 # Ensure the subdirectory exists
-                if not os.path.exists(subdir):
-                    os.makedirs(subdir)
+                os.makedirs(subdir, exist_ok=True)  # Create the directory if it doesn't exist
 
                 # Command to run your tool with the template and output directory
                 command = ["python", "Arrow/main.py", template_path, "--output", subdir, "--arch", arch]
