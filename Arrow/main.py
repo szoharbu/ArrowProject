@@ -31,11 +31,21 @@ def main(args=None):
         dump_time(start_time, "Test total")
         logger.error(f"Error: {e}")
         logger.error(traceback.format_exc())
+        raise
+
     else:
         # Test was successful
         dump_time(start_time, "Test total")
         logger.info("Test was successful :)\n")
         logger.info("Mission accomplished...")
+
+    finally:
+        config_manager = get_config_manager()
+        cloud_mode = config_manager.get_value('Cloud_mode')
+        if cloud_mode:
+            logger.info(f"Ending main in cloud_mode, resetting tool structures")
+            from Tool.stages import final_stage
+            final_stage.reset_tool()
 
     return True
 
