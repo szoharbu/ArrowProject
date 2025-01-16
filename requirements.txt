@@ -1,0 +1,5 @@
+numpy~=2.1.2
+peewee~=3.17.7
+setuptools~=75.3.0
+pyairtable~=3.0.1
+streamlit~=1.40.1
