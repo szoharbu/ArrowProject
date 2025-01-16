@@ -84,6 +84,12 @@ RISCV learning
 # TODO:: in riscv add I (integer content) , R, arithmetic  and pesudo stress bursts
 # Done :: RISCV ending convention
 
+# TODO:: GitHub
+    # Done:: set the repos as Public
+    # Done:: add rule to Enforce Pull Requests with Branch Protection Rules
+    # TODO:: testing
+
+
 # TODO:: Arch-Agnostic content writing
 # TODO:: Implement a function to store values into operands! will make code arch-agnostic
 ###AR.asm(f'li {reg}, {recursive_count}', comment=f"set the value of {recursive_count} into {reg}")
