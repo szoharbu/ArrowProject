@@ -4,12 +4,10 @@ import streamlit as st
 import traceback
 
 # # needed to avoid Streamlit cloud matching issues
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Tool")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Externals")))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Tool")))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Externals")))
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Submodeles","arrow_content")))
-from Arrow import main
-from importlib import reload
 
 # Function that will run when the Run button is clicked
 def handle_run_button(code_input):
@@ -42,16 +40,20 @@ def handle_run_button(code_input):
             # Command to run your tool with the template and output directory
             architecture = st.session_state["architecture"]
             seed = st.session_state["seed"]
-            # command = ["python", "Tool/main.py", template_file, "--output", output_dir, "--arch", architecture, "--seed", str(seed), "--cloud_mode", "True" ]
-            command = [template_file, "--output", output_dir, "--arch", architecture,"--seed", str(seed), "--cloud_mode", "True"]
-            command_str = " ".join(command)
+            command_args = [template_file, "--output", output_dir, "--arch", architecture,"--seed", str(seed), "--cloud_mode", "True"]
+            command_str = " ".join(command_args)
             print(f"Test command line is : `{command_str}`")
-            # st.write(f"Test command line is : `{command_str}`")
+
+            # command = ["python", "Tool/main.py", template_file, "--output", output_dir, "--arch", architecture, "--seed", str(seed), "--cloud_mode", "True" ]
             #success = run_tool(template_file, output_dir, command_line=command, run_str="StreamLit_run")
 
             try:
                 # run main application logic
 
+                from Arrow import main
+                from importlib import reload
+                reload(main)
+                #
                 # from Utils.singleton_management import SingletonManager
                 # SingletonManager.reset()  # Reset all singletons
                 #
@@ -79,7 +81,10 @@ def handle_run_button(code_input):
                 # # from Tool.generation import generate
                 # # reload(generate)
 
-                success = main.main(command)
+                from Tool.stages import final_stage
+                final_stage.reset_tool()
+
+                success = main.main(command_args)
 
                 if not success:
                     raise RuntimeError("Failed to run tool")
