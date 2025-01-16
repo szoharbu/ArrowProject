@@ -7,6 +7,7 @@ from Tool.generation_management.utils import map_inputs_to_operands
 from Tool.frontend.choice import choice
 # from Tool.frontend.sources_API import Sources
 from Tool.memory_management.memory import Memory
+from Tool.state_management import get_current_state
 
 import ast
 
@@ -16,6 +17,9 @@ def generate_arm(
         dest: Any = None,
         comment: Optional[str] = None,
 ) -> List[GeneratedInstruction]: # some instances might require dynamic init
+
+    current_state = get_current_state()
+    RegisterManager = current_state.register_manager
 
     instruction_comment = comment
     instruction_list = [] # some instances might require dynamic init
