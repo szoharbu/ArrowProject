@@ -1,3 +1,4 @@
+import os
 import time
 import traceback
 from pathlib import Path
@@ -5,6 +6,8 @@ from pathlib import Path
 def main(args=None):
 
     start_time = time.time()
+
+    ensure_working_directory()
 
     from Utils.arg_parser.arg_parser import parse_arguments
     from Utils.logger_management import get_logger
@@ -82,6 +85,18 @@ def set_basedir_path():
     except Exception as e:
         logger.error(f"Error setting base or submodule paths: {e}")
         raise
+
+def ensure_working_directory():
+    """Ensure the script is being run from the project root directory."""
+    required_dirs = ["Arrow", "Externals", "Submodules"]  # Directories that should exist in the project root
+    cwd = os.getcwd()
+
+    for dir_name in required_dirs:
+        if not os.path.isdir(os.path.join(cwd, dir_name)):
+            raise RuntimeError(
+                f"Invalid working directory: {cwd}\n"
+                f"Please run this script from the project root directory, e.g., 'ArrowProject/' and not 'ArrowProject/Arrow/'."
+            )
 
 if __name__ == "__main__":
     main()
