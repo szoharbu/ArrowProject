@@ -1,7 +1,7 @@
 
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
-from stages.final_stage.json_dump import generation_json_dump, memory_usage_json_dump
+from Tool.stages.final_stage.json_dump import generation_json_dump, memory_usage_json_dump
 from Externals.db_manager.models import get_instruction_db
 from Utils.singleton_management import SingletonManager
 
