@@ -1,7 +1,7 @@
 import random
 from typing import Optional, Any, List
 from Externals.db_manager.models import Instruction
-from asm_libraries.label import Label
+from Tool.asm_libraries.label import Label
 from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
 from Tool.frontend.choice import choice
