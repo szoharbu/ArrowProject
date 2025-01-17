@@ -26,42 +26,35 @@ Example:
     arithmetic_instructions = Instruction.select().where(Instruction.group == 'arithmetic')
 """
 
+def get_json_path(architecture:str=None):
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if architecture:
+        json_file = f"{architecture}_instructions.json"
+    else:
+        json_file = f"{Configuration.Architecture.arch_str}_instructions.json"
+    json_path = os.path.join(base_dir, 'db_manager', 'instruction_jsons', json_file)
+    if not os.path.exists(json_path):
+        raise ValueError(f"Couldn't find json_path : {json_path}")
+    return json_path
 
-# Function to dynamically select and initialize the database
-def get_database(architecture:str=None):
-    """Initialize and return the database for the given architecture."""
+
+def get_db_path(architecture: str = None, check_exist=False):
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    db_dir = os.path.join(base_dir, 'db_manager', 'db')
+    os.makedirs(db_dir, exist_ok=True) # Create the directory if it doesn't exist
 
     if architecture:
-        # Map architecture to database file
-        db_files = {
-            "x86": "x86_instructions.db",
-            "riscv": "riscv_instructions.db",
-            "arm": "arm_instructions.db",
-        }
-
-        if architecture not in db_files:
-            raise ValueError(f"Unknown Architecture requested: {architecture}")
-
-        db_file = db_files[architecture]
+        db_file = f"{architecture}_instructions.db"
     else:
-        if Configuration.Architecture.x86:
-            db_file = 'x86_instructions.db'
-        elif Configuration.Architecture.riscv:
-            db_file = 'riscv_instructions.db'
-        elif Configuration.Architecture.arm:
-            db_file = 'arm_instructions.db'
-        else:
-            raise ValueError(f"Unknown Architecture requested")
+        db_file = f"{Configuration.Architecture.arch_str}_instructions.db"
+    db_path = os.path.join(db_dir , db_file)
 
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    db_path = os.path.join(BASE_DIR, 'db_manager', 'db', db_file)
 
-    if not os.path.exists(db_path) and not architecture:
-        raise ValueError(f'Unknown SqliteDatabase path {db_path}')
+    if check_exist and not os.path.exists(db_path):
+        raise ValueError(f"Couldn't find db_path : {db_path}")
 
-    logger = get_logger()
-    logger.debug(f'======================== using SqliteDatabase with {db_path}')
-    return SqliteDatabase(db_path)
+    return db_path
+
 
 # Instruction Model
 class Instruction(Model):
@@ -83,7 +76,7 @@ class Instruction(Model):
         """Bind the Instruction model to a specific database."""
         cls._meta.database = database
 
-
+print('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz to use SINGLETON')
 # Add a caching mechanism for bound models
 _model_cache = {}
 
@@ -91,14 +84,17 @@ def get_instruction_db(architecture:str=None):
     """Get a cached Instruction model or create a new one bound to the correct database."""
     global _model_cache
     if architecture not in _model_cache:
-        db = get_database(architecture)
+
+        db_path = get_db_path(architecture)
+
+        sql_db = SqliteDatabase(db_path)
 
         # Properly rebind the model to the new database
-        Instruction.bind_to_database(db)
+        Instruction.bind_to_database(sql_db)
 
         # Reset the database connection state (if lingering)
-        if not db.is_closed():
-            db.close()
+        if not sql_db.is_closed():
+            sql_db.close()
 
         _model_cache[architecture] = Instruction
 
