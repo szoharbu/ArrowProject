@@ -22,6 +22,7 @@ class GeneratedInstruction:
         for i, operand in enumerate(operands):
             if isinstance(operand, Memory):
                 # TODO:: we will enter this case only in x86 when memory is passed as an operand. this is not supported in linked_elf mode, and need to refactor X86 to use memory label and dynamic init!!!!
+                operand.address = 0x0
                 memory_hint = f" mem.address: {hex(operand.address)}"
                 if operand.reused_memory:
                     memory_hint = f" reused memory {operand.unique_label} (address: {hex(operand.address)})"
