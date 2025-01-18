@@ -1,7 +1,6 @@
 import os
 from peewee import Model, CharField, TextField, SqliteDatabase, BooleanField
 from Utils.configuration_management import Configuration
-from Utils.singleton_management import SingletonManager
 from Utils.logger_management import get_logger
 
 """
