@@ -2,6 +2,7 @@ import os
 from peewee import Model, CharField, TextField, SqliteDatabase, BooleanField
 from Utils.configuration_management import Configuration
 from Utils.logger_management import get_logger
+from Utils.singleton_management import SingletonManager
 
 """
 File: models.py
