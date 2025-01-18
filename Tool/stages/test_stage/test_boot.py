@@ -7,7 +7,8 @@ from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.branch_to_segment import branch_to_segment
 from Tool.generation_management.generate import generate
 
-from Tool.frontend import choice
+from Utils.APIs import choice
+
 
 def do_boot():
     logger = get_logger()

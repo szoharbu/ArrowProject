@@ -5,7 +5,7 @@ from Utils.configuration_management import get_config_manager, Configuration
 from Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
 from Tool.register_management.register import Register
 from Tool.memory_management.memory_segments import CodeSegment
-from Tool.frontend import choice, range_with_peak
+from Utils.APIs import choice, range_with_peak
 from Tool.asm_libraries import label, asm_logger, stack, store_value
 from Tool.asm_libraries.memory_array.memory_array import MemoryArray as MemoryArray_wrapper
 from Tool.asm_libraries.loop.loop_base import LoopBase

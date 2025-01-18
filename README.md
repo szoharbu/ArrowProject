@@ -19,11 +19,68 @@ With its flexible design, Arrow is ideal for researchers and engineers assessing
 
 ## Getting Started
 
+This guide will walk you through setting up the project environment and dependencies. Follow these steps to ensure the project is ready to run.
+
 ### Prerequisites
 
-- Python 3.8 or higher
-- Install dependencies from `requirements.txt`:
-      `pip install -r requirements.txt`
+Before you begin, make sure you have the following installed:
+
+- **Python**: Version 3.7 or later
+- **Git**: For cloning the repository
+- **PyCharm (optional)**: For an enhanced development experience
+
+
+### Setup Instructions
+
+1. **Clone the Repository**
+
+   ```bash
+   git clone https://github.com/szoharbu/ArrowProject.git
+   cd project
+   ```
+
+2. **Run the Setup Script**
+   The setup script will:
+
+   - Remove old settings (if any)
+   - Create a virtual environment
+   - Install project dependencies
+
+   Run the following command:
+
+   ```bash
+   python Scripts/setup.py
+   ```
+
+   Alternatively, you can  manually install dependencies from `requirements.txt`: `pip install -r requirements.txt`
+
+
+3. **Activate the Virtual Environment**
+   After the setup script completes, activate the virtual environment:
+
+   - **Windows**:
+     ```bash
+     venv\Scripts\activate
+     ```
+   - **Linux/macOS**:
+     ```bash
+     source venv/bin/activate
+     ```
+
+4. **Verify the Installation**
+   Check that the dependencies are installed correctly:
+
+   ```bash
+   python -m pip list
+   ```
+
+   You should see a list of installed packages matching those in `requirements.txt`.
+
+### Notes
+
+- If you make changes to the project structure or dependencies, re-run the setup script to ensure consistency.
+- For advanced usage or development, consider setting up additional PyCharm run configurations (commented out in the setup script).
+
 
 
 ### Running the Tool
