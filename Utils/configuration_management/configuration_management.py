@@ -35,7 +35,6 @@ class ConfigManager:
         if key not in self._config:
             self._logger.error(f"Configuration key '{key}' not found.")
             raise KeyError(f"Configuration key '{key}' not found.")
-        self._logger.debug(f"Retrieved configuration: {key} = {self._config[key]}")
         return self._config[key]
 
     def is_exist(self, key: str)->bool:

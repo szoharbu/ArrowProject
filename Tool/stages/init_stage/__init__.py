@@ -126,9 +126,9 @@ def init_scenarios():
             '''
             #ensure_submodule_initialized()
 
-            # TODO:: failing on Streamlit cloud, need to fix. at the moment blocking this capability
-            logger.warning("Skipping Content initialization, using only scenarios from main template.")
-            return
+            # # TODO:: failing on Streamlit cloud, need to fix. at the moment blocking this capability
+            # logger.warning("Skipping Content initialization, using only scenarios from main template.")
+            # return
 
         logger.info("================ import External content")
         spec = importlib.util.spec_from_file_location("scenarios_path", normalized_path)

@@ -25,7 +25,7 @@ def main():
                 os.makedirs(subdir, exist_ok=True)  # Create the directory if it doesn't exist
 
                 # Command to run your tool with the template and output directory
-                command = ["python", "Arrow/main.py", template_path, "--output", subdir, "--arch", arch]
+                command = ["python", "Arrow/main.py", template_path, "--output", subdir, "--arch", arch, "--cloud_mode", "True"]
 
                # Run the tool and collect the success/failure result
                 success = run_tool.run_tool(template_path, subdir, command_line=command, run_str=run_str)

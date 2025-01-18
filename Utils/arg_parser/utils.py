@@ -20,7 +20,7 @@ def setup_chosen_architecture():
     else:
         raise ValueError(f"Unknown architecture: {architecture}")
 
-def setup_template_and_content(template_file_path, submodule_content_path=None):
+def setup_template_and_content(template_file_path, input_content_path=None):
     """
     Validates the existence of a template file.
 
@@ -32,7 +32,7 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
 
     Args:
         template_file_path (str): The path of the template file (relative or full).
-        submodule_content_path (str, optional): Custom submodule content path to use.
+        input_content_path (str, optional): Custom submodule content path to use.
 
     Returns:
         str: The absolute path to the validated template file.
@@ -48,9 +48,9 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
 
 
     # Step 1: Determine the content path
-    if submodule_content_path:
+    if input_content_path:
         # if provided as input by user
-        external_content_base_path = Path(submodule_content_path).resolve()
+        external_content_base_path = Path(input_content_path).resolve()
         logger.debug(f"Using provided submodule content path: {external_content_base_path}")
         # Ensure the content directory exists
         if not external_content_base_path.exists() or not external_content_base_path.is_dir():
