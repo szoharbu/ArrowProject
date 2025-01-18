@@ -49,37 +49,43 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
 
     # Step 1: Determine the content path
     if submodule_content_path:
-        content_base_path = Path(submodule_content_path).resolve()
-        logger.debug(f"Using provided submodule content path: {content_base_path}")
+        # if provided as input by user
+        external_content_base_path = Path(submodule_content_path).resolve()
+        logger.debug(f"Using provided submodule content path: {external_content_base_path}")
+        # Ensure the content directory exists
+        if not external_content_base_path.exists() or not external_content_base_path.is_dir():
+            logger.error(f"User provided Content path '{external_content_base_path}' does not exist or is not a directory.")
+            raise FileNotFoundError(f"Content provided path '{external_content_base_path}' does not exist or is not a directory.")
     else:
         # Fallback to base_dir/submodules/content
         base_dir = config_manager.get_value('base_dir_path')
-        content_base_path = Path(base_dir).resolve() / ".." / 'Submodules' / 'arrow_content'/ 'content_repo' / 'content'
-        content_base_path = content_base_path.resolve()
-        logger.debug(f"Derived submodule content path from base_dir: {content_base_path}")
-    # Ensure the content directory exists
-    if not content_base_path.exists() or not content_base_path.is_dir():
-        cloud_mode = config_manager.get_value('Cloud_mode')
-        if cloud_mode:
-            '''
-                When in Streamlit 'cloud mode',  the Submodules/content is not uploaded, and so not in use.
-                # TODO:: need to fix this eventually. for now ignoring Content_path as a WA    
-                Scenarios should be written locally on the template
-            '''
-            content_base_path = f"Not-available-in-cloud-mode"
-        else:
-            logger.error(f"Content path '{content_base_path}' does not exist or is not a directory.")
-            raise FileNotFoundError(f"Content path '{content_base_path}' does not exist or is not a directory.")
-    config_manager.set_value('content_dir_path', content_base_path)
+        external_content_base_path = Path(base_dir).resolve() / ".." / 'Submodules' / 'arrow_content'/ 'content_repo' / 'content'
+        external_content_base_path = external_content_base_path.resolve()
+        logger.debug(f"Derived submodule content path from base_dir: {external_content_base_path}")
+        # Ensure the content directory exists
+        if not external_content_base_path.exists() or not external_content_base_path.is_dir():
+            external_content_base_path = f"External-content-not-available"
+    config_manager.set_value('external_content_dir_path', external_content_base_path)
 
-    # Step 2: Check if the file exists relative to the content path
-    relative_template_path = content_base_path / template_file_path
+    internal_content_base_path = Path(base_dir).resolve() / ".." / 'Internal_content'
+    internal_content_base_path = internal_content_base_path.resolve()
+    config_manager.set_value('internal_content_dir_path', internal_content_base_path)
+
+    # Step 2: Check if the file exists relative to the Internal content path
+    relative_template_path = internal_content_base_path / template_file_path
     if relative_template_path.exists() and relative_template_path.is_file():
-        logger.debug(f"Template file found relative to content directory: {relative_template_path.resolve()}")
+        logger.debug(f"Template file found relative to Internal content directory: {relative_template_path.resolve()}")
         config_manager.set_value('template_path', relative_template_path)
         return
 
-    # Step 3: Check if the file exists as a full path
+    # Step 3: Check if the file exists relative to the External content path
+    relative_template_path = external_content_base_path / template_file_path
+    if relative_template_path.exists() and relative_template_path.is_file():
+        logger.debug(f"Template file found relative to External content directory: {relative_template_path.resolve()}")
+        config_manager.set_value('template_path', relative_template_path)
+        return
+
+    # Step 4: Check if the file exists as a full path
     full_template_path = Path(template_file_path).resolve()
     if full_template_path.exists() and full_template_path.is_file():
         logger.debug(f"Template file found at full path: {full_template_path}")
@@ -87,7 +93,7 @@ def setup_template_and_content(template_file_path, submodule_content_path=None):
         return
 
     # Log and raise an error if the file could not be located
-    logger.error(f"Template file '{template_file_path}' not found in either the content directory '{content_base_path}' "
+    logger.error(f"Template file '{template_file_path}' not found in either the content directory '{external_content_base_path}' "
                  f"or as a full path.")
     raise FileNotFoundError(f"Template file '{template_file_path}' could not be located.")
 

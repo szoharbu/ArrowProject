@@ -69,7 +69,17 @@ class ScenarioManager:
 
         Args:
             scenario (ScenarioWrapper): The scenario instance to add.
+
+        Raises:
+            ValueError: If a scenario with the same name already exists in the pool.
         """
+        # Check if a scenario with the same name already exists
+        if any(existing_scenario.name() == scenario.name() for existing_scenario in self._scenarios_pool):
+            raise ValueError(f"A scenario with the name '{scenario.name()}' already exists in the pool.")
+
+        # Add the scenario to the pool
+        logger = get_logger()
+        logger.debug(f"Add new scenario {scenario.name()}")
         self._scenarios_pool.append(scenario)
 
     # Functions to query scenarios

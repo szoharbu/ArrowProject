@@ -19,7 +19,7 @@ def init_state():
 
     core_count = Configuration.Knobs.Config.core_count.get_value()
     for i in range(core_count):
-        # create a state singleton for thread i, and set it's values
+        # create a state singleton for thread i, and set its values
         state_id = f'core_{i}'
         logger.info(f'--------------- Creating state for {state_id}')
 
@@ -106,29 +106,35 @@ def init_memory():
 def init_scenarios():
     logger = get_logger()
     logger.info("============ init_scenarios")
+    logger.info("================ import Internal_content")
+    import Internal_content
+
     config_manager = get_config_manager()
-    content_dir = config_manager.get_value('content_dir_path')
-    content_path = os.path.join(content_dir,"__init__.py")
+    external_content_dir_path = config_manager.get_value('external_content_dir_path')
+    if external_content_dir_path != "External-content-not-available":
 
-    # Normalize the path to ensure it's correct for the operating system
-    normalized_path = os.path.normpath(content_path)
+        content_path = os.path.join(external_content_dir_path,"__init__.py")
 
-    cloud_mode = config_manager.get_value('Cloud_mode')
-    if cloud_mode:
-        '''
-        When deploy an app on Community Cloud, the only thing that gets cloned during deployment is the source repo for your app. 
-        To access the content_repo submodule we need to execute a 'git submodule update' within the Python code of your app to query your second repo and copy additional files.
-        '''
-        #ensure_submodule_initialized()
+        # Normalize the path to ensure it's correct for the operating system
+        normalized_path = os.path.normpath(content_path)
 
-        # TODO:: failing on Streamlit cloud, need to fix. at the moment blocking this capability
-        logger.warning("Skipping Content initialization, using only scenarios from main template.")
-        return
+        cloud_mode = config_manager.get_value('Cloud_mode')
+        if cloud_mode:
+            '''
+            When deploy an app on Community Cloud, the only thing that gets cloned during deployment is the source repo for your app. 
+            To access the content_repo submodule we need to execute a 'git submodule update' within the Python code of your app to query your second repo and copy additional files.
+            '''
+            #ensure_submodule_initialized()
 
-    spec = importlib.util.spec_from_file_location("scenarios_path", normalized_path)
-    foo = importlib.util.module_from_spec(spec)
-    sys.modules["scenarios_path"] = foo
-    spec.loader.exec_module(foo)
+            # TODO:: failing on Streamlit cloud, need to fix. at the moment blocking this capability
+            logger.warning("Skipping Content initialization, using only scenarios from main template.")
+            return
+
+        logger.info("================ import External content")
+        spec = importlib.util.spec_from_file_location("scenarios_path", normalized_path)
+        foo = importlib.util.module_from_spec(spec)
+        sys.modules["scenarios_path"] = foo
+        spec.loader.exec_module(foo)
 
 def init_section():
     logger = get_logger()

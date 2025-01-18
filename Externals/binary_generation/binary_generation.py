@@ -10,11 +10,14 @@ def generate_binary():
 
     # Define output file paths
     output_dir = config_manager.get_value('output_dir_path')
-    content_dir_path = config_manager.get_value('content_dir_path')
+
+    internal_content_dir_path = config_manager.get_value('internal_content_dir_path')
+
     assembly_file = config_manager.get_value('asm_file')
     # Extract base file name (without extension) for output files
     base_name = os.path.splitext(os.path.basename(assembly_file))[0]
-    cpp_file = os.path.join(content_dir_path, "ingredients","fibonacci","fibonacci.cpp")
+    # TODO:: refactor it, currently hard coded pointing to fibonacci only
+    cpp_file = os.path.join(internal_content_dir_path, "ingredients","fibonacci","fibonacci.cpp")
     cpp_asm_file = os.path.join(output_dir, f"{base_name}_cpp_asm.s")
     object_file = os.path.join(output_dir, f"{base_name}.o")
     executable_file = os.path.join(output_dir, f"{base_name}.elf")
