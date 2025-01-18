@@ -33,6 +33,13 @@ ArrowProject/
 
 '''
 
+# TODO:: add internal content repository, which can be added to the external one
+# TODO:: improve the Readme.getting started section
+# TODO:: move choices, rangeWithPeak from Tool to Utils
+# TODO:: improve Choice to support less uniform behavior
+    # so for example, instead of using choice(30:70) that inside a huge for loop will always maintain this ratio
+    # provide an ability to randomize the initial balance, that each seed will generate different ratio to pick from
+
 # Done:: move db_manager into External repos
 # TODO:: refactor User interface and importing!!!! replace usage of AR, Sources, StateManager, Tool imports
 

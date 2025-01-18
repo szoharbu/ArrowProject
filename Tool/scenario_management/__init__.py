@@ -2,7 +2,7 @@ from typing import Optional, Dict, Callable, Union, List
 from Utils.singleton_management import SingletonManager
 from Utils.configuration_management import Configuration
 from Utils.logger_management import get_logger
-from Tool.frontend.choice import choice
+from Utils.APIs.choice import choice
 
 class ScenarioWrapper:
     """

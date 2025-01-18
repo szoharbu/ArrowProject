@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from Tool.frontend.choice import choice
+from Utils.APIs.choice import choice
 from Tool.asm_libraries.label import Label
 from Tool.state_management import get_current_state
 

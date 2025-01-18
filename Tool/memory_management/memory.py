@@ -2,7 +2,7 @@ import random
 from typing import Optional
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
-from Tool.frontend import choice
+from Utils.APIs import choice
 from Tool.memory_management.memory_block import MemoryBlock
 from Tool.register_management.register import Register
 from Tool.state_management import get_state_manager
@@ -126,7 +126,7 @@ class Memory:
                 if not self.reused_memory: # Either because reuse_memory=False or wasn't to find valid option
 
                     # In 50% probability, allocate a bigger memory block to allow later sharing with overlapping
-                    byte_size_extension = choice.choice(values={0:50,random.randint(1,10):45,random.randint(10,20):5})
+                    byte_size_extension = choice.choice(values={0:50, random.randint(1, 10):45, random.randint(10, 20):5})
                     new_byte_size = self.byte_size + byte_size_extension
                     self.memory_block = MemoryBlock(name=self.unique_label, byte_size=new_byte_size, address=self.address,
                                                     memory_type=self.memory_type, shared=shared,
