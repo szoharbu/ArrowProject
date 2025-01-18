@@ -11,8 +11,11 @@ def normalize_path(path):
 def get_last_user_context():
     # Get config values and normalize paths
     config_manager = get_config_manager()
-    content_dir_path = normalize_path(config_manager.get_value('content_dir_path'))
+
+    internal_content_dir_path = config_manager.get_value('internal_content_dir_path')
+    external_content_dir_path = config_manager.get_value('external_content_dir_path')
     template_file = normalize_path(config_manager.get_value('template_path'))
+
     test_stage_path = normalize_path('Tool/stages/test_stage')
     memory_segments_path = normalize_path('Tool/memory_management/memory_segments.py') # initial code label is create there
 
@@ -23,12 +26,19 @@ def get_last_user_context():
     for frame_info in stack_snapshot:
         filename_abs = normalize_path(frame_info.filename)
 
-        # Check for matches in Content directory first
-        if content_dir_path in filename_abs:
+        # Check for matches in Internal Content directory first
+        if str(internal_content_dir_path) in filename_abs:
             # Create a relative path from content_directory
-            relative_path = os.path.relpath(filename_abs, content_dir_path)
+            relative_path = os.path.relpath(filename_abs, internal_content_dir_path)
             return filename_abs, relative_path.replace(os.sep, '/'), frame_info.lineno
 
+        # Check for matches in External Content directory
+        if str(external_content_dir_path) in filename_abs:
+            # Create a relative path from content_directory
+            relative_path = os.path.relpath(filename_abs, external_content_dir_path)
+            return filename_abs, relative_path.replace(os.sep, '/'), frame_info.lineno
+
+        # Check for matches in the template directory
         if template_file in filename_abs:
             filename_abs = normalize_path(frame_info.filename)
             shortened_path = "/".join(filename_abs.split(os.sep)[-2:])

@@ -55,6 +55,14 @@ class IngredientManager:
 
     def add_ingredient(self, ingredient_class):
         """Register an ingredient into the pool."""
+
+        # Check for duplicate class names
+        if any(existing_ingredient.__name__ == ingredient_class.__name__ for existing_ingredient in self._ingredients_pool):
+            raise ValueError(
+                f"An ingredient class with the name '{ingredient_class.__name__}' already exists in the pool. "
+                f"Conflicting classes : {ingredient_class}."
+            )
+
         logger = get_logger()
         logger.debug(f"Add new ingredient {ingredient_class}")
         self._ingredients_pool.append(ingredient_class)

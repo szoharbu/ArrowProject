@@ -63,10 +63,12 @@ def parse_arguments(input_args=None):
     # Logic based on the parsed arguments
     setup_template_and_content(args.template, args.content)
     template = config_manager.get_value('template_path')
-    content_path = config_manager.get_value('content_dir_path')
+    internal_content_path = config_manager.get_value('internal_content_dir_path')
+    external_content_path = config_manager.get_value('external_content_dir_path')
     logger.info(f"--------------- Template: {template}")
-    logger.info(f"--------------- Content directory: {content_path}")
-
+    logger.info(f"--------------- Internal Content directory: {internal_content_path}")
+    if external_content_path != "External-content-not-available":
+        logger.info(f"--------------- External Content directory: {external_content_path}")
 
     if args.output:
         logger.info(f"--------------- Output directory: {args.output}")
