@@ -14,7 +14,7 @@ Thank you for your interest in contributing to Arrow! Contributions are crucial 
 
 ## Licensing of Contributions
 
-By contributing to this repository, you agree that your contributions will be licensed under the same license as the project: [GPL-3.0](./LICENSE).
+By contributing to this repository, you agree that your contributions will be licensed under the same license as the project: [GPL-3.0](../LICENSE).
 
 ## Reporting Issues
 

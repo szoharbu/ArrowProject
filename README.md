@@ -40,46 +40,14 @@ Before you begin, make sure you have the following installed:
    ```
 
 2. **Run the Setup Script**
-   The setup script will:
 
-   - Remove old settings (if any)
-   - Create a virtual environment
-   - Install project dependencies
+   To set up the project environment:
 
-   Run the following command:
+   - **For Non-PyCharm Users**:
+  Follow the [Setup Instructions for Non-PyCharm Users](Docs/setup_basic.md).
 
-   ```bash
-   python Scripts/setup.py
-   ```
-
-   Alternatively, you can  manually install dependencies from `requirements.txt`: `pip install -r requirements.txt`
-
-
-3. **Activate the Virtual Environment**
-   After the setup script completes, activate the virtual environment:
-
-   - **Windows**:
-     ```bash
-     venv\Scripts\activate
-     ```
-   - **Linux/macOS**:
-     ```bash
-     source venv/bin/activate
-     ```
-
-4. **Verify the Installation**
-   Check that the dependencies are installed correctly:
-
-   ```bash
-   python -m pip list
-   ```
-
-   You should see a list of installed packages matching those in `requirements.txt`.
-
-### Notes
-
-- If you make changes to the project structure or dependencies, re-run the setup script to ensure consistency.
-- For advanced usage or development, consider setting up additional PyCharm run configurations (commented out in the setup script).
+   - **For PyCharm Users**:
+  Follow the [Setup Instructions for PyCharm Users](Docs/setup_pycharm.md).
 
 
 
@@ -88,6 +56,7 @@ Before you begin, make sure you have the following installed:
 Run the main script to start using Arrow:
       `python Arrow/main.py <your template>`
 
+For PyCharm Users, simply run the `direct_run` configuration from PyCharm
 
 ## License
 
@@ -102,7 +71,7 @@ Contributions are welcome! If you'd like to contribute:
 
 By contributing, you agree that your contributions will be licensed under the GPL-3.0.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
+See [CONTRIBUTING.md](.Docs/CONTRIBUTING.md) for more details.
 
 ## Future Intentions
 

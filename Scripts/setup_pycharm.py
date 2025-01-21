@@ -3,135 +3,99 @@ import subprocess
 import sys
 import shutil
 
-def reset_old_settings(project_dir):
-    """Reset old PyCharm settings to ensure a clean slate."""
-    idea_path = os.path.join(project_dir, ".idea")
-    scripts_dir = os.path.join(project_dir, "scripts")
 
-    # Remove .idea folder
+def reset_old_settings(project_dir):
+    """
+    Remove old PyCharm settings and virtual environment, if present.
+    Ensures a clean slate before setup.
+    """
+    idea_path = os.path.join(project_dir, ".idea")
+    venv_path = os.path.join(project_dir, ".venv")
+
     if os.path.exists(idea_path):
         shutil.rmtree(idea_path)
         print(f"Removed old PyCharm settings: {idea_path}")
 
-    # Remove old scripts
-    if os.path.exists(scripts_dir):
-        shutil.rmtree(scripts_dir)
-        print(f"Removed old scripts: {scripts_dir}")
+    if os.path.exists(venv_path):
+        shutil.rmtree(venv_path)
+        print(f"Removed old virtual environment: {venv_path}")
 
-def install_dependencies():
-    """Install required Python dependencies."""
-    # Locate the requirements.txt file relative to this script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    requirements_path = os.path.join(script_dir, '..', 'requirements.txt')
 
-    if not os.path.exists(requirements_path):
-        print(f"ERROR: Could not find requirements file at {requirements_path}")
-        return
-
-    print("Installing Python dependencies...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_path])
-
-def setup_interpreter(project_dir):
-    """Configure the Python interpreter in PyCharm."""
-    misc_path = os.path.join(project_dir, ".idea", "misc.xml")
-
-    # Example interpreter path: Adjust this to match your virtual environment or system Python
-    interpreter_path = os.path.join(project_dir, "venv", "bin", "python") if os.name != "nt" else os.path.join(project_dir, "venv", "Scripts", "python.exe")
-
-    # Create .idea/misc.xml if it doesn't exist
-    os.makedirs(os.path.dirname(misc_path), exist_ok=True)
-
-    # Update or create the interpreter settings
-    misc_content = f"""
-    <project version="4">
-      <component name="ProjectRootManager" version="2" languageLevel="PYTHON38">
-        <output url="file://$PROJECT_DIR$/out" />
-        <python>
-          <option name="sdkHome" value="{interpreter_path}" />
-        </python>
-      </component>
-    </project>
+def create_virtual_environment(project_dir):
     """
+    Create a new virtual environment in the project directory.
+    """
+    venv_path = os.path.join(project_dir, ".venv")
+    if not os.path.exists(venv_path):
+        print("Creating a virtual environment...")
+        subprocess.check_call([sys.executable, "-m", "venv", venv_path])
+        print(f"Virtual environment created at: {venv_path}")
+    else:
+        print("Virtual environment already exists. Skipping creation.")
+    return venv_path
 
-    with open(misc_path, "w") as f:
-        f.write(misc_content)
 
-    print(f"Python interpreter configured at: {interpreter_path}")
+def install_dependencies(venv_path):
+    """
+    Install project dependencies from requirements.txt into the virtual environment.
+    """
+    pip_executable = os.path.join(venv_path, "Scripts", "pip.exe") if os.name == "nt" else os.path.join(venv_path, "bin", "pip")
+    requirements_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'requirements.txt')
+
+    if os.path.exists(requirements_path):
+        print("Installing dependencies...")
+        subprocess.check_call([pip_executable, "install", "-r", requirements_path])
+        print("Dependencies installed successfully.")
+    else:
+        print(f"ERROR: requirements.txt not found at {requirements_path}")
+        sys.exit(1)
+
 
 def create_pycharm_run_configurations(project_dir):
-    """Generate PyCharm run configurations."""
+    """
+    Generate PyCharm run configurations in the .idea folder.
+    """
     run_config_dir = os.path.join(project_dir, ".idea", "runConfigurations")
     os.makedirs(run_config_dir, exist_ok=True)
 
-    # Example configuration for running main.py with default parameters
-    run_config = """
+    run_config = f"""
     <component name="ProjectRunConfigurationManager">
-      <configuration default="false" name="Direct Run" type="PythonConfigurationType" factoryName="Python">
-        <module name="project" />
+      <configuration default="false" name="direct_run" type="PythonConfigurationType" factoryName="Python">
+        <module name="{os.path.basename(project_dir)}" />
         <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Arrow/main.py" />
         <option name="PARAMETERS" value="templates/direct_template.py" />
-        <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      </configuration>
-      <configuration default="false" name="Random Run" type="PythonConfigurationType" factoryName="Python">
-        <module name="project" />
-        <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Arrow/main.py" />
-        <option name="PARAMETERS" value="templates/random_template.py" />
         <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       </configuration>
     </component>
     """
 
-    config_path = os.path.join(run_config_dir, "Run_Tool.xml")
+    config_path = os.path.join(run_config_dir, "Run_Main.xml")
     with open(config_path, "w") as f:
-        f.write(run_config)
-
+        f.write(run_config.strip())
     print(f"PyCharm run configurations created at: {config_path}")
 
-def create_wrapper_scripts(project_dir):
-    """Create wrapper scripts for command-line usage."""
-    scripts_dir = os.path.join(project_dir, "scripts")
-    os.makedirs(scripts_dir, exist_ok=True)
-
-    # Create a shell script for Linux/Mac
-    shell_script = f"""#!/bin/bash
-    python {os.path.join(project_dir, 'main.py')} --param1 default_value --param2 42
-    """
-    with open(os.path.join(scripts_dir, "run_tool.sh"), "w") as f:
-        f.write(shell_script)
-    os.chmod(os.path.join(scripts_dir, "run_tool.sh"), 0o755)
-
-    # Create a batch script for Windows
-    batch_script = f"""@echo off
-    python {os.path.join(project_dir, 'main.py')} --param1 default_value --param2 42
-    """
-    with open(os.path.join(scripts_dir, "run_tool.bat"), "w") as f:
-        f.write(batch_script)
-
-    print(f"Wrapper scripts created in {scripts_dir}.")
 
 def main():
-    print("Starting setup...")
+    """
+    Main entry point for the PyCharm-specific setup script.
+    """
+    print("Starting PyCharm setup...")
+    project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-    # Locate the project directory
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_dir = os.path.abspath(os.path.join(script_dir, ".."))
-
-    # 0. Reset old settings
+    # Reset old settings
     reset_old_settings(project_dir)
 
-    # 1. Install Python dependencies
-    install_dependencies()
+    # Create virtual environment
+    venv_path = create_virtual_environment(project_dir)
 
-    # 2. Set up Python interpreter
-    setup_interpreter(project_dir)
+    # Install dependencies
+    install_dependencies(venv_path)
 
-    # 3. Create PyCharm run configurations
+    # Create PyCharm configurations
     create_pycharm_run_configurations(project_dir)
 
-    # 4. Create wrapper scripts for command-line usage
-    create_wrapper_scripts(project_dir)
+    print("\nPyCharm setup complete! Open the project in PyCharm to use the configured settings.")
 
-    print("Setup complete. You're ready to go!")
 
 if __name__ == "__main__":
     main()
