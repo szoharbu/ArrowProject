@@ -6,7 +6,7 @@ import shutil
 def reset_old_settings(project_dir):
     """Reset old PyCharm settings to ensure a clean slate."""
     idea_path = os.path.join(project_dir, ".idea")
-    venv_path = os.path.join(project_dir, "venv")
+    venv_path = os.path.join(project_dir, ".venv")
 
     # Remove .idea folder
     if os.path.exists(idea_path):
@@ -20,7 +20,7 @@ def reset_old_settings(project_dir):
 
 def create_virtual_environment(project_dir):
     """Create a virtual environment if it doesn't already exist."""
-    venv_path = os.path.join(project_dir, "venv")
+    venv_path = os.path.join(project_dir, ".venv")
 
     if not os.path.exists(venv_path):
         print("Creating a virtual environment...")
