@@ -119,9 +119,7 @@ class KnobManager:
         else:
             raise ValueError(f"Knob '{name}' not found.")
 
-
-# Initialization logic inside a factory function, to ensure that it is only called when needed (lazy initialization).
-# This way, even when we import the module, the knob_manager instance won’t be reinitialized unnecessarily.
+# Factory function to retrieve the KnobManager instance
 def get_knob_manager():
     # Access or initialize the singleton variable
     knob_manager_instance = SingletonManager.get("knob_manager_instance", default=None)

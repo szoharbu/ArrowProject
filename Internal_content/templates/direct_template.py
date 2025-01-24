@@ -55,7 +55,10 @@ def direct_scenario():
     AR.comment("same memory stress with load store of different size")
     mem = MemoryManager.Memory(init_value=0x123)
     for _ in range(5):
-        action = AR.choice(values=["load","store"])
+        # Replacing choice with Adaptive_choice, instead of always being 50:50 the adaptive will give wider randomization
+        # action = AR.choice(values={"load":50, "store":50})
+        values_with_ranges = {"load": (30, 70),"store": (70, 30)}
+        action = AR.adaptive_choice(values_with_ranges)
         size = AR.choice(values=[1,2,4,8])
         offset = random.randint(0, mem.byte_size - size)
         #partial_mem = mem.get_partial(byte_size=size, offset=offset)
