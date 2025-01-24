@@ -1,4 +1,5 @@
 import argparse
+import sys
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager, get_knob_manager
 from Utils.seed_management import set_seed
@@ -59,6 +60,12 @@ def parse_arguments(input_args=None):
     args = parser.parse_args(input_args) if input_args else parser.parse_args()
 
     # Update configurations based on arguments
+
+    # Get the full command line as a string
+    command_line_string = ' '.join(sys.argv)
+    config_manager.set_value('command_line_string', command_line_string)
+
+
 
     # Logic based on the parsed arguments
     setup_template_and_content(args.template, args.content)

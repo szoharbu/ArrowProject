@@ -35,10 +35,6 @@ ArrowProject/
 
 # Done:: add internal content repository, which can be added to the external one
 # TODO:: improve the Readme.getting started section
-# Done:: move choices, rangeWithPeak from Tool to Utils
-# TODO:: improve Choice to support less uniform behavior
-    # so for example, instead of using choice(30:70) that inside a huge for loop will always maintain this ratio
-    # provide an ability to randomize the initial balance, that each seed will generate different ratio to pick from
 
 # Done:: move db_manager into External repos
 # TODO:: refactor User interface and importing!!!! replace usage of AR, Sources, StateManager, Tool imports
@@ -303,7 +299,8 @@ RISCV learning
     # Done:: implement rangeWithPeak
     # TODO:: add more APIs, like event_trigger, Branch, function, safe_regs,...
     # Done:: add comment into AR.asm("nop",comment="nop instruction")
-
+    # Done:: move choices, rangeWithPeak from Tool to Utils
+    # Done:: add Adaptive_choice in addition to Choice to support less uniform behavior and extend random variations.
 
 # TODO:: AR API
     # DONE:: decouple FE from Tool, create additional TG class from the Tool class, and all init will be there
