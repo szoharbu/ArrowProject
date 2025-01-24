@@ -1,23 +1,30 @@
-name: Verify Airtable Secret
+name: Run Tests with Airtable Secret
 
 on:
-  workflow_dispatch:  # Allows manual trigger
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  check-secret:
-    runs-on: ubuntu-latest  # Use the default Ubuntu runner
+  test-with-secret:
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Print Environment Variables
-      run: printenv  # Print all environment variables for debugging
+    - name: Check out repository
+      uses: actions/checkout@v3
 
-    - name: Verify Airtable Token
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
       run: |
-        if [ -z "$AIRTABLE_PAT" ]; then
-          echo "AIRTABLE_PAT is not set"
-          exit 1
-        else
-          echo "AIRTABLE_PAT is set"
-        fi
+        pip install -r requirements.txt
+
+    - name: Run Tests
       env:
-        AIRTABLE_PAT: ${{ secrets.ARROW_AIRTABLE_RUN_STATISTICS_UPLOAD_TOKEN }}  # Inject the secret
+        AIRTABLE_PAT: ${{ secrets.ARROW_AIRTABLE_RUN_STATISTICS_UPLOAD_TOKEN }}  # Pass the secret to the test environment
+      run: |
+        python Arrow/main() # Run your tests
