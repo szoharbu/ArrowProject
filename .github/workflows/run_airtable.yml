@@ -28,4 +28,4 @@ jobs:
         AIRTABLE_PAT: ${{ secrets.ARROW_AIRTABLE_RUN_STATISTICS_UPLOAD_TOKEN }}  # Pass the secret to the test environment
       run: |
         export PYTHONPATH=$(pwd)  # Set PYTHONPATH to the current working directory
-        python Arrow/main.py # Run your tests
+        python Arrow/main.py templates/direct_template.py # Run your tests
