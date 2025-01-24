@@ -16,7 +16,10 @@ class MemoryPairing_ing(AR.Ingredient):
 
     def body(self):
         for i in range(random.randint(2,5)):
-            action = AR.choice(values=["load","store"])
+            # Replacing choice with Adaptive_choice, instead of always being 50:50 the adaptive will give wider randomization
+            # action = AR.choice(values={"load":50, "store":50})
+            values_with_ranges = {"load": (30, 70), "store": (70, 30)}
+            action = AR.adaptive_choice(values_with_ranges)
             if action == "load":
                 if Configuration.Architecture.x86:
                     AR.generate(src=self.mem, comment="load instruction")
@@ -64,7 +67,10 @@ class MemoryOverlapping(AR.Ingredient):
 
     def body(self):
         for i in range(random.randint(2, 6)):
-            action = AR.choice(values=["load", "store"])
+            # Replacing choice with Adaptive_choice, instead of always being 50:50 the adaptive will give wider randomization
+            # action = AR.choice(values={"load":50, "store":50})
+            values_with_ranges = {"load": (30, 70), "store": (70, 30)}
+            action = AR.adaptive_choice(values_with_ranges)
             size = AR.choice(values=[1, 2, 4, 8])
             offset = random.randint(0, self.mem_block.byte_size - size)
             partial_mem = MemoryManager.Memory(memory_block=self.mem_block, memory_block_offset=offset, byte_size=size)

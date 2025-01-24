@@ -1,11 +1,11 @@
 from peewee import Expression
-from typing import Union, List, Dict, Any, Optional
+from typing import Union, List, Dict, Any, Optional, Tuple
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager, Configuration
 from Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
 from Tool.register_management.register import Register
 from Tool.memory_management.memory_segments import CodeSegment
-from Utils.APIs import choice, range_with_peak
+from Utils.APIs import choice, range_with_peak, adaptive_choice
 from Tool.asm_libraries import label, asm_logger, stack, store_value
 from Tool.asm_libraries.memory_array.memory_array import MemoryArray as MemoryArray_wrapper
 from Tool.asm_libraries.loop.loop_base import LoopBase
@@ -14,7 +14,6 @@ from Tool.asm_libraries.branch_to_segment.branch_to_segment_base import BranchTo
 from Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegment as BranchToSegment_wrapper
 from Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
 from Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as EventTrigger_wrapper
-
 
 class AR:
     logger = get_logger()
@@ -55,6 +54,15 @@ class AR:
     def rangeWithPeak(start:int, end: int, peak: int, peak_width='normal')-> int:
         # Calls the internal Tool rangeWithPeak yet expose to users as TG.choice API
         return range_with_peak.rangeWithPeak(start, end, peak, peak_width)
+
+    @staticmethod
+    def adaptive_choice(values: Dict[Any, Union[int, Tuple[int, int]]]) -> Any:
+        """
+        Public API for adaptive_choice. Delegates to AdaptiveChoiceManager.
+        """
+        adaptive_choice_manager = adaptive_choice.get_adaptive_choice_manager()
+        return adaptive_choice_manager.adaptive_choice(values)
+
 
     # @staticmethod
     def generate(
