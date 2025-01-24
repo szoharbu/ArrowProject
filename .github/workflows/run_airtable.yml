@@ -1,31 +1,23 @@
-name: Run Airtable Tool
+name: Verify Airtable Secret
 
 on:
-  workflow_dispatch: # Allows you to manually trigger the workflow from GitHub
-  push:
-    branches:
-      - main           # Runs the workflow whenever code is pushed to the main branch
-
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
-  run-tool:
-    runs-on: ubuntu-latest  # The environment in which the tool runs (Linux in this case)
+  check-secret:
+    runs-on: ubuntu-latest  # Use the default Ubuntu runner
 
     steps:
-    - name: Check out repository
-      uses: actions/checkout@v3  # Fetches your code from the repository
+    - name: Print Environment Variables
+      run: printenv  # Print all environment variables for debugging
 
-    - name: Set up Python
-      uses: actions/setup-python@v4  # Installs Python
-      with:
-        python-version: '3.12'        # Specify the version of Python your tool requires
-
-    - name: Install dependencies
+    - name: Verify Airtable Token
       run: |
-        pip install -r requirements.txt  # Installs dependencies from requirements.txt
-
-    - name: Run Airtable Tool
+        if [ -z "$AIRTABLE_PAT" ]; then
+          echo "AIRTABLE_PAT is not set"
+          exit 1
+        else
+          echo "AIRTABLE_PAT is set"
+        fi
       env:
-        AIRTABLE_PAT: ${{ secrets.ARROW_AIRTABLE_RUN_STATISTICS_UPLOAD_TOKEN }}  # Securely passes the token to the script
-      run: |
-        python Arrow/main.py  # Runs your tool
+        AIRTABLE_PAT: ${{ secrets.ARROW_AIRTABLE_RUN_STATISTICS_UPLOAD_TOKEN }}  # Inject the secret
