@@ -4,9 +4,6 @@ from datetime import datetime
 
 # Airtable configuration
 PERSONAL_ACCESS_TOKEN = os.getenv("AIRTABLE_PAT") # Retrieve the Airtable token from the environment variable set as GutHub secret
-if not PERSONAL_ACCESS_TOKEN:
-    raise ValueError("The Airtable token (AIRTABLE_PAT) is missing from the environment.")
-
 BASE_ID = 'appOJKrcvb4gxH65d'
 TABLE_NAME = 'run_statistics'
 
@@ -15,6 +12,10 @@ URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 
 # Function to upload run statistics
 def upload_run_statistics(template, command_line, duration, architecture, cloud_mode, run_status:str="Pass"):
+
+    if not PERSONAL_ACCESS_TOKEN:
+        return
+        #raise ValueError("The Airtable token (AIRTABLE_PAT) is missing from the environment.")
 
     headers = {
         "Authorization": f"Bearer {PERSONAL_ACCESS_TOKEN}",
