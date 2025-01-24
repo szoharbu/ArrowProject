@@ -8,6 +8,7 @@ With its flexible design, Arrow is ideal for researchers and engineers assessing
 ## Features
 
 - Architecture-agnostic design: Not tied to any specific hardware or architecture.
+- Dynamic, template-driven generation: Adapts to user inputs and intent with configurable knobs and user-tailored scenarios.
 - Generate random assembly stimuli for architectural and micro-architectural analysis.
 - Evaluate system performance under diverse workloads and edge cases.
 - Extensible library for adding custom workflows, stimuli, and use cases.
