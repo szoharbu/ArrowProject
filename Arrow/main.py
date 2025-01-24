@@ -36,7 +36,7 @@ def main(args=None):
     except Exception as e:
         logger.warning("Test failed :(")
         dump_time(start_time, "Test total")
-        upload_data = True #config_manager.get_value('upload_data')
+        upload_data = False #config_manager.get_value('upload_data')
         if upload_data:
             upload_statistics(start_time, run_status='Fail')
         logger.error(f"Error: {e}")
@@ -49,7 +49,7 @@ def main(args=None):
         logger.info("Test was successful :)\n")
         logger.info("Mission accomplished...")
 
-        upload_data = True #config_manager.get_value('upload_data')
+        upload_data = False #config_manager.get_value('upload_data')
         if upload_data:
             upload_statistics(start_time, run_status='Pass')
 
