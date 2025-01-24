@@ -28,7 +28,4 @@ jobs:
       env:
         AIRTABLE_PAT: ${{ secrets.ARROW_AIRTABLE_RUN_STATISTICS_UPLOAD_TOKEN }}  # Securely passes the token to the script
       run: |
-        python main.py  # Runs your tool
-
-    - name: Debug Environment Variables
-      run: printenv
+        python Arrow/main.py  # Runs your tool
