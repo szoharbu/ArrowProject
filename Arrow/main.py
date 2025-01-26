@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import traceback
 from pathlib import Path
@@ -7,7 +8,7 @@ def main(args=None):
 
     start_time = time.time()
 
-    ensure_working_directory()
+    ensure_correct_setting()
 
     from Utils.arg_parser.arg_parser import parse_arguments
     from Utils.logger_management import get_logger
@@ -127,11 +128,17 @@ def set_basedir_path():
         logger.error(f"Error setting base or submodule paths: {e}")
         raise
 
-def ensure_working_directory():
+def ensure_correct_setting():
+
+    """Ensure the correct Python version is used."""
+    if sys.version_info < (3, 12):
+        raise RuntimeError(
+            f"Arrow requires Python 3.12 or higher. You are using Python {sys.version_info.major}.{sys.version_info.minor}."
+        )
+
     """Ensure the script is being run from the project root directory."""
     required_dirs = ["Arrow", "Externals", "Submodules"]  # Directories that should exist in the project root
     cwd = os.getcwd()
-
     for dir_name in required_dirs:
         if not os.path.isdir(os.path.join(cwd, dir_name)):
             raise RuntimeError(
