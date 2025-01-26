@@ -33,6 +33,16 @@ ArrowProject/
 
 '''
 
+# align
+# python 3.12 minimum
+
+# TODO:: upload statistics into cloud
+    # Done:: add Airtable table and infrastructure + create upload function
+        # URL = "https://api.airtable.com/v0/appOJKrcvb4gxH65d/run_statistics"
+    # Done:: hide private_TOKEN - using PythonAnywhare API
+        # URL = "szoharbu.pythonanywhere.com"
+
+
 # Done:: add internal content repository, which can be added to the external one
 # TODO:: improve the Readme.getting started section
 
