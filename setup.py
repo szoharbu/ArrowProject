@@ -6,6 +6,7 @@ setup(
     version='0.1.0',
     packages=find_packages(where='Arrow'),  # Ensures it looks in the right directory
     package_dir={'': 'Arrow'},  # Root directory for packages
+    python_requires='>=3.12',
     install_requires=[
         'requests',  # Add your actual dependencies
         'numpy',
@@ -28,5 +29,4 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.8',
 )

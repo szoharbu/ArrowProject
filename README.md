@@ -26,7 +26,7 @@ This guide will walk you through setting up the project environment and dependen
 
 Before you begin, make sure you have the following installed:
 
-- **Python**: Version 3.7 or later
+- **Python**: Version 3.12 or later
 - **Git**: For cloning the repository
 - **PyCharm (optional)**: For an enhanced development experience
 
