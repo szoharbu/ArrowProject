@@ -33,8 +33,9 @@ ArrowProject/
 
 '''
 
-# align
-# python 3.12 minimum
+# Done:: add alignment in riscv assembly
+
+# Done:: enforce python 3.12 version or higher, error if not
 
 # TODO:: upload statistics into cloud
     # Done:: add Airtable table and infrastructure + create upload function

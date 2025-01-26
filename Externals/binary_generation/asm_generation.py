@@ -19,13 +19,13 @@ def get_output(location, block_name=None):
         "data_block_header": {
             "x86_NASM": f"section .data\nglobal {block_name}\n{block_name}:\n",
             "x86_GAS": f".section .data.{block_name}\n.global {block_name}\n{block_name}:\n",
-            "riscv": f".section .data.{block_name}\n.global {block_name}\n{block_name}:\n",
+            "riscv": f".section .data.{block_name}\n.global {block_name}\n.align 2\n{block_name}:\n",
             "arm": f".section .data\n.global {block_name}\n{block_name}:\n",
         },
         "bss_block_header": {
             "x86_NASM": f"section .bss\nglobal {block_name}_bss\n{block_name}_bss:\n",
             "x86_GAS": f".section .bss.{block_name}\n.global {block_name}_bss\n{block_name}_bss:\n",
-            "riscv":  f".section .bss.{block_name}\n.global {block_name}_bss\n{block_name}_bss:\n",
+            "riscv":  f".section .bss.{block_name}\n.global {block_name}_bss\n.align 2\n{block_name}_bss:\n",
             "arm": f".section .bss\n.global {block_name}_bss\n{block_name}_bss:\n",
         },
     }
@@ -55,6 +55,8 @@ def generate_asm_from_AsmUnits(instruction_blocks):
         block_name = block.name
         tmp_asm_code += get_output(location="text_block_header", block_name=block_name)
         tmp_asm_code += f".global {block_name}\n"
+        if Configuration.Architecture.riscv:
+            tmp_asm_code += f".align 2       {get_comment_mark()} Align to 4-byte boundary\n"
         tmp_asm_code += f"{block_name}:\n"
 
         # Access or initialize the singleton variable
