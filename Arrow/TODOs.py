@@ -33,13 +33,13 @@ ArrowProject/
 
 '''
 
+# TODO:: add interesting memory stress stimuli
+
 # TODO:: disconnect google cloud - need to disable its billing
 
 # Done:: add knobs for gen_stages full or gen only , need to think of a good name
 # Done:: add some identifier to airtable statistics, so I see if two different users run it.
-# TODO:: add riscv compilation
-
-
+# Done:: add riscv binary creation.
 # Done:: add alignment in riscv assembly
 # Done:: enforce python 3.12 version or higher, error if not
 
