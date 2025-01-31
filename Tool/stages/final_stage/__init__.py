@@ -23,7 +23,7 @@ def final_section():
         try:
             generate_binary()
         except Exception as e:
-            logger.error("Binary creation failed :(  , if not need you can try running with '--create_binary False' ")
+            logger.error("Binary creation failed :(   if Binary is not needed please try running with '--create_binary False' ")
             raise
 
     # def assemble_and_run_riscv(assembly_code, output_file="program.elf"):

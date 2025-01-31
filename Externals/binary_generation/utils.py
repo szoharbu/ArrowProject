@@ -42,9 +42,19 @@ def check_tool_exists(tool):
     Args:
         tool: a tool command to check (e.g., ['aarch64-none-elf-g++', 'aarch64-none-elf-as']).
     """
+    from Utils.configuration_management import Configuration
     logger = get_logger()
     if shutil.which(tool) is None:
-        raise FileNotFoundError(f"Missing required tool {tool} in PATH")
+        error_str = (f"Missing required tool {tool} in PATH\n"
+                     f"Ensure you have {Configuration.Architecture.arch_str} toolchain installed.\n")
+
+        if Configuration.Architecture.riscv:
+            error_str = (error_str + "Installation instructions:\n"
+                         "  - Ubuntu: sudo apt install gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf\n"
+                         "  - Arch Linux: sudo pacman -S riscv64-elf-binutils riscv64-elf-gcc\n"
+                         "  - Manual: https://github.com/riscv-collab/riscv-gnu-toolchain")
+
+        raise FileNotFoundError(error_str)
     else:
         logger.debug(f"Required tool {tool} is available.")
 
