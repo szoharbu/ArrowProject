@@ -18,10 +18,13 @@ def final_section():
 
     generate_assembly()
 
-    # when in 'Cloud_mode' there is no need to run assembler and linker
-    cloud_mode = config_manager.get_value('Cloud_mode')
-    if not cloud_mode:
-        generate_binary()
+    create_binary = config_manager.get_value('Create_binary')
+    if create_binary:
+        try:
+            generate_binary()
+        except Exception as e:
+            logger.error("Binary creation failed :(  , if not need you can try running with '--create_binary False' ")
+            raise
 
     # def assemble_and_run_riscv(assembly_code, output_file="program.elf"):
     logger.info("Finalizing...")

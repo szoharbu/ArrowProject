@@ -51,6 +51,12 @@ def parse_arguments(input_args=None):
     parser.add_argument('--execution_platform', choices=['baremetal', 'linked_elf'],
                         help="execution_platform to run with, ('baremetal', 'linked_elf').")
 
+    parser.add_argument('--upload_statistics', choices=['True', 'False'],
+                        help="Upload run statistics at test end, ('True', 'False').")
+
+    parser.add_argument('--create_binary', choices=['True', 'False'],
+                        help="Continue with binary creation or stop at generation stage, ('True', 'False').")
+
     # Optional argument: --define or -D (multiple key-value pairs)
     parser.add_argument('-D', '--define', action='append',
                         help="Define knobs in the format key=value. Can be used multiple times.")
@@ -106,11 +112,10 @@ def parse_arguments(input_args=None):
     if args.cloud_mode:
         cloud_mode = True if (args.cloud_mode == "True") else False
         logger.info(f"--------------- Cloud_mode: {cloud_mode}")
-        config_manager.set_value('Cloud_mode', cloud_mode)
     else:
         cloud_mode = False
         logger.info(f"--------------- Cloud_mode: {cloud_mode} (default)")
-        config_manager.set_value('Cloud_mode', cloud_mode)
+    config_manager.set_value('Cloud_mode', cloud_mode)
 
     if args.execution_platform:
         logger.info(f"--------------- execution_platform: {args.execution_platform}")
@@ -120,6 +125,29 @@ def parse_arguments(input_args=None):
         logger.info(f"--------------- execution_platform: {execution_platform} (default)")
         config_manager.set_value('Execution_platform', execution_platform)
 
+
+    if args.upload_statistics:
+        upload_statistics = True if (args.upload_statistics == "True") else False
+        logger.info(f"--------------- upload_statistics: {upload_statistics}")
+    else:
+        upload_statistics = True
+        logger.info(f"--------------- upload_statistics: {upload_statistics} (defaults)")
+    config_manager.set_value('Upload_statistics', upload_statistics)
+
+
+    if args.create_binary:
+        create_binary = True if (args.create_binary == "True") else False
+        logger.info(f"--------------- create_binary: {create_binary}")
+    else:
+        create_binary = True
+        logger.info(f"--------------- create_binary: {create_binary} (defaults)")
+    config_manager.set_value('Create_binary', create_binary)
+
+
+    # when in 'Cloud_mode' there is no need to Continue with Binary creation unless explicitly asked for
+    if args.cloud_mode == "True":
+        if args.create_binary != "True":
+            config_manager.set_value('Create_binary', False)
 
     # Process --define arguments
     if args.define:

@@ -37,9 +37,7 @@ def main(args=None):
     except Exception as e:
         logger.warning("Test failed :(")
         dump_time(start_time, "Test total")
-        upload_data = True #config_manager.get_value('upload_data')
-        if upload_data:
-            upload_statistics(start_time, run_status='Fail')
+        upload_statistics(start_time, run_status='Fail')
         logger.error(f"Error: {e}")
         logger.error(traceback.format_exc())
         raise
@@ -49,10 +47,7 @@ def main(args=None):
         dump_time(start_time, "Test total")
         logger.info("Test was successful :)\n")
         logger.info("Mission accomplished...")
-
-        upload_data = True #config_manager.get_value('upload_data')
-        if upload_data:
-            upload_statistics(start_time, run_status='Pass')
+        upload_statistics(start_time, run_status='Pass')
 
     finally:
         config_manager = get_config_manager()
@@ -79,6 +74,10 @@ def upload_statistics(start_time, run_status):
     from Utils.configuration_management import get_config_manager
 
     config_manager = get_config_manager()
+    upload_stats = config_manager.get_value('Upload_statistics')
+    if not upload_stats:
+        return
+
     template_path = config_manager.get_value('template_path')
     template_name = os.path.basename(template_path)
     command_line = config_manager.get_value('command_line_string')
