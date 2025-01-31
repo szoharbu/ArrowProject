@@ -1,9 +1,19 @@
+import os
+import subprocess
+import sys
+from Utils.configuration_management import get_config_manager
 from Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
+
 
 class RiscvBuildPipeline(BuildPipeline):
     def __init__(self):
         """
-        Converts a RISC-V assembly file into an executable.
+        Converts RISC-V assembly file into an executable.
+
+        Steps:
+            1. Assemble the `.s` file into an object file using `as`.
+            2. Link the object file into an executable ELF file using `ld`.
+            3. Optionally verify the ELF file using `objdump`.
         """
         self.toolchain_prefix = "riscv64-unknown-elf"
 
@@ -40,48 +50,3 @@ class RiscvBuildPipeline(BuildPipeline):
         link_cmd = [tool, "-o", executable_file, object_file]
         check_file_exists(object_file, "Object File")
         run_command(link_cmd, f"Linking '{object_file}' to '{executable_file}'")
-
-
-    # config_manager = get_config_manager()
-    # output_dir = config_manager.get_value('output_directory')
-    # asm_file = os.path.join(output_dir,"asm_file.s")
-    # object_file = os.path.join(output_dir,"object_file.o")
-    # # Write assembly code to a .s file
-    # with open(asm_file, "w") as asm_f:
-    #     asm_f.write(assembly_code)
-
-#     # Assemble the code into an object file
-#     try:
-#         subprocess.run(["riscv64-unknown-elf-as", "-o", object_file, asm_file], check=True)
-#         print("Assembled program.o successfully.")
-#     except subprocess.CalledProcessError:
-#         print("Error during assembly.")
-#         return
-#
-#
-# #
-#
-# def assemble_and_run_riscv(assembly_code, output_file="program.elf"):
-
-#
-#     # Link the object file into an ELF executable
-#     try:
-#         subprocess.run(["riscv64-unknown-elf-ld", "-o", output_file, "program.o"], check=True)
-#         print(f"Linked {output_file} successfully.")
-#     except subprocess.CalledProcessError:
-#         print("Error during linking.")
-#         return
-#
-#     # Run the ELF file with QEMU emulator
-#     try:
-#         result = subprocess.run(["qemu-riscv64", output_file], capture_output=True, text=True, check=True)
-#         print("Program output:")
-#         print(result.stdout)
-#     except subprocess.CalledProcessError:
-#         print("Error during execution.")
-#
-#     # Clean up intermediate files if desired
-#     os.remove("program.s")
-#     os.remove("program.o")
-#
-#
