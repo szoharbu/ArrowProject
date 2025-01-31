@@ -33,9 +33,17 @@ ArrowProject/
 
 '''
 
-# Done:: add alignment in riscv assembly
+# disconnect google cloud - need to disable its billing
 
+# Done:: add knobs for upload
+# Done:: add knobs for gen_stages full or gen only , need to think of a good name
+# add riscv compilation
+# add some identifier to airtable statistics, so I see if two different users run it.
+
+
+# Done:: add alignment in riscv assembly
 # Done:: enforce python 3.12 version or higher, error if not
+
 
 # TODO:: upload statistics into cloud
     # Done:: add Airtable table and infrastructure + create upload function
