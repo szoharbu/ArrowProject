@@ -3,6 +3,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
+from Externals.Cloud.upload_run_statistics import upload_statistics
 
 def main(args=None):
 
@@ -36,18 +37,18 @@ def main(args=None):
 
     except Exception as e:
         logger.warning("Test failed :(")
-        dump_time(start_time, "Test total")
-        upload_statistics(start_time, run_status='Fail')
+        duration = dump_time(start_time, "Test total")
+        upload_statistics(duration, run_status='Fail')
         logger.error(f"Error: {e}")
         logger.error(traceback.format_exc())
         raise
 
     else:
         # Test was successful
-        dump_time(start_time, "Test total")
+        duration = dump_time(start_time, "Test total")
         logger.info("Test was successful :)\n")
         logger.info("Mission accomplished...")
-        upload_statistics(start_time, run_status='Pass')
+        upload_statistics(duration, run_status='Pass')
 
     finally:
         config_manager = get_config_manager()
@@ -58,40 +59,6 @@ def main(args=None):
             final_stage.reset_tool()
 
     return True
-
-
-def upload_statistics(start_time, run_status):
-    '''
-    Entry fields:
-    - Name: ??
-    - Template:
-    - Command Line
-    - Status : Pass / Fail
-    - Start time
-    - Duration
-    '''
-    from Externals.Cloud.Airtable import upload_run_statistics
-    from Utils.configuration_management import get_config_manager
-
-    config_manager = get_config_manager()
-    upload_stats = config_manager.get_value('Upload_statistics')
-    if not upload_stats:
-        return
-
-    template_path = config_manager.get_value('template_path')
-    template_name = os.path.basename(template_path)
-    command_line = config_manager.get_value('command_line_string')
-    duration = dump_time(start_time=start_time)
-    Architecture = config_manager.get_value("Architecture")
-    Cloud_mode = config_manager.get_value('Cloud_mode')
-
-    upload_run_statistics(template=template_name,
-                          command_line=command_line,
-                          duration=duration,
-                          run_status=run_status,
-                          architecture=Architecture,
-                          cloud_mode=Cloud_mode,
-                          )
 
 
 def dump_time(start_time, message_header = None) -> str:
