@@ -17,6 +17,7 @@ ArrowProject/
 │   ├── db_manager/             # Per-Arch instruction DB
 │   ├── binary_generation/      # Per-Arch binary generation
 │   ├── streamlit/              # Streamlit-specific front-end logic
+│   ├── cloud/                  # Upload run statistics to cloud
 │   └── run_tool.py             # External entry point for the tool
 ├── Submodules/                 # External repositories
 │   ├── arrow_content/          # External content repository
@@ -34,6 +35,7 @@ ArrowProject/
 '''
 
 # TODO:: add interesting memory stress stimuli
+# TODO:: add interesting BPU stress stimuli
 
 # TODO:: disconnect google cloud - need to disable its billing
 
