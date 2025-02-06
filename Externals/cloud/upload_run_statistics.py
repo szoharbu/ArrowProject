@@ -32,8 +32,12 @@ def upload_statistics(duration, run_status):
     # Get system metadata as a summarized string
     system_summary = get_system_metadata()
 
-    # Get anonymized user identifier
-    user_id = get_anonymized_user()
+
+    if config_manager.is_exist('Identifier'):
+        user_id = config_manager.get_value('Identifier')
+    else:
+        # Get anonymized user identifier
+        user_id = get_anonymized_user()
 
 
     upload_run_statistics(template=template_name,
