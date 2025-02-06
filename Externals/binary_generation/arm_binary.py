@@ -36,8 +36,9 @@ class ArmBuildPipeline(BuildPipeline):
         """
         tool = f"{self.toolchain_prefix}-as"
         check_tool_exists(tool)
+        extension = "-march=armv9-a+cssc"
 
-        assemble_cmd = [tool, "-o", object_file, assembly_file]
+        assemble_cmd = [tool, extension, "-o", object_file, assembly_file]
         check_file_exists(assembly_file, "Assembly File")
         run_command(assemble_cmd, f"Assembling '{assembly_file}' to '{object_file}'")
 
