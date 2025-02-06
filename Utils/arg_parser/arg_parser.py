@@ -57,6 +57,8 @@ def parse_arguments(input_args=None):
     parser.add_argument('--create_binary', choices=['True', 'False'],
                         help="Continue with binary creation or stop at generation stage, ('True', 'False').")
 
+    parser.add_argument('--identifier', type=str, help='Identifier to use during statistics upload.')
+
     # Optional argument: --define or -D (multiple key-value pairs)
     parser.add_argument('-D', '--define', action='append',
                         help="Define knobs in the format key=value. Can be used multiple times.")
@@ -125,7 +127,6 @@ def parse_arguments(input_args=None):
         logger.info(f"--------------- execution_platform: {execution_platform} (default)")
         config_manager.set_value('Execution_platform', execution_platform)
 
-
     if args.upload_statistics:
         upload_statistics = True if (args.upload_statistics == "True") else False
         logger.info(f"--------------- upload_statistics: {upload_statistics}")
@@ -134,6 +135,9 @@ def parse_arguments(input_args=None):
         logger.info(f"--------------- upload_statistics: {upload_statistics} (defaults)")
     config_manager.set_value('Upload_statistics', upload_statistics)
 
+    if args.identifier:
+        logger.info(f"--------------- identifier: {args.identifier}")
+        config_manager.set_value('Identifier', args.identifier)
 
     if args.create_binary:
         create_binary = True if (args.create_binary == "True") else False
