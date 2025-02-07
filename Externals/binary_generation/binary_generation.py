@@ -24,8 +24,6 @@ def generate_binary():
     object_file = os.path.join(output_dir, f"{base_name}.o")
     executable_file = os.path.join(output_dir, f"{base_name}.elf")
 
-    fail_on_error = True
-    C_file_exits = True
 
     pipeline = None
     if Configuration.Architecture.x86:
@@ -37,8 +35,13 @@ def generate_binary():
     else:
         raise ValueError(f"Unknown Architecture requested")
 
+    # TODO:: Expose as Config parameters
+    fail_on_error = True
+    C_file_supported = False
+    if C_file_supported:
 
-    if C_file_exits:
+        # TODO:: check if C files exist, or else skip the step
+
         # Step 1: Compile C++ to Assembly
         pipeline.cpp_to_asm(cpp_file, cpp_asm_file)
 
