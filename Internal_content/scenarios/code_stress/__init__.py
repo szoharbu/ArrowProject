@@ -70,7 +70,7 @@ def generate_nested_branch(depth, max_depth, current_iteration, max_iteration):
 
         while True: # keep selecting action until explicitly return
 
-            print(f"zzzzzzzzzzz depth {depth}, iteration {current_iteration}  (max_depth {max_depth}, max_iteration {max_iteration})")
+            #print(f"zzzzzzzzzzz depth {depth}, iteration {current_iteration}  (max_depth {max_depth}, max_iteration {max_iteration})")
             '''    
                 Set action probabilities based on constraints
                 - At early iterations, "go_deeper" is more likely.
@@ -97,9 +97,7 @@ def generate_nested_branch(depth, max_depth, current_iteration, max_iteration):
                 action_weights = {"generate_random_instruction": 30, "exit": 70}
 
             action = AR.choice(values=action_weights)
-            comment_str = f"action selected : {action}"
-            AR.comment(comment_str)
-            print(comment_str)
+            AR.comment(f"action selected : {action}")
 
             if action == "generate_random_instruction":
                 AR.generate(instruction_count=random.randint(1, 3))
