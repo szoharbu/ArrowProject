@@ -18,6 +18,7 @@ class ArmBuildPipeline(BuildPipeline):
         """
         self.toolchain_prefix = "aarch64-unknown-linux-gnu"
         self.toolchain_extensions = "-march=armv9-a+cssc"
+        self.toolchain_emulation_extensions = "aarch64elf" # Supported emulations: aarch64linux aarch64elf aarch64elf32 aarch64elf32b aarch64elfb armelf armelfb aarch64linuxb aarch64linux32 aarch64linux32b armelfb_linux_eabi armelf_linux_eabi
 
     def cpp_to_asm(self, cpp_file, asm_file):
         """
@@ -49,7 +50,7 @@ class ArmBuildPipeline(BuildPipeline):
         tool = f"{self.toolchain_prefix}-ld"
         check_tool_exists(tool)
 
-        link_cmd = [tool, self.toolchain_extensions, "-o", executable_file, object_file]
+        link_cmd = [tool, self.toolchain_emulation_extensions, "-o", executable_file, object_file]
         check_file_exists(object_file, "Object File")
         run_command(link_cmd, f"Linking '{object_file}' to '{executable_file}'")
 
