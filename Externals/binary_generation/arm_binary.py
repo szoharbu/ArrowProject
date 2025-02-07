@@ -16,18 +16,18 @@ class ArmBuildPipeline(BuildPipeline):
             2. Link the object file into an executable ELF file using `ld`.
             3. Optionally verify the ELF file using `objdump`.
         """
-        self.toolchain_prefix = "aarch64-none-elf"
+        self.toolchain_prefix = "aarch64-unknown-linux-gnu"
+        self.toolchain_extensions = "-march=armv9-a+cssc"
 
     def cpp_to_asm(self, cpp_file, asm_file):
         """
         Compiles a C++ file to assembly using the given toolchain.
         """
 
-        #tool = f"{self.toolchain_prefix}-g++"
-        tool = "g++"
+        tool = f"{self.toolchain_prefix}-g++"
         check_tool_exists(tool)
 
-        cpp_assemble_cmd = [tool , "-S", "-o", asm_file, cpp_file]
+        cpp_assemble_cmd = [tool, self.toolchain_extensions, "-S", "-o", asm_file, cpp_file]
         check_file_exists(cpp_file, "CPP Source File")
         run_command(cpp_assemble_cmd, f"CPP Assembling '{trim_path(cpp_file)}' to '{trim_path(asm_file)}'")
 
@@ -35,12 +35,10 @@ class ArmBuildPipeline(BuildPipeline):
         """
         Assembles an assembly file into an object file.
         """
-        #tool = f"{self.toolchain_prefix}-as"
-        tool = "as"
+        tool = f"{self.toolchain_prefix}-as"
         check_tool_exists(tool)
-        extension = "-march=armv9-a+cssc"
 
-        assemble_cmd = [tool, extension, "-o", object_file, assembly_file]
+        assemble_cmd = [tool, self.toolchain_extensions, "-o", object_file, assembly_file]
         check_file_exists(assembly_file, "Assembly File")
         run_command(assemble_cmd, f"Assembling '{assembly_file}' to '{object_file}'")
 
@@ -48,11 +46,10 @@ class ArmBuildPipeline(BuildPipeline):
         """
         Link the object file into an executable ELF file using `ld`.
         """
-        #tool = f"{self.toolchain_prefix}-ld"
-        tool = "ld"
+        tool = f"{self.toolchain_prefix}-ld"
         check_tool_exists(tool)
 
-        link_cmd = [tool, "-o", executable_file, object_file]
+        link_cmd = [tool, self.toolchain_extensions, "-o", executable_file, object_file]
         check_file_exists(object_file, "Object File")
         run_command(link_cmd, f"Linking '{object_file}' to '{executable_file}'")
 
