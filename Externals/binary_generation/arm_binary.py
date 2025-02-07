@@ -23,7 +23,8 @@ class ArmBuildPipeline(BuildPipeline):
         Compiles a C++ file to assembly using the given toolchain.
         """
 
-        tool = f"{self.toolchain_prefix}-g++"
+        #tool = f"{self.toolchain_prefix}-g++"
+        tool = "g++"
         check_tool_exists(tool)
 
         cpp_assemble_cmd = [tool , "-S", "-o", asm_file, cpp_file]
@@ -34,7 +35,8 @@ class ArmBuildPipeline(BuildPipeline):
         """
         Assembles an assembly file into an object file.
         """
-        tool = f"{self.toolchain_prefix}-as"
+        #tool = f"{self.toolchain_prefix}-as"
+        tool = "as"
         check_tool_exists(tool)
         extension = "-march=armv9-a+cssc"
 
@@ -46,7 +48,8 @@ class ArmBuildPipeline(BuildPipeline):
         """
         Link the object file into an executable ELF file using `ld`.
         """
-        tool = f"{self.toolchain_prefix}-ld"
+        #tool = f"{self.toolchain_prefix}-ld"
+        tool = "ld"
         check_tool_exists(tool)
 
         link_cmd = [tool, "-o", executable_file, object_file]
