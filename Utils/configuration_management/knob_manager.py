@@ -92,11 +92,9 @@ class KnobManager:
     def override_knob(self, name, new_value):
         """Override the value of a knob."""
         knob = self.get_knob(name)
-        if knob:
-            knob.set_value(new_value)
-            self.knobs[name] = knob
-        else:
-            raise ValueError(f"Knob '{name}' not found.")
+        # no need to check if knob exist, get_knob will raise exception if not found
+        knob.set_value(new_value)
+        self.knobs[name] = knob
 
     def seal_all(self):
         """seal all knobs."""
@@ -114,10 +112,8 @@ class KnobManager:
     def evaluate_knob(self, name):
         """Evaluate and return the value of a knob."""
         knob = self.get_knob(name)
-        if knob:
-            return knob.get_value()
-        else:
-            raise ValueError(f"Knob '{name}' not found.")
+        # no need to check if knob exist, get_knob will raise exception if not found
+        return knob.get_value()
 
 # Factory function to retrieve the KnobManager instance
 def get_knob_manager():
