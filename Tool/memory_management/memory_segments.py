@@ -1,3 +1,4 @@
+import random
 from abc import ABC
 from Tool.asm_blocks import DataUnit, AsmUnit
 from Utils.configuration_management import Configuration
@@ -7,8 +8,14 @@ from Tool.memory_management.memory_block import MemoryBlock
 
 # Abstract base class for MemorySegment
 class MemorySegment(ABC):
+
+    # generate incremental memory_segment_unique_id
+    _memory_segment_initial_seed_id = random.randint(1234, 5678)  # start at a random label
+
     def __init__(self, name: str, address: int, byte_size: int, memory_type:Configuration.Memory_types):
-        self.name = name
+
+        MemorySegment._memory_segment_initial_seed_id += 1
+        self.name = f"{name}_{MemorySegment._memory_segment_initial_seed_id}"
         self.address = address
         self.byte_size = byte_size
         self.memory_type = memory_type
