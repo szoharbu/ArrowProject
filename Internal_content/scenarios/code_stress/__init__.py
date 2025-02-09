@@ -22,10 +22,8 @@ def code_switching_scenario():
 
     ingredient_manager.call_ingredients_init(joint_ing)
 
-    # TODO:: implement an API to receive a unique identifier. using random value for now
-    a, b = random.sample(range(1, 100), 2) # generate two unique numbers
-    code_A = MemoryManager.MemorySegment(f"code_block_{a}", byte_size=0x500, memory_type=Configuration.Memory_types.CODE)
-    code_B = MemoryManager.MemorySegment(f"code_block_{b}", byte_size=0x500, memory_type=Configuration.Memory_types.CODE)
+    code_A = MemoryManager.MemorySegment(f"code_switch_A", byte_size=0x500, memory_type=Configuration.Memory_types.CODE)
+    code_B = MemoryManager.MemorySegment(f"code_switch_B", byte_size=0x500, memory_type=Configuration.Memory_types.CODE)
 
     AR.comment(f'allocating 2 code blocks, code_A {hex(code_A.address)} and code_B {hex(code_B.address)}')
 
