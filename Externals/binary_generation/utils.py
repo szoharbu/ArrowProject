@@ -58,7 +58,7 @@ def check_tool_exists(tool):
     else:
         logger.debug(f"Required tool {tool} is available.")
 
-def run_command(command, description, fail_on_error=True):
+def run_command(command, description, fail_on_error=True, output_file=None):
     """
     Runs a shell command and provides robust error handling.
     """
@@ -66,6 +66,11 @@ def run_command(command, description, fail_on_error=True):
     try:
         logger.info(f"---- Running: '{" ".join(command)}'")
         result = subprocess.run(command, check=True, text=True, capture_output=True)
+
+        if output_file:
+            with open(output_file, "w") as f:
+                f.write(result.stdout)
+
         logger.info(f"---- Success: {description}")
         return result.stdout
     except subprocess.CalledProcessError as e:
