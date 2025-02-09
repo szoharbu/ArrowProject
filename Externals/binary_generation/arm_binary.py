@@ -53,3 +53,12 @@ class ArmBuildPipeline(BuildPipeline):
         link_cmd = [tool, "-o", executable_file, object_file]
         check_file_exists(object_file, "Object File")
         run_command(link_cmd, f"Linking '{object_file}' to '{executable_file}'")
+
+        # New objdump stage
+        tool = f"{self.toolchain_prefix}-objdump"
+        dump_file = f"{executable_file}.dump"
+
+        dump_cmd = [tool, "-d", executable_file]  # Corrected command
+        with open(dump_file, "w") as f:
+            run_command(dump_cmd, f"Dumping ELF file info to '{dump_file}'", output_file=dump_file)
+
