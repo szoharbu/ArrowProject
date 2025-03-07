@@ -1,6 +1,6 @@
 
 class Register:
-    def __init__(self, name):
+    def __init__(self, name, type:str, is_random:bool):
         """
         Initializes a Register with a name and a reserved attribute
 
@@ -9,6 +9,8 @@ class Register:
         - reserved (bool): Whether the register is reserved. Defaults to False.
         """
         self.name = name
+        self.type = type # gpr, vector, extended, ...
+        self.is_random = is_random # some register can't get selected randomly
         self._reserve = False
 
     def is_reserve(self) -> bool:

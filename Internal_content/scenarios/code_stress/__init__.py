@@ -56,7 +56,7 @@ def nested_code_sequence():
 
 def generate_nested_branch(depth, max_depth, current_iteration, max_iteration):
     if current_iteration >= max_iteration:
-        AR.comment("Max iteration reached. only generate instructions or exi")
+        AR.comment("Max iteration reached. only generate instructions or exit")
 
     code = MemoryManager.MemorySegment(
         f"nested_code_sequence_{current_iteration}", byte_size=0x100, memory_type=Configuration.Memory_types.CODE
