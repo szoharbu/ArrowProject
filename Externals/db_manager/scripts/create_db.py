@@ -5,7 +5,7 @@ from Utils.logger_management import get_logger
 import os
 
 """
-Script: create_db_arm.py
+Script: create_db.py
 
 Description:
 This script creates and populates an SQLite database (instructions.db) from JSON data 
@@ -21,7 +21,7 @@ Functionality:
 
 Usage:
 Run this script from the project root to refresh the database with the latest JSON data:
-    python Tool/scripts/create_db_arm.py
+    python Tool/scripts/create_db.py
 """
 
 

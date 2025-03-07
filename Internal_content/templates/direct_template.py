@@ -9,7 +9,31 @@ from Utils.configuration_management import Configuration
 
 Configuration.Knobs.Config.core_count.set_value(1)
 Configuration.Knobs.Template.scenario_count.set_value(3)
-Configuration.Knobs.Template.scenario_query.set_value({"direct_scenario":40, "direct_memory_scenario":59,Configuration.Tag.REST:1})
+Configuration.Knobs.Template.scenario_query.set_value({"random_instructions":99,Configuration.Tag.REST:1})
+
+@AR.scenario_decorator(random=True)
+def random_instructions():
+    AR.comment("inside random_instructions")
+    AR.generate(instruction_count=20)
+
+
+@AR.scenario_decorator(random=True)
+def mx_cross_v2g_scenario():
+    AR.comment("inside direct_memory_scenario")
+
+    with AR.Loop(counter=random.randint(10,20)):
+        mem = MemoryManager.Memory(memory_type="uc", init_value=0x456)
+        AR.comment("inside Loop scope, generating 5 instructions")
+        for _ in range(20):
+            action = AR.choice(values={"mx": 80, "v2g": 80})
+            r1 = RegisterManager.get()
+            r2 = RegisterManager.get()
+            if action == "mx":
+                AR.asm(f"mul {r1}, {r2}", comment="simple nop instruction")
+            else:
+                AR.asm(f"add {r1}, {r2}", comment="simple nop instruction")
+
+
 
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
@@ -21,8 +45,8 @@ def direct_memory_scenario():
     mem_block2 = MemoryManager.MemoryBlock(name="blockzz150",byte_size=25, shared=True)
     mem_block3 = MemoryManager.MemoryBlock(name="blockzz200",byte_size=100, shared=True)
     mem5 = MemoryManager.Memory(name='mem5_partial', memory_block=mem_block, memory_block_offset=2, byte_size=4, shared=True)
-    mem6 = MemoryManager.Memory(name='mem6_partial', memory_block=mem_block2, memory_block_offset=14, byte_size=4, shared=True)
-    instr = AR.generate(src=mem5)
+    mem6 = MemoryManager.Memory(name='mem6_partial', memory_block=mem_block, memory_block_offset=14, byte_size=4, shared=True)
+    instr = AR.generate(src=mem5, comment="zzzzzzzzzzzzzzzzz")
     #instr2 = AR.asm(f'mov {mem2}, rax')
     instr = AR.generate(src=mem6)
     for _ in range(100):
@@ -79,7 +103,7 @@ def direct_scenario():
     if Configuration.Architecture.x86:
         AR.generate(src=mem1, dest=reg)
     else:
-        AR.generate(src=mem1, dest=reg, query=(AR.Instruction.group == "load" ))
+        AR.generate(src=mem1, dest=reg, query=(AR.Instruction.group == "load" & AR.Instruction.cyc >3 & AR.Instruction.streed =="mx_pred"))
     RegisterManager.free(reg)
 
     # if Configuration.Architecture.x86:
