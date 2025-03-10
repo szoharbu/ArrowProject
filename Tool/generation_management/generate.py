@@ -5,8 +5,10 @@ from Tool.generation_management.generated_instruction import GeneratedInstructio
 from Tool.generation_management.generate_x86 import generate_x86
 from Tool.generation_management.generate_riscv import generate_riscv
 from Tool.generation_management.generate_arm import generate_arm
+from Tool.generation_management.generate_arm_asl import generate_arm_asl
 from Utils.configuration_management import Configuration
 from Externals.db_manager.models import get_instruction_db
+
 from peewee import Expression, fn
 
 # @staticmethod
@@ -33,6 +35,22 @@ def generate(
 
     # Get the bound Instruction model
     Instruction = get_instruction_db()
+
+
+    asl_extract = True
+    if Configuration.Architecture.arm and asl_extract:
+        from Externals.db_manager.asl_testing import asl_models
+        from peewee import SqliteDatabase
+
+        db_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/asl_testing/instructions.db"
+        sql_db = SqliteDatabase(db_path)
+        asl_models.Instruction._meta.database = sql_db
+        asl_models.Operand._meta.database = sql_db
+
+        sql_db.connect()
+        Instruction = asl_models.Instruction
+        Operand = asl_models.Operand
+
 
     # Start with a base query for instructions
     query_filter = Instruction.select()
@@ -91,6 +109,8 @@ def generate(
             gen_instructions = generate_x86(selected_instruction, src, dest, comment=comment)
         elif Configuration.Architecture.riscv:
             gen_instructions = generate_riscv(selected_instruction, src, dest, comment=comment)
+        elif Configuration.Architecture.arm and asl_extract:
+            gen_instructions = generate_arm_asl(selected_instruction, src, dest, comment=comment)
         elif Configuration.Architecture.arm:
             gen_instructions = generate_arm(selected_instruction, src, dest, comment=comment)
         else:
