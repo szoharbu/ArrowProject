@@ -180,10 +180,13 @@ if run_query:
                     st.text(f"•  steering_classes: {inst.steering_class}")
 
                     st.subheader("Resources:")
-                    asl_link = asl_path + f"#{inst.id}"
-                    usl_link = usl_path + f"#{inst.id}"
-                    st.markdown(f"🔗 **[ASL::{inst.id}]({asl_link})**")
-                    st.markdown(f"🔗 **[USL::{inst.id}]({usl_link})**")
+                    if inst.usl_flow != "N/A":
+                        asl_link = asl_path + f"#{inst.usl_flow}"
+                        usl_link = usl_path + f"#{inst.usl_flow}"
+                        st.markdown(f"🔗 **[ASL::{inst.id}]({asl_link})**")
+                        st.markdown(f"🔗 **[USL::{inst.id}]({usl_link})**")
+                    else:
+                        st.markdown(f"🔗 N/A")
 
 # Sidebar: About / Support Info
 st.sidebar.markdown("---")  # Adds a horizontal line for separation

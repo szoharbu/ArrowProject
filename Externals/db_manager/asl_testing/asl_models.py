@@ -21,12 +21,14 @@ class Instruction(BaseModel):
     mnemonic = CharField(null=True)  # From ASL
     instr_class = CharField(null=True)
     feature = CharField(null=True)
+    iformid = CharField(null=True)
     #operands = TextField(null=True)  # From ASL
     mop_count = IntegerField(null=True)  # From USL
     table_name = CharField(null=True)  # From USL
     #latency_class = CharField(null=True)  # From USL
     max_latency = IntegerField(null=True)  # From USL
     steering_class = TextField(null=True)  # From USL , will store a JSON list of steering classes
+    usl_flow = CharField(null=True)
     random_generate = BooleanField(default=False)  # New boolean flag with a default
     asl_info = TextField(null=True)  # Full ASL JSON
     usl_info = TextField(null=True)  # Full USL JSON

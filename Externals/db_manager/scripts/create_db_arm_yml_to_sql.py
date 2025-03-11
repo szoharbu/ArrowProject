@@ -135,13 +135,16 @@ def populate_database(yaml_dict, force_reset=False):
             asl_data = inst_data.get("asl", {})
             if asl_data is not None:
                 encoding_name = asl_data.get("encoding_name", "N/A")
-                iform = asl_data.get("iform", "N/A")
+                #iform = asl_data.get("iform", "N/A")
+                iformid = asl_data.get("iformid", "N/A").replace(".xml", "")
 
             # Extract USL data
             usl_data = inst_data.get("usl", {})
             if usl_data is not None:
+                usl_flow = usl_data.get("flow", "N/A")
                 steering_classes_list = usl_data.get("steering", [])
             else:
+                usl_flow = "N/A"
                 steering_classes_list = []
 
             # Generate unique ID
@@ -169,6 +172,8 @@ def populate_database(yaml_dict, force_reset=False):
                 mnemonic=inst_data.get("mnemonic", "").lower(),
                 instr_class=inst_data.get("instr_class", "no description"),
                 feature=inst_data.get("feature", "None"),
+                iformid = iformid,
+                usl_flow = usl_flow,
                 # mop_count=usl_data.get("mop_count"),
                 # table_name=usl_data.get("table_name"),
                 # max_latency=max_latency,
