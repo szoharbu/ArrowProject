@@ -4,7 +4,12 @@ import re
 from asl_models import Instruction, Operand
 from peewee import SqliteDatabase, fn
 
-db_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/asl_testing/instructions.db"
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+db_path = os.path.join(base_dir, 'db', 'arm_instructions_isalib.db')
+# Check if the file exists
+if not os.path.exists(db_path):
+    raise ValueError(f"SQL DB file not found: {db_path}")
+#db_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/asl_testing/instructions.db"
 
 
 def return_last_modified_date():
