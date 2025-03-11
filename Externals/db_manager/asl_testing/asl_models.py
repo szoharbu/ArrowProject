@@ -1,7 +1,13 @@
+import os
 from peewee import Model, SqliteDatabase, CharField, IntegerField, ForeignKeyField, TextField, BooleanField
 
 # Initialize SQLite Database
-db = SqliteDatabase("instructions.db")
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+db_dir = os.path.join(base_dir, 'db')
+if not os.path.exists(db_dir):
+    raise ValueError(f" DB path doesn't exist: {db_dir}")
+db_path = os.path.join(db_dir, 'arm_instructions_isalib.db')
+db = SqliteDatabase(db_path)
 
 class BaseModel(Model):
     class Meta:
@@ -13,6 +19,8 @@ class Instruction(BaseModel):
     syntax = TextField()  # Assembly syntax variation
     description = TextField()  # Full instruction description
     mnemonic = CharField(null=True)  # From ASL
+    instr_class = CharField(null=True)
+    feature = CharField(null=True)
     #operands = TextField(null=True)  # From ASL
     mop_count = IntegerField(null=True)  # From USL
     table_name = CharField(null=True)  # From USL
@@ -60,32 +68,3 @@ def initialize_db():
     db.connect(reuse_if_open=True)
     db.create_tables([Instruction, Operand], safe=True)
     db.close()
-
-# def execute_query(expression):
-#     """
-#     Execute a Peewee query using overloaded operators.
-#     """
-#     try:
-#         query = (Instruction
-#                  .select()
-#                  .join(ForeignKeyField("Operand", backref="operands"), on=(Instruction.id == ForeignKeyField("Operand", backref="operands").instruction))
-#                  .where(expression.condition))
-#
-#         # Convert results to JSON
-#         result = [
-#             {
-#                 "id": instr.id,
-#                 "unique_id": instr.unique_id,
-#                 "mnemonic": instr.mnemonic,
-#                 "syntax": instr.syntax,
-#                 "mop_count": instr.mop_count,
-#                 "latency": instr.latency,
-#                 "table_name": instr.table_name
-#             }
-#             for instr in query
-#         ]
-#
-#         return json.dumps(result, indent=4)
-#
-#     except Exception as e:
-#         return json.dumps({"error": str(e)})

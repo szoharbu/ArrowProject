@@ -30,7 +30,6 @@ def generate_arm_asl(
         selected_instruction.operands = ast.literal_eval(selected_instruction.operands)
 
     print(f"--------------------- generate_arm_asl -------------------------")
-
     print(f"Selected Instruction: {selected_instruction.syntax}")
     operands = list(selected_instruction.operands)  # Convert to list
     for op in operands:

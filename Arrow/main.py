@@ -39,8 +39,7 @@ def main(args=None):
         logger.warning("Test failed :(")
         duration = dump_time(start_time, "Test total")
         upload_statistics(duration, run_status='Fail')
-        logger.error(f"Error: {e}")
-        logger.error(traceback.format_exc())
+        logger.error("Test failed :(\n%s", traceback.format_exc())  # Logs the full error and traceback once
         raise
 
     else:

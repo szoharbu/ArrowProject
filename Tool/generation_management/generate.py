@@ -1,3 +1,4 @@
+import os
 import random
 from typing import Optional, Any, List, Dict
 from Tool.generation_management.utils import get_operand_type
@@ -33,16 +34,19 @@ def generate(
     - Instruction: The generated instruction.
     """
 
-    # Get the bound Instruction model
-    Instruction = get_instruction_db()
-
 
     asl_extract = True
     if Configuration.Architecture.arm and asl_extract:
         from Externals.db_manager.asl_testing import asl_models
         from peewee import SqliteDatabase
 
-        db_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/asl_testing/instructions.db"
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        db_path = os.path.join(base_dir, '..', 'Externals' , 'db_manager', 'db', 'arm_instructions_isalib.db')
+
+        # Check if the file exists
+        if not os.path.exists(db_path):
+            raise ValueError(f"SQL DB file not found: {db_path}")
+
         sql_db = SqliteDatabase(db_path)
         asl_models.Instruction._meta.database = sql_db
         asl_models.Operand._meta.database = sql_db
@@ -50,7 +54,9 @@ def generate(
         sql_db.connect()
         Instruction = asl_models.Instruction
         Operand = asl_models.Operand
-
+    else:
+        # Get the bound Instruction model
+        Instruction = get_instruction_db()
 
     # Start with a base query for instructions
     query_filter = Instruction.select()
