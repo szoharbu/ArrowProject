@@ -30,10 +30,10 @@ def generate_arm_asl(
         selected_instruction.operands = ast.literal_eval(selected_instruction.operands)
 
     print(f"--------------------- generate_arm_asl -------------------------")
-    print(f"Selected Instruction: {selected_instruction.syntax}")
+    print(f"   Selected Instruction: {selected_instruction.syntax}")
     operands = list(selected_instruction.operands)  # Convert to list
     for op in operands:
-        print(f"   Operand: {op.text}, Type: {op.type}, Role: {op.role}, Size: {op.size}")
+        print(f"      Operand: {op.text}, Type: {op.type}, Role: {op.role}, Size: {op.size}")
 
     # set True or False if one of the operands has memory type
     memory_usage = any(operand.type == "mem" for operand in selected_instruction.operands)
@@ -75,36 +75,37 @@ def generate_arm_asl(
                 eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
             else:
                 eval_operand = dest
-        elif operand.type == "reg" or operand.type == "GPR":
-            eval_operand = RegisterManager.get(reg_type="gpr")
-        elif operand.type == "imm" or operand.type == "IMMEDIATE":
-            optional_number = generate_random_immediate_for_instruction(selected_instruction.mnemonic)
-            if optional_number is None:
-                size = operand.size
-                if size != "unknown":
-                    size_in_bits = int(operand.size)
-                    # Calculate the maximum value based on the given bit size
-                    #max_value = (1 << size_in_bits) - 1  # This is 2^bits - 1
-                    max_value = (1 << 12) - 1  # This is 2^12 - 1
-                    eval_operand = random.randint(0, max_value)
-                    #eval_operand = f"#{hex(random.randint(0, max_value))}"
-                else:
-                    eval_operand = "unknown"
+        elif operand.type_category == "register":
+            if operand.type == "reg" or "gpr_" in operand.type:
+                eval_operand = RegisterManager.get(reg_type="gpr")
+            elif "simdfp_scalar" in operand.type:
+                eval_operand = RegisterManager.get(reg_type="simd_fp")
+            elif operand.type == "sve_reg":
+                eval_operand = RegisterManager.get(reg_type="sve_reg")
+            elif operand.type == "sve_pred":
+                eval_operand = RegisterManager.get(reg_type="sve_pred")
             else:
-                eval_operand = optional_number
-                #eval_operand = f"#{hex(optional_number)}"
-        # TODO:: Need to fix all the below types
-        elif operand.type == "SHIFT":
-            eval_operand = "SHIFT"
-        elif operand.type == "SVE":
-            eval_operand = RegisterManager.get(reg_type="extended")
-        elif operand.type == "SIMD_FPR":
-            eval_operand = RegisterManager.get(reg_type="vector")
-        elif operand.type == "PREDICATE":
-            eval_operand = RegisterManager.get(reg_type="predicate")
-        elif operand.type == "UNKNOWN":
-            eval_operand = "UNKNOWN"
+                eval_operand = "UNKNOWN"
+        elif operand.type_category == "immediate":
 
+            if operand.type == "imm" or "imm" in operand.type:
+                optional_number = generate_random_immediate_for_instruction(selected_instruction.mnemonic)
+                if optional_number is None:
+                    size = operand.size
+                    if size != "unknown":
+                        size_in_bits = int(operand.size)
+                        # Calculate the maximum value based on the given bit size
+                        #max_value = (1 << size_in_bits) - 1  # This is 2^bits - 1
+                        max_value = (1 << 12) - 1  # This is 2^12 - 1
+                        eval_operand = random.randint(0, max_value)
+                        #eval_operand = f"#{hex(random.randint(0, max_value))}"
+                    else:
+                        eval_operand = "unknown"
+                else:
+                    eval_operand = optional_number
+                    #eval_operand = f"#{hex(optional_number)}"
+            else:
+                eval_operand = "unknown"
         elif operand.type == "mem":
             # For every memory usage, we will plant a dynamic_init instruction to place that memory address in a temp register
             # this is done to avoid using memories offset due to their formatting requirements and my lack of knowledge.
@@ -122,6 +123,8 @@ def generate_arm_asl(
         op_location += 1
 
     gen_instruction = GeneratedInstruction(mnemonic=selected_instruction.mnemonic, operands=evaluated_operands, comment=instruction_comment)
+
+    print(f"   Generated Instruction: {gen_instruction}")
 
     instruction_list.append(gen_instruction)
 

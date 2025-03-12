@@ -14,7 +14,8 @@ Configuration.Knobs.Template.scenario_query.set_value({"random_instructions":99,
 @AR.scenario_decorator(random=True)
 def random_instructions():
     AR.comment("inside random_instructions")
-    AR.generate(instruction_count=20)
+    with AR.Loop(counter=5):
+        AR.generate(instruction_count=20)
 
 
 @AR.scenario_decorator(random=True)
@@ -26,14 +27,10 @@ def mx_cross_v2g_scenario():
         AR.comment("inside Loop scope, generating 5 instructions")
         for _ in range(20):
             action = AR.choice(values={"mx": 80, "v2g": 80})
-            r1 = RegisterManager.get()
-            r2 = RegisterManager.get()
             if action == "mx":
-                AR.asm(f"mul {r1}, {r2}", comment="simple nop instruction")
+                AR.generate(instruction_count=10, query=(AR.Instruction.steering_class.contain("mx_pred")))
             else:
-                AR.asm(f"add {r1}, {r2}", comment="simple nop instruction")
-
-
+                AR.generate(query=(AR.Instruction.steering_class.contain("vx_v2x")))
 
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])

@@ -55,8 +55,11 @@ class Operand(BaseModel):
     instruction = ForeignKeyField(Instruction, backref="operands", on_delete="CASCADE")
     text = CharField()
     type = CharField()
+    type_category = CharField()
     role = CharField()
     size = IntegerField(null=True)
+    index = IntegerField(null=True)
+    width = IntegerField(null=True)
     element_size = IntegerField(null=True)
     is_optional = IntegerField(default=0)  # 0 = False, 1 = True
     #anchors = TextField(null=True)  # Stored as JSON string

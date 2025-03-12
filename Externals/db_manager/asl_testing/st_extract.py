@@ -168,7 +168,7 @@ if run_query:
                     st.subheader("Operands:")
                     if inst.operands:
                         for op in inst.operands:
-                            operand_txt = f"• {op.text} - {op.type} ({op.role})"
+                            operand_txt = f"• OP{op.index}: {op.text} type={op.type}, role={op.role}"
                             if op.is_optional:
                                 operand_txt += " (Optional)"
                             st.text(operand_txt)

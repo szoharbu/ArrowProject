@@ -18,9 +18,9 @@ def extract_operands(inst_data):
     operands_data = []
     var_encode = inst_data.get("var_encode", {})
     if var_encode is not None:
-        for operand_name, operand_info in var_encode.items():
+        for operand_text, operand_info in var_encode.items():
             operand_entry = {
-                "name": operand_name,  # Operand identifier (Rd, Rm, Rn)
+                "text": operand_text,  # Operand identifier (Rd, Rm, Rn)
                 "hibit": operand_info.get("hibit", None),  # High bit position
                 "width": operand_info.get("width", None),  # Bit width
                 "encode": operand_info.get("encode", ""),  # Encoding pattern
@@ -28,7 +28,8 @@ def extract_operands(inst_data):
                 "r31": operand_info.get("reginfo", {}).get("r31", "N/A"),  # Special register condition
                 "type": operand_info.get("reginfo", {}).get("type", "N/A"),  # Register type (e.g., gpr_64)
                 "use": operand_info.get("reginfo", {}).get("use", "N/A"),  # Operand role (dst, src)
-                "role": operand_info.get("reginfo", {}).get("use", "N/A"),
+                "role": "N/A",  # Similar to "use" field, with slight adjustments and more common name
+                "index": 0,  # Index of operand (1, 2, 3, 4)
                 # Similar to 'use' both more common name, keeping also the original 'use' name
             }
             operands_data.append(operand_entry)
@@ -36,21 +37,26 @@ def extract_operands(inst_data):
     # Sort operands by `hibit` (bit position) to determine order
     operands_data.sort(key=lambda op: op["hibit"])
 
+    def check_substring(strings, substring):
+        return any(substring in s for s in strings)
+
     index = 1
     # Add operand size and Index op1, op2, ...
     for operand in operands_data:
         operand["index"] = index
         index += 1
+        optional_names = [operand["type"], operand["text"]]
         # Possible types are: gpr_32, gpr_64, gpr_var, simdfp_scalar_128, simdfp_scalar_16, simdfp_scalar_32, simdfp_scalar_64, simdfp_scalar_8, simdfp_scalar_var, simdfp_vec, sve_pred, sve_reg
-        if "128" in operand["type"]:
+        if check_substring(optional_names, "128"):
             operand["size"] = 128
-        if "64" in operand["type"]:
+        if check_substring(optional_names, "64"):
             operand["size"] = 64
-        elif "32" in operand["type"]:
+        elif check_substring(optional_names, "32"):
             operand["size"] = 32
-        elif "16" in operand["type"]:
+        #elif "16" in optional_names:
+        elif check_substring(optional_names, "16"):
             operand["size"] = 16
-        elif "8" in operand["type"]:
+        elif check_substring(optional_names, "8"):
             operand["size"] = 8
         elif "simdfp" in operand["type"]:  # default operand size in Olympus
             operand["size"] = 128
@@ -59,13 +65,35 @@ def extract_operands(inst_data):
         else:
             operand["size"] = None
 
-        # Adding "role" while keeping the original "use", with slight naming adjustment dest instead of dst
+    # Adding "role" while keeping the original "use", with slight naming adjustment dest instead of dst
+    for operand in operands_data:
         if operand["use"] == "dst":
             operand["role"] == "dest"
         elif operand["use"] == "src":
             operand["role"] == "src"
         elif operand["use"] == "src_dst":
             operand["role"] == "src_dest"
+
+
+    # Adding operand category based on the operand type
+    for operand in operands_data:
+        '''
+        Operand types:
+        'imm19', 'imm5', 'sz', 'scale', 'immlo', 'Rt2', 'Xn', 'V', 'b5', 'imm7', 'shift', 'Rs', 'Pm',
+        'immr', 'Zn', 'i3h', 'uimm6', 'Rv', 'imm6', 'Zm', 'Rd', 'tszh', 'imm4', 'imm12', 'i4', 'off3',
+        'i3', 'Q', 'tsize', 'S', 'hw', 'o0', 'L', 'Zdn', 'sh', 'Rt', 'imm13', 'off2', 'immh', 'xs',
+        'N', 'Rm', 'op2', 'a', 'Pn', 'imm9h', 'Rn', 'Pd', 'Xm', 'CRm', 'simm7', 'size', 'i1', 'i2h',
+        'imm2', 'i2', 'imm16', 'imm8', 'Pg', 'i4h', 'op1', 'imm26', 'imm9', 'imm8h'
+        '''
+        if operand["type"] != "N/A":
+            # this mean reg_info is available
+            operand["type_category"] = "register"
+        elif "imm" in operand["text"]:
+            operand["type_category"] = "immediate"
+        # TODO:: need to extend it
+        else:
+            operand["type_category"] = "unknown"
+
 
     return operands_data
 
@@ -162,6 +190,10 @@ def populate_database(yaml_dict, force_reset=False):
             # Extract and insert operands
             operands_data = extract_operands(inst_data)
             instr_extended_operands = extended_operands(operands_data)
+            print(f"  syntax: {asm_template}")
+            for op in operands_data:
+                print(f"    operand {op}")
+
 
             # Insert instruction
             instruction = Instruction.create(
@@ -188,14 +220,16 @@ def populate_database(yaml_dict, force_reset=False):
             for operand in operands_data:
                 Operand.create(
                     instruction=instruction,  # Foreign key reference
-                    text=operand["name"],  # Rd, Rm, Rn
+                    text=operand["text"],  # Rd, Rm, Rn
                     type=operand["type"],  # gpr_64, gpr_32
+                    type_category=operand["type_category"], # register, immediate, unknown # TODO:: need to extend it
                     role=operand["role"],  # dst, src, src_dest
                     size=operand["size"],  # 8,16,32,64,128
                     index=operand["index"],  # 1,2..
                     width=operand["width"],
                     is_optional=0  # Default to 0, can be adjusted if needed
                 )
+
 
     print(f"Total instructions: {Instruction.select().count()}")
     print("Database populated successfully!")
