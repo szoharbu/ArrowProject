@@ -1,6 +1,8 @@
+from typing import List, Dict
+
 
 class Register:
-    def __init__(self, name, type:str, is_random:bool):
+    def __init__(self, name_mapping:Dict, type:str, default_size:int, is_random:bool):
         """
         Initializes a Register with a name and a reserved attribute
 
@@ -8,13 +10,23 @@ class Register:
         - name (str): The name of the register.
         - reserved (bool): Whether the register is reserved. Defaults to False.
         """
-        self.name = name
-        self.type = type # gpr, vector, extended, ...
+        self.name_mapping = name_mapping
+        self.type = type # gpr, vector, sve, ...
         self.is_random = is_random # some register can't get selected randomly
+        self.default_size = default_size # in gpr default is 64, in simd and sve default is 128
         self._reserve = False
+        self.name = f"{self.name_mapping[self.default_size]}"
 
     def is_reserve(self) -> bool:
         return self._reserve
+
+    def as_size(self, size:int) -> str:
+        # Convert the register to another available size.
+
+        if size in self.name_mapping:
+            return f"{self.name_mapping[size]}"
+        else:
+            raise ValueError(f"Size {size} is not available for {self.type} registers.")
 
     def set_reserve(self):
         self._reserve = True

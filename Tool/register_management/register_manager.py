@@ -25,12 +25,16 @@ class RegisterManager:
                 Special Purpose: RSP (stack pointer), RBP (base pointer), RIP (instruction pointer), FLAGS (status flags), CS, DS, ES, FS, GS, SS (segment registers).
                 SIMD/Float: XMM0 - XMM15 (for 128-bit floating-point operations).
             '''
-            for name in (["rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"]): # exclude "rsp"
-                reg = Register(name=name, type="gpr", is_random=True)
+            for name in (["ax", "bx", "cx", "dx", "si", "di", "bp"]):
+                reg = Register(name_mapping={64: f"r{name}", 32: f"r{name}", 16: name}, type="gpr", default_size=64, is_random=True)
                 self._registers_pool.append(reg)
 
-            for name in (["rsp"]):
-                reg = Register(name=name, type="gpr", is_random=False)
+            for name in (["r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"]):
+                reg = Register(name_mapping={64: {name}, 32: f"{name}d", 16:f"{name}w"}, type="gpr", default_size=64, is_random=True)
+                self._registers_pool.append(reg)
+
+            for name in (["sp"]):
+                reg = Register(name_mapping={64:f"r{name}",32:f"e{name}"}, type="gpr", default_size=64, is_random=False)
                 self._registers_pool.append(reg)
 
         elif Configuration.Architecture.riscv:
@@ -43,47 +47,59 @@ class RegisterManager:
             '''
             # TODO:: in some setting, there are 16 s-registers and 8 t-registers, need to check when, for now I reduced it to 12s and 6t
             for i in range(0,6):
-                reg = Register(name=f"t{i}", type="gpr", is_random=True)
+                reg = Register(name_mapping={64:f"t{i}"}, type="gpr", default_size=64, is_random=True)
                 self._registers_pool.append(reg)
             for i in range(0,12):
-                reg = Register(name=f"s{i}", type="gpr", is_random=True)
+                reg = Register(name_mapping={64:f"s{i}"}, type="gpr", default_size=64, is_random=True)
                 self._registers_pool.append(reg)
 
             for name in (["pc","x0","ra","sp"]):
-                reg = Register(name=name, type="gpr", is_random=False)
+                reg = Register(name_mapping={64:name}, type="gpr", default_size=64, is_random=False)
                 self._registers_pool.append(reg)
 
         elif Configuration.Architecture.arm:
             '''
             Summary of Common Registers in ARM64:
-                General Purpose: x0 - x30 (used for data storage, function arguments, etc.)
-                Special Purpose: sp (stack pointer), lr (link register), pc (program counter), xZR (zero register)
-                Floating-Point/SIMD: S0 - S31, D0 - D31, Q0 - Q15, V0 - V31
+                General Purpose: (used for data storage, function arguments, etc.)
+                    X0 - X30 - 64bit register (x31 is reserved for zero register)
+                    W0 - W30 - 32bit register (lower 32 bit of X registers)
+                    Special Purpose: sp (stack pointer), lr (link register), pc (program counter), W/XZR (zero register)
+                SIMD & FP:
+                    V0 - V31 - 128bit SIMD and FP registers
+                    Q0 - Q31 - 128bit SIMD and FP registers, just the legacy name and more common in AArch32 
+                    D0 - D31 - 64bit SIMD and FP registers (lower 64 bit of V registers)
+                    S0 - S31 - 32bit SIMD and FP registers (lower 32 bit of V registers)
+                    H0 - H31 - 16bit SIMD and FP registers (lower 16 bit of V registers)
+                    B0 - B31 - 8bit SIMD and FP registers (lower 8 bit of V registers)
+                SVE (Scalable Vector Extension):
+                    Z0 - Z31 - 128bit SVE registers
                 Condition Flags: NZCV (Negative, Zero, Carry, Overflow)
-                Frame Pointer: x29 (fp)
+                SPSR (Saved Program Status Register): Holds the saved state of the CPSR during an exception.
+                FAR (Fault Address Register): Holds the faulting address during an exception.
+                TPIDR_EL0 (Thread Pointer ID Register): Holds the thread ID of the current thread.
             '''
 
             ############################### GPR registers
             for i in range(0,29):
-                reg = Register(name=f"x{i}", type="gpr", is_random=True)
+                reg = Register(name_mapping={64:f"X{i}",32:f"W{i}"}, type="gpr", default_size=64, is_random=True)
                 self._registers_pool.append(reg)
 
             for name in (["sp","lr","pc","xzr", "fp"]):
-                reg = Register(name=name, type="gpr", is_random=False)
+                reg = Register(name_mapping={64:name,}, type="gpr", default_size=64, is_random=False)
                 self._registers_pool.append(reg)
 
-            ############################### Vector registers
+            ############################### SIMD&FP registers
             for i in range(0, 31):
-                reg = Register(name=f"v{i}", type="vector", is_random=True)
+                reg = Register(name_mapping={128:f"V{i}",64:f"D{i}",32:f"S{i}",16:f"H{i}",8:f"B{i}"}, type="simd_fp", default_size=128, is_random=True)
                 self._registers_pool.append(reg)
 
             ############################### Extended vector registers
             for i in range(0, 31):
-                reg = Register(name=f"z{i}", type="extended", is_random=True)
+                reg = Register(name_mapping={128:f"Z{i}"}, type="sve_reg", default_size=128, is_random=True)
                 self._registers_pool.append(reg)
 
             for i in range(0, 15):
-                reg = Register(name=f"p{i}", type="predicate", is_random=True)
+                reg = Register(name_mapping={16:f"P{i}"}, type="sve_pred", default_size=16, is_random=True)
                 self._registers_pool.append(reg)
 
         else:
