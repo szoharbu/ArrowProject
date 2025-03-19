@@ -34,7 +34,7 @@ mnemonic_input = tk.Entry(sidebar)
 mnemonic_input.pack(fill=tk.X)
 
 tk.Label(sidebar, text="⚙️ Source Type:").pack(anchor="w")
-src_type = ttk.Combobox(sidebar, values=get_unique_values("src1_type"))
+src_type = ttk.Combobox(sidebar, values=[""] + get_unique_values("src1_type"))
 src_type.pack(fill=tk.X)
 
 tk.Label(sidebar, text="⚙️ Source Size:").pack(anchor="w")
@@ -42,7 +42,7 @@ src_size = ttk.Combobox(sidebar, values=["", "8-bit", "16-bit", "32-bit", "64-bi
 src_size.pack(fill=tk.X)
 
 tk.Label(sidebar, text="⚙️ Destination Type:").pack(anchor="w")
-dest_type = ttk.Combobox(sidebar, values=get_unique_values("dest1_type"))
+dest_type = ttk.Combobox(sidebar, values=[""] + get_unique_values("dest1_type"))
 dest_type.pack(fill=tk.X)
 
 tk.Label(sidebar, text="⚙️ Destination Size:").pack(anchor="w")
@@ -50,7 +50,7 @@ dest_size = ttk.Combobox(sidebar, values=["", "8-bit", "16-bit", "32-bit", "64-b
 dest_size.pack(fill=tk.X)
 
 tk.Label(sidebar, text="⚙️ Steering Class:").pack(anchor="w")
-steering_class = ttk.Combobox(sidebar, values=get_unique_values("steering_class"))
+steering_class = ttk.Combobox(sidebar, values=[""] + get_unique_values("steering_class"))
 steering_class.pack(fill=tk.X)
 
 tk.Label(sidebar, text="⚙️ Max Latency:").pack(anchor="w")
@@ -188,7 +188,7 @@ tk.Button(sidebar, text="📥 Download DB YAML", command=download_yaml).pack(fil
 # tk.Button(sidebar, text="📥 Download USL JSON", command=download_usl).pack(fill=tk.X, pady=5)
 
 # ✅ **Show Last Modified Time**
-time_label = tk.Label(sidebar, text=f"Last Updated: {return_last_modified_date()}", fg="blue")
+time_label = tk.Label(sidebar, text=f"{return_last_modified_date()}", fg="blue")
 time_label.pack(pady=5)
 
 # Run the Tkinter event loop
