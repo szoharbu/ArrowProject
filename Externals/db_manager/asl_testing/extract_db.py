@@ -9,7 +9,6 @@ db_path = os.path.join(base_dir, 'db', 'arm_instructions_isalib.db')
 # Check if the file exists
 if not os.path.exists(db_path):
     raise ValueError(f"SQL DB file not found: {db_path}")
-#db_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/asl_testing/instructions.db"
 
 
 def return_last_modified_date():
@@ -131,18 +130,15 @@ def extract(selected_project,
     if max_latency:
         query = query.where(Instruction.max_latency==max_latency)
 
-
     return query
 
 if __name__ == "__main__":
 
     print("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")
-    #
     print(f"Total instructions: {Instruction.select().count()}")
 
-    #
-    # query = Instruction.select().where(Instruction.mnemonic == "add" and Instruction.operands['role'] == "src")
-    # print(f"Total instructions: {Instruction.select().count()}")
+    query = Instruction.select().where(Instruction.mnemonic == "add" and Instruction.operands['role'] == "src")
+    print(f"Total instructions: {Instruction.select().count()}")
 
     query = (Instruction.select().join(Operand).where(
         (Operand.role == "DEST") & (Operand.type == "PREDICATE") &

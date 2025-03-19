@@ -74,8 +74,7 @@ with st.sidebar.expander("⚙️ Arch Filters", expanded=False):
 
 
     src_type = st.selectbox("Source Type",
-                            all_src_types,
-                            #["", "GPR", "SIMD_FPR", "SVE", "IMMEDIATE", "LABEL", "SHIFT"],
+                            all_src_types,     #["", "GPR", "SIMD_FPR", "SVE", "IMMEDIATE", "LABEL", "SHIFT"],
                             help="Filters instructions where at least ONE operand has this source type.")
 
     src_size = st.selectbox("Source Size",
@@ -83,8 +82,7 @@ with st.sidebar.expander("⚙️ Arch Filters", expanded=False):
                             help="Filters instructions where at least ONE operand has this source size.")
 
     dest_type = st.selectbox("Destination Type",
-                             #["", "GPR", "SIMD_FPR", "SVE", "IMMEDIATE", "LABEL", "SHIFT"],
-                             all_dest_types,
+                             all_dest_types,   #["", "GPR", "SIMD_FPR", "SVE", "IMMEDIATE", "LABEL", "SHIFT"],
                              help="Filters instructions where at least ONE operand has this destination type.")
 
     dest_size = st.selectbox("Destination Size",
@@ -198,36 +196,52 @@ st.sidebar.markdown("For suggestions, issues, or questions, contact **Zohar Buch
 
 
 st.sidebar.markdown("---")  # Adds a horizontal line for separation
-st.sidebar.markdown("📝 **JSON Database**")
-
-# Download Jsons
-col3, col4 = st.sidebar.columns([2, 2])  # Wider column for results, smaller for input
+st.sidebar.markdown("📝 **YAML Database**")
 
 time = return_last_modified_date()
 st.sidebar.markdown(time)
 
-# Read the JSON file
-arm_asl_instructions_json_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/instruction_jsons/arm_asl_instructions.json"
-with open(arm_asl_instructions_json_path, "r", encoding="utf-8") as f:
-    asl_json_data = f.read()  # Read file content as string
-with col3:
-    st.download_button(
-        label="📥 ASL JSON",
-        data=asl_json_data,
-        file_name="arm_asl_instructions.json",
-        mime="application/json",
-        help="Click to download ASL as a JSON file."
-    )
+# Read the YAML file
+arm_asl_instructions_yaml_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/instruction_jsons/arm_isalib_extended.yml"
+with open(arm_asl_instructions_yaml_path, "r", encoding="utf-8") as f:
+    asl_json_yaml = f.read()  # Read file content as string
+st.sidebar.download_button(
+    label="📥 Database YML",
+    data=asl_json_yaml,
+    file_name="arm_isalib_extended.yml",
+    mime="application/yaml",
+    help="Click to download DB as a YAML file."
+)
 
-# Read the JSON file
-arm_usl_instructions_json_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/instruction_jsons/arm_usl_instructions.json"
-with open(arm_usl_instructions_json_path, "r", encoding="utf-8") as f:
-    usl_json_data = f.read()  # Read file content as string
-with col4:
-    st.download_button(
-        label="📥 USL JSON",
-        data=usl_json_data,
-        file_name="arm_usl_instructions.json",
-        mime="application/json",
-        help="Click to download USL as a JSON file."
-    )
+#
+# # Download Jsons
+# col3, col4 = st.sidebar.columns([2, 2])  # Wider column for results, smaller for input
+#
+# time = return_last_modified_date()
+# st.sidebar.markdown(time)
+#
+# # Read the JSON file
+# arm_asl_instructions_json_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/instruction_jsons/arm_asl_instructions.json"
+# with open(arm_asl_instructions_json_path, "r", encoding="utf-8") as f:
+#     asl_json_data = f.read()  # Read file content as string
+# with col3:
+#     st.download_button(
+#         label="📥 ASL JSON",
+#         data=asl_json_data,
+#         file_name="arm_asl_instructions.json",
+#         mime="application/json",
+#         help="Click to download ASL as a JSON file."
+#     )
+#
+# # Read the JSON file
+# arm_usl_instructions_json_path = "C:/Users/zbuchris/PycharmProjects/ArrowProject/Externals/db_manager/instruction_jsons/arm_usl_instructions.json"
+# with open(arm_usl_instructions_json_path, "r", encoding="utf-8") as f:
+#     usl_json_data = f.read()  # Read file content as string
+# with col4:
+#     st.download_button(
+#         label="📥 USL JSON",
+#         data=usl_json_data,
+#         file_name="arm_usl_instructions.json",
+#         mime="application/json",
+#         help="Click to download USL as a JSON file."
+#     )
