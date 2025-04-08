@@ -1,22 +1,25 @@
 from typing import Optional
 from Utils.configuration_management import Configuration
 from Tool.asm_blocks.data_unit import get_last_user_context
-
+from Utils.statistics_managment import get_statistics_manager
 
 
 class AsmUnit:
     def __init__(
             self,
             *,
-            prefix:str=None,
-            mnemonic: Optional[str]=None,
-            operands: Optional[list]=None,
-            asm_string: Optional[str]=None,
-            comment: Optional[str]=None,
+            prefix: str = None,
+            mnemonic: Optional[str] = None,
+            operands: Optional[list] = None,
+            asm_string: Optional[str] = None,
+            comment: Optional[str] = None,
     ):
         """
         Initializes an AsmUnit from an asm, generate or comment syntax. and can later be published into the asm file
         """
+
+        statistics_manager = get_statistics_manager()
+        statistics_manager.increment("asm_unit_count")
 
         if asm_string is not None and (mnemonic is not None or operands is not None):
             raise ValueError("asm_string and mnemonic or operands are mutually excluded.")
@@ -37,7 +40,7 @@ class AsmUnit:
         self.asm_string = asm_string
         self.comment = comment
 
-        #extract context to generated data
+        # extract context to generated data
         self.file_name, self.file_name_shortened_path, self.line_number = get_last_user_context()
 
         self.extended_comment = ""
@@ -53,13 +56,14 @@ class AsmUnit:
             self.asm_unit += f" {get_comment_mark()} {self.comment}"
 
         # add file and line Inspect
-        self.asm_unit = format_with_alignment(self.asm_unit, f"{get_comment_mark()} ( From {self.file_name_shortened_path}, line {self.line_number})")
+        self.asm_unit = format_with_alignment(self.asm_unit,
+                                              f"{get_comment_mark()} ( From {self.file_name_shortened_path}, line {self.line_number})")
 
-        #print(f"   {self.asm_unit}")
-
+        # print(f"   {self.asm_unit}")
 
     def __str__(self):
         return self.asm_unit
+
 
 def get_comment_mark():
     if Configuration.Architecture.x86:
@@ -70,7 +74,6 @@ def get_comment_mark():
         return "//"
     else:
         raise ValueError(f"Unknown Architecture requested")
-
 
 
 def format_with_alignment(main_text, comment, width=120):
@@ -90,3 +93,4 @@ def format_with_alignment(main_text, comment, width=120):
 
     # Append the comment, which will start after the padded main text
     return f"{aligned_text}{comment}"
+
