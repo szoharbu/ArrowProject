@@ -10,7 +10,7 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A])
 def bypass_bursts():
-    num_burst = random.randint(2,4)
+    num_burst = random.randint(8,15)
     for _ in range(num_burst):
         strategy = random.choice(["long_chain", "short_gap", "load_use", "reuse_noise", "fan_out", "mixed"])
 
@@ -42,7 +42,6 @@ def bypass_bursts():
 
 def generate_dependency_pattern(
     chain_length: int = 0,
-    base_reg: str = "R0",
     gap: int = 0,
     use_load: bool = False,
     register_reuse_prob: float = 0.0,
@@ -52,14 +51,17 @@ def generate_dependency_pattern(
     """
     Generate a sequence of instructions with controlled dependencies and hazards.
     """
-    current_reg = RegisterManager.get()
+    base_reg = RegisterManager.get_and_reserve(reg_type="gpr")
+    current_reg = base_reg
 
+    use_load = False # WA as Memory is not fully supported yet TODO:: need to fix it!!
     if use_load:
         mem = MemoryManager.Memory(shared=False)
         AR.generate(dest=current_reg, src=mem , comment="generate_dependency_pattern: load from memory")
 
     for i in range(chain_length):
-        next_reg = RegisterManager.get()
+        next_reg = RegisterManager.get(reg_type="gpr")
+
         AR.generate(dest=next_reg, src=current_reg, comment=f"generate_dependency_pattern: chain link {i}")
 
         if gap > 0 and include_noise:
@@ -67,10 +69,11 @@ def generate_dependency_pattern(
                 AR.generate(instruction_count=random.randint(1,2), comment="generate_dependency_pattern: random gap")
 
         for _ in range(fan_out - 1):
-            AR.generate(query=mnemonic == "mul", src=next_reg)
+            AR.generate(query=(AR.Instruction.mnemonic.contains("mul")), src=next_reg)
 
         current_reg = next_reg
 
         if random.random() < register_reuse_prob:
             current_reg = base_reg
 
+    RegisterManager.free(base_reg)
