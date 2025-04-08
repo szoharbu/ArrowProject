@@ -139,4 +139,3 @@ def generate(
         instruction_list.extend(gen_instructions)
 
     return instruction_list
-

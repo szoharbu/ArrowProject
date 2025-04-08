@@ -32,7 +32,7 @@ class Instruction(BaseModel):
     random_generate = BooleanField(default=False)  # New boolean flag with a default
     asl_info = TextField(null=True)  # Full ASL JSON
     usl_info = TextField(null=True)  # Full USL JSON
-
+    is_valid = BooleanField(default=True)  # New boolean flag with a default
     # redundant fields to reduce the number of joins
     src1_size = IntegerField(null=True)
     src1_type = CharField(null=True)
@@ -54,6 +54,7 @@ class Instruction(BaseModel):
 class Operand(BaseModel):
     instruction = ForeignKeyField(Instruction, backref="operands", on_delete="CASCADE")
     text = CharField()
+    syntax = CharField()
     type = CharField()
     type_category = CharField()
     role = CharField()
@@ -61,7 +62,10 @@ class Operand(BaseModel):
     index = IntegerField(null=True)
     width = IntegerField(null=True)
     element_size = IntegerField(null=True)
+    extensions = TextField(null=True)  # a JSON list of extensions like .T, /M, etc
     is_optional = IntegerField(default=0)  # 0 = False, 1 = True
+    is_operand = BooleanField(default=True)  # New boolean flag with a default
+    is_valid = BooleanField(default=True)  # New boolean flag with a default
     #anchors = TextField(null=True)  # Stored as JSON string
 
     class Meta:
