@@ -35,12 +35,27 @@ def find_possible_locations(operands, role, type):
         list of int: List of valid indices where the operand can be placed.
     """
     possible_locations = []
-    for i, op in enumerate(operands):
-        if (op['type'] == type) and (op['role'] == role):
-            possible_locations.append(i)
+    index = 1   # index start from 1 not 0
+    for op in operands:
+        #print(f'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz op_type {op.type}, op_role {op.role}, wanted_type {type}, wanted_role {role}')
+        if not op.is_operand:
+            continue
+        if (op.type == type) or (type == "gpr" and op.type.startswith("gpr")) or (type == "simdfp" and op.type.startswith("simdfp")):
+            if (op.role == role) or (op.role == "src_dest" and (role == "src" or role == "dest")):
+                possible_locations.append(index)
+        # if (op.type == type) and (op.role == role):
+        #     possible_locations.append(index)
+        # elif (op.type == type) and (op.role == "src_dest") and ((role == "src") or (role == "dest")):
+        #     possible_locations.append(index)
+        # elif type == "gpr" and op.type.startswith("gpr") and (op.role == role):
+        #     possible_locations.append(index)
+        # elif type == "simdfp" and op.type.startswith("simdfp") and (op.role == role):
+        #     possible_locations.append(index)
+        index += 1
     if not possible_locations:
         raise ValueError(f"Couldn't find possible location that match {role} {type} operand")
     else:
+        print(f"   find_possible_locations for {role} {type} operand: {possible_locations}")
         return possible_locations
 
 
@@ -53,11 +68,10 @@ def map_inputs_to_operands(selected_instruction, src, dest):
     src_location = None
     dest_location = None
     if src is not None:
-        src_locations = find_possible_locations(selected_instruction.operands, role="src", type=get_operand_type(src))
+        src_locations = find_possible_locations(selected_instruction.operands, role="src", type=src.type)
         src_location = random.choice(src_locations)
     if dest is not None:
-        dest_locations = find_possible_locations(selected_instruction.operands, role="dest",
-                                                 type=get_operand_type(dest))
+        dest_locations = find_possible_locations(selected_instruction.operands, role="dest", type=dest.type)
         dest_location = random.choice(dest_locations)
     if dest is not None and src is not None:
         # if both src/dest input was provided, need to make sure they dont targeting the same operand

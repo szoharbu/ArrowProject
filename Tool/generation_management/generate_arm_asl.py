@@ -1,7 +1,7 @@
 import random
+import ast
 from typing import Optional, Any, List
-#from Externals.db_manager.models import Instruction
-from Externals.db_manager.asl_testing.asl_models import Instruction, Operand
+from Externals.db_manager.asl_testing.asl_models import Instruction
 from Tool.asm_libraries.label import Label
 from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
@@ -9,47 +9,45 @@ from Utils.APIs.choice import choice
 # from Tool.frontend.sources_API import Sources
 from Tool.memory_management.memory import Memory
 from Tool.state_management import get_current_state
+from Utils.configuration_management import get_config_manager
 
-import ast
 
 def generate_arm_asl(
         selected_instruction: Instruction,
         src: Any = None,
         dest: Any = None,
         comment: Optional[str] = None,
-) -> List[GeneratedInstruction]: # some instances might require dynamic init
+) -> List[GeneratedInstruction]:  # some instances might require dynamic init
 
     current_state = get_current_state()
     RegisterManager = current_state.register_manager
+    config_manager = get_config_manager()
 
     instruction_comment = comment
-    instruction_list = [] # some instances might require dynamic init
+    instruction_list = []  # some instances might require dynamic init
 
     # convert the operand from a string into a list of operands
     if isinstance(selected_instruction.operands, str):
         selected_instruction.operands = ast.literal_eval(selected_instruction.operands)
 
-    print(f"--------------------- generate_arm_asl -------------------------")
-    print(f"   Selected Instruction: {selected_instruction.syntax}")
+    debug_mode = config_manager.get_value('Debug_mode')
+    if debug_mode:
+        print(f"   Selected Instruction: {selected_instruction.syntax}")
 
     # Sort the operands list by index
     sorted_operands = sorted(selected_instruction.operands, key=lambda op: op.index)
 
-    for op in sorted_operands:
-        if op.is_operand and not op.is_valid:
-            print(f"        Skipping instruction!!! operand {op.text} is not parsed correctly yet.")
-            return []
-
-    for op in sorted_operands:
-        op_info_str = f"text: {op.text}, Category: {op.type_category}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width}"
-        if op.is_operand:
-            if op.is_valid:
-                print(f"        - valid operand {op.index} : {op_info_str}")
+    if debug_mode:
+        for op in sorted_operands:
+            op_info_str = f"text: {op.text}, Category: {op.type_category}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width}, extensions: {op.extensions}, is_valid: {op.is_valid}"
+            if op.is_operand:
+                print(f"        - operand {op.index} : {op_info_str}")
+                # if op.is_valid:
+                #     print(f"        - valid operand {op.index} : {op_info_str}")
+                # else:
+                #     print(f"        - invalid operand {op.index} : {op_info_str}")
             else:
-                print(f"        - invalid operand {op.index} : {op_info_str}")
-        else:
-            print(f"        - attribute : {op_info_str}")
-
+                print(f"        - attribute : {op_info_str}")
 
     # set True or False if one of the operands has memory type
     memory_usage = any(operand.type == "mem" for operand in selected_instruction.operands)
@@ -71,7 +69,9 @@ def generate_arm_asl(
         if memory_operand.reused_memory:
             comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} for next instruction"
 
-        dynamic_init_instruction = GeneratedInstruction(mnemonic='ldr', operands=[dynamic_init_memory_address_reg, f"={memory_operand._memory_initial_seed_id}"], comment=comment)
+        dynamic_init_instruction = GeneratedInstruction(mnemonic='ldr', operands=[dynamic_init_memory_address_reg,
+                                                                                  f"={memory_operand._memory_initial_seed_id}"],
+                                                        comment=comment)
 
         instruction_list.append(dynamic_init_instruction)
 
@@ -79,26 +79,32 @@ def generate_arm_asl(
 
     # evaluate operands
     evaluated_operands = []
-    op_location = 0
-    size_specifier = None
+    op_location = 1
     zdn_register = None
+    extensions_index = None
 
     for op in sorted_operands:
-        #print(f"       - Operand{op.index}: {op.text}, Category: {op.type_category}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width} ")
         if not op.is_operand:
             continue
         if not op.is_valid:
             raise TypeError(f"Invalid operand type {op}, please check the instruction and operands in the database")
         if src_location == op_location:
+            print(f"   src_location == op_location == {op_location}")
             if isinstance(src, Memory):
                 eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
             else:
-                eval_operand = src
+                eval_operand = src.as_size(op.size)
+                print(
+                    f"    src is {src}, size is {op.size}, src.as_size(op.size): {src.as_size(op.size)}  ==> eval_operand: {eval_operand}")
         elif dest_location == op_location:
+            print(f"   dest_location == op_location == {op_location}")
             if isinstance(dest, Memory):
                 eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
             else:
-                eval_operand = dest
+                eval_operand = dest.as_size(op.size)
+                print(
+                    f"    dest is {dest}, size is {op.size}, dest.as_size(op.size): {dest.as_size(op.size)}  ==> eval_operand: {eval_operand}")
+
         elif op.type_category == "register":
             if op.type == "reg" or "gpr_" in op.type:
                 if op.type == "gpr_var":
@@ -107,9 +113,9 @@ def generate_arm_asl(
                 else:
                     eval_operand = RegisterManager.get(reg_type="gpr").as_size(op.size)
             elif "simdfp_scalar" in op.type:
-                eval_operand = RegisterManager.get(reg_type="simd_fp").as_size(op.size)
+                eval_operand = RegisterManager.get(reg_type="simdfp").as_size(op.size)
             elif "simdfp_vec" in op.type:
-                eval_operand = RegisterManager.get(reg_type="simd_fp").as_size(op.size)
+                eval_operand = RegisterManager.get(reg_type="simdfp").as_size(op.size)
             elif op.type == "sve_reg":
                 eval_operand = RegisterManager.get(reg_type="sve_reg")
                 if op.syntax == "Zdn":
@@ -120,24 +126,15 @@ def generate_arm_asl(
                         # we already have a Zdn register, we need to use the same one
                         eval_operand = zdn_register
             elif op.type == "sve_pred":
-                eval_operand = RegisterManager.get(reg_type="sve_pred")
+                if op.width == 4:
+                    eval_operand = RegisterManager.get(reg_type="sve_pred")
+                elif op.width == 3:
+                    # if width is 3, we need to check if there are any free predicate registers available at the range of p0-p7
+                    eval_operand = RegisterManager.get(reg_type="sve_pred_low")
+                else:
+                    raise ValueError(f"Invalid width for SVE predicate register: {op.width}")
             else:
                 eval_operand = "UNKNOWN"
-
-            # handle extensions
-            if op.extensions != "[]":
-                extensions = ast.literal_eval(op.extensions)
-                if ".T" in extensions:
-                    if size_specifier is None:
-                        size_specifier = choice(values=["B", "H", "S", "D"])
-                    eval_operand = f"{eval_operand}.{size_specifier}"
-                elif "SP" in op.extensions:
-                    if "31" in eval_operand:
-                        # when asm_template contains <Xn|SP> , it means the register can be r1..30 or SP, r31 is not allowed
-                        # in this logic, I just replace r31 with SP. #TODO:: need to replace with a smarter logic
-                        eval_operand = RegisterManager.get(reg_type="gpr", reg_name="SP")
-                else:
-                    eval_operand = f"{eval_operand}{extensions[0]}"
 
         elif op.type_category == "immediate":
             if op.width is not None:
@@ -152,47 +149,45 @@ def generate_arm_asl(
         elif op.type == "label":
             eval_operand = Label(postfix=f"generate")
         elif op.type == "condition":
-            random_condition = choice(values=["EQ","LT","LE","GT","GE"]) # NEQ create invalid condition?
+            random_condition = choice(values=["EQ", "LT", "LE", "GT", "GE"])  # NEQ create invalid condition?
             eval_operand = random_condition
         else:
             eval_operand = "unknown"
-            #raise ValueError(f"invalid operand type {operand.type} at selected instruction {selected_instruction.mnemonic}")
+            # raise ValueError(f"invalid operand type {operand.type} at selected instruction {selected_instruction.mnemonic}")
+
+        # handle extensions
+        if op.extensions != "[]":
+            extensions = ast.literal_eval(op.extensions)
+            if len(extensions) > 1:
+                if extensions_index is None:
+                    extensions_index = random.randint(0, len(extensions) - 1)
+                eval_operand = f"{eval_operand}.{extensions[extensions_index]}"
+            elif "SP" in op.extensions:
+                if "31" in eval_operand:
+                    # when asm_template contains <Xn|SP> , it means the register can be r0..30 or SP, r31 is not allowed
+                    # in this logic, I just replace r31 with SP. #TODO:: need to replace with a smarter logic
+                    eval_operand = RegisterManager.get(reg_type="gpr", reg_name="SP")
+            else:
+                eval_operand = f"{eval_operand}{extensions[0]}"
 
         evaluated_operands.append(eval_operand)
         op_location += 1
 
-    gen_instruction = GeneratedInstruction(mnemonic=selected_instruction.mnemonic, operands=evaluated_operands, comment=instruction_comment)
+    gen_instruction = GeneratedInstruction(mnemonic=selected_instruction.mnemonic, operands=evaluated_operands,
+                                           comment=instruction_comment)
 
-    print(f"   Generated Instruction: {gen_instruction}")
-
-    instruction_list.append(gen_instruction)
+    # print(f"    Generated Instruction: {gen_instruction}")
 
     if memory_usage:
         RegisterManager.free(dynamic_init_memory_address_reg)
 
+    instruction_list.append(gen_instruction)
+
     return instruction_list
 
 
-def generate_random_immediate_based_in_width(width:int):
+def generate_random_immediate_based_in_width(width: int):
     if width <= 0:
         raise ValueError("Bit width must be greater than 0")
     max_value = (1 << width) - 1  # Compute the maximum value for this bit width
     return random.randint(0, max_value)
-
-def assemble_instruction(instruction):
-    import subprocess
-    assembler_path = "aarch64-unknown-linux-gnu-as"
-    assembler_flags = ["-march=armv9-a+cssc+bf16"]
-    asm_code = instruction + "\n"
-    with open("temp.asm", "w") as f:
-        f.write(asm_code)
-
-    cmd = [assembler_path] + assembler_flags + ["-o", "temp.o", "temp.asm"]
-    try:
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        print(f"Assembled instruction: {instruction}")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"Error assembling instruction: {instruction} - {e.output.decode('utf-8')}")
-        return False
-
