@@ -40,6 +40,8 @@ class Tag(Enum):
     MEMORY = "memory"
     STACK = "stack"
     REST = "rest"  # Special tag representing all available tags
+    DISPATCH = "dispatch"
+    BRANCH = "branch"
 
 
 class Priority(Enum):

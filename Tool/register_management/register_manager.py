@@ -90,7 +90,7 @@ class RegisterManager:
 
             ############################### SIMD&FP registers
             for i in range(0, 31):
-                reg = Register(name_mapping={128:f"v{i}",64:f"d{i}",32:f"s{i}",16:f"h{i}",8:f"b{i}"}, type="simd_fp", default_size=128, is_random=True)
+                reg = Register(name_mapping={128:f"v{i}",64:f"d{i}",32:f"s{i}",16:f"h{i}",8:f"b{i}"}, type="simdfp", default_size=128, is_random=True)
                 self._registers_pool.append(reg)
 
             ############################### Extended vector registers
@@ -112,7 +112,7 @@ class RegisterManager:
         """
         #return [register for register in self._random_register_pool if not register.is_reserve()]
         if reg_type is None:
-            return [register for register in self._registers_pool if (not register.is_reserve() and register.is_random ==True)]
+            return [register for register in self._registers_pool if (not register.is_reserve() and register.is_random==True)]
         else:
             return [register for register in self._registers_pool
                     if (not register.is_reserve() and register.type==reg_type and register.is_random==True)]
@@ -138,7 +138,14 @@ class RegisterManager:
                     return reg
             raise ValueError(f'Invalid value, register {reg_name} is not part of registers list ')
         else:
-            free_regs = self.get_free_registers(reg_type=reg_type)
+            if reg_type == "sve_pred_low":
+                # if reg_type is sve_pred_low, we need to check if there are any free predicate registers available at the range of p0-p7 , which is a subset of sve_pred (p0-p17)
+                all_free_regs = self.get_free_registers(reg_type="sve_pred")
+                low_registers = [reg for reg in all_free_regs if reg.name in ["p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"]]
+                free_regs = low_registers
+            else:
+                free_regs = self.get_free_registers(reg_type=reg_type)
+
             if free_regs:
                 if Configuration.Architecture.riscv:
                     # in riscv, try preferring temp registers when ask for get, and saved registers when asked for get_and_reserve

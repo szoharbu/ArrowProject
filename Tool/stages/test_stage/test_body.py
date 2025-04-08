@@ -7,6 +7,7 @@ from Tool.scenario_management import ScenarioWrapper, get_scenario_manager
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Utils.APIs import choice
 from Tool.asm_libraries.branch_to_segment import branch_to_segment
+from Utils.statistics_managment import get_statistics_manager
 
 
 def execute_scenario(scenario_instance):
@@ -15,6 +16,9 @@ def execute_scenario(scenario_instance):
     # Check if we got a ScenarioWrapper instance
     if not isinstance(scenario_instance, ScenarioWrapper):
         raise ValueError("Error: Expected a ScenarioWrapper instance but got:", type(scenario_instance))
+
+    statistics_manager = get_statistics_manager()
+    statistics_manager.increment("scenario_count")
 
     scenario_instance.func()  # Call the wrapped function
 
