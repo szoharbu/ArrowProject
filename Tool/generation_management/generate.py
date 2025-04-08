@@ -61,6 +61,20 @@ def generate(
     # Start with a base query for instructions
     query_filter = Instruction.select()
 
+    # # Print all instructions
+    # query_filter = query_filter[20:30]
+    # for instr in list(query_filter):
+    #     print(f"   Instruction: {instr.syntax}")
+    #     # Sort the operands list by index
+    #     sorted_operands = sorted(instr.operands, key=lambda op: op.index)
+    #     for op in sorted_operands:
+    #         if op.index != -1:
+    #             print(f"     Operand{op.index}: text: {op.text}, Category: {op.type_category}, Index: {op.index}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width} ")
+    #         else:
+    #             print(f"     attribute: text: {op.text}, Category: {op.type_category}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width} ")
+    # exit()
+
+
     # Filter out all random_generate=False instructions
     query_filter = query_filter.where(Instruction.random_generate == True)
 

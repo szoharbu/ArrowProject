@@ -26,7 +26,7 @@ class Register:
         if size in self.name_mapping:
             return f"{self.name_mapping[size]}"
         else:
-            raise ValueError(f"Size {size} is not available for {self.type} registers.")
+            raise ValueError(f"Size {size} is not available for {self.type} registers. valid sizes are {self.name_mapping.keys()}")
 
     def set_reserve(self):
         self._reserve = True

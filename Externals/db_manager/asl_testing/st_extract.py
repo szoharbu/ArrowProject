@@ -100,6 +100,7 @@ with st.sidebar.expander("⚙️ UArch Filters", expanded=False):
     # Use session state for result limit
     # Query database for all unique steering_class values
     steering_class_list = get_unique_values("steering_class")
+    steering_class_list.insert(0,"") # add an empty option
     selected_steering_classes = st.multiselect(
         "Steering Class",
         steering_class_list,

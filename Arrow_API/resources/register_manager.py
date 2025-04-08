@@ -8,38 +8,38 @@ class RegisterManager_API:
     from Tool.register_management import register_manager
 
     @staticmethod
-    def get_free_registers() -> list[register_manager.Register]:
+    def get_free_registers(reg_type:str=None) -> list[register_manager.Register]:
         """
         Returns a list of all free registers.
         """
         current_state = _get_current_state()
-        return current_state.register_manager.get_free_registers()
+        return current_state.register_manager.get_free_registers(reg_type)
 
     @staticmethod
-    def get_used_registers() -> list[register_manager.Register]:
+    def get_used_registers(reg_type:str=None) -> list[register_manager.Register]:
         """
         Returns a list of all reserved registers.
         """
         current_state = _get_current_state()
-        return current_state.register_manager.get_used_registers()
+        return current_state.register_manager.get_used_registers(reg_type)
 
     @staticmethod
-    def get(reg_name:str=None) -> register_manager.Register:
+    def get(reg_name:str=None, reg_type:str=None) -> register_manager.Register:
         """
         Selects a random free register, don't mark them as used (reserved = False),
         and returns the selected register. If no available child is found, raise Error
         """
         current_state = _get_current_state()
-        return current_state.register_manager.get(reg_name)
+        return current_state.register_manager.get(reg_name, reg_type)
 
     @staticmethod
-    def get_and_reserve() -> register_manager.Register:
+    def get_and_reserve(reg_type:str="gpr") -> register_manager.Register:
         """
         Selects a random free register, marks them as used (reserved = True),
         and returns the selected register. If no available child is found, raise Error
         """
         current_state = _get_current_state()
-        return current_state.register_manager.get_and_reserve()
+        return current_state.register_manager.get_and_reserve(reg_type)
 
     @staticmethod
     def reserve(register: register_manager.Register):

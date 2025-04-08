@@ -81,7 +81,7 @@ class RegisterManager:
 
             ############################### GPR registers
             for i in range(0,29):
-                reg = Register(name_mapping={64:f"X{i}",32:f"W{i}"}, type="gpr", default_size=64, is_random=True)
+                reg = Register(name_mapping={64:f"x{i}",32:f"w{i}"}, type="gpr", default_size=64, is_random=True)
                 self._registers_pool.append(reg)
 
             for name in (["sp","lr","pc","xzr", "fp"]):
@@ -90,16 +90,16 @@ class RegisterManager:
 
             ############################### SIMD&FP registers
             for i in range(0, 31):
-                reg = Register(name_mapping={128:f"V{i}",64:f"D{i}",32:f"S{i}",16:f"H{i}",8:f"B{i}"}, type="simd_fp", default_size=128, is_random=True)
+                reg = Register(name_mapping={128:f"v{i}",64:f"d{i}",32:f"s{i}",16:f"h{i}",8:f"b{i}"}, type="simd_fp", default_size=128, is_random=True)
                 self._registers_pool.append(reg)
 
             ############################### Extended vector registers
             for i in range(0, 31):
-                reg = Register(name_mapping={128:f"Z{i}"}, type="sve_reg", default_size=128, is_random=True)
+                reg = Register(name_mapping={128:f"z{i}"}, type="sve_reg", default_size=128, is_random=True)
                 self._registers_pool.append(reg)
 
             for i in range(0, 15):
-                reg = Register(name_mapping={16:f"P{i}"}, type="sve_pred", default_size=16, is_random=True)
+                reg = Register(name_mapping={16:f"p{i}"}, type="sve_pred", default_size=16, is_random=True)
                 self._registers_pool.append(reg)
 
         else:
@@ -112,9 +112,10 @@ class RegisterManager:
         """
         #return [register for register in self._random_register_pool if not register.is_reserve()]
         if reg_type is None:
-            return [register for register in self._registers_pool if not register.is_reserve()]
+            return [register for register in self._registers_pool if (not register.is_reserve() and register.is_random ==True)]
         else:
-            return [register for register in self._registers_pool if (not register.is_reserve() and register.type==reg_type)]
+            return [register for register in self._registers_pool
+                    if (not register.is_reserve() and register.type==reg_type and register.is_random==True)]
 
 
     def get_used_registers(self, reg_type:str=None) -> list[Register]:
