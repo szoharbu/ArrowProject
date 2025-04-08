@@ -5,8 +5,8 @@ import traceback
 from pathlib import Path
 from Externals.cloud.upload_run_statistics import upload_statistics
 
-def main(args=None):
 
+def main(args=None):
     start_time = time.time()
 
     ensure_correct_setting()
@@ -14,6 +14,7 @@ def main(args=None):
     from Utils.arg_parser.arg_parser import parse_arguments
     from Utils.logger_management import get_logger
     from Utils.configuration_management import get_config_manager
+    from Utils.statistics_managment import get_statistics_manager
 
     set_basedir_path()
 
@@ -25,15 +26,15 @@ def main(args=None):
 
         from Tool.stages import input_stage, evaluation_stage, init_stage, test_stage, final_stage
 
-        input_stage.read_inputs()          # Read inputs, read template, read configuration, ARM/riscv, ...
-        evaluation_stage.evaluate_section() # review all configs and knobs, set them according to some logic and seal them ...
-        init_stage.init_section()           # initialize the state, register, memory and other managers.
-        test_stage.test_section()           # boot, body (foreach core, foreach scenario), test final
+        input_stage.read_inputs()  # Read inputs, read template, read configuration, ARM/riscv, ...
+        evaluation_stage.evaluate_section()  # review all configs and knobs, set them according to some logic and seal them ...
+        init_stage.init_section()  # initialize the state, register, memory and other managers.
+        test_stage.test_section()  # boot, body (foreach core, foreach scenario), test final
 
         logger.info("Test generated successful :)")
         dump_time(start_time, "Test generation")
 
-        final_stage.final_section()         # post flows?
+        final_stage.final_section()  # post flows?
 
     except Exception as e:
         logger.warning("Test failed :(")
@@ -44,6 +45,11 @@ def main(args=None):
 
     else:
         # Test was successful
+
+        statistics_manager = get_statistics_manager()
+        logger.info(
+            f"Test generated {statistics_manager.get('scenario_count')} scenarios and {statistics_manager.get('asm_unit_count')} instructions")
+
         duration = dump_time(start_time, "Test total")
         logger.info("Test was successful :)\n")
         logger.info("Mission accomplished...")
@@ -60,15 +66,16 @@ def main(args=None):
     return True
 
 
-def dump_time(start_time, message_header = None) -> str:
+def dump_time(start_time, message_header=None) -> str:
     from Utils.logger_management import get_logger
     logger = get_logger()
 
     current_time = time.time()  # Capture current time
-    duration = current_time - start_time # Calculate duration
+    duration = current_time - start_time  # Calculate duration
     if message_header is not None:
         logger.info(f'{message_header} took {duration:.2f} seconds')
     return duration
+
 
 def set_basedir_path():
     """
@@ -93,8 +100,8 @@ def set_basedir_path():
         logger.error(f"Error setting base or submodule paths: {e}")
         raise
 
-def ensure_correct_setting():
 
+def ensure_correct_setting():
     """Ensure the correct Python version is used."""
     if sys.version_info < (3, 12):
         raise RuntimeError(
@@ -110,6 +117,7 @@ def ensure_correct_setting():
                 f"Invalid working directory: {cwd}\n"
                 f"Please run this script from the project root directory, e.g., 'ArrowProject/' and not 'ArrowProject/Arrow/'."
             )
+
 
 if __name__ == "__main__":
     main()
