@@ -42,7 +42,7 @@ def code_switching_scenario():
 
 
 
-@AR.scenario_decorator(random=True, priority=Configuration.Priority.HIGH)
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.HIGH, tags=[Configuration.Tag.BRANCH])
 def nested_code_sequence():
     """
     A scenario that generate a nested branching sequence,

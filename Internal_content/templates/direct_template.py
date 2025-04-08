@@ -1,29 +1,56 @@
 import random
-
 from Arrow_API import AR
+from Utils.configuration_management import Configuration
 from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
 from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
-from Utils.configuration_management import Configuration
-
-
 Configuration.Knobs.Config.core_count.set_value(1)
-Configuration.Knobs.Template.scenario_count.set_value(3)
-Configuration.Knobs.Template.scenario_query.set_value({"random_instructions":99,Configuration.Tag.REST:1})
+Configuration.Knobs.Template.scenario_count.set_value(1)
+Configuration.Knobs.Template.scenario_query.set_value(
+    {"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
 
-@AR.scenario_decorator(random=True)
+
+@AR.scenario_decorator(random=True, )
 def random_instructions():
     AR.comment("inside random_instructions")
+
+    reg = RegisterManager.get(reg_type="gpr")
+    reg2 = RegisterManager.get(reg_type="gpr")
+    AR.asm(f"add {reg}, {reg}, {reg2}", comment=f"adding {reg} = {reg} + {reg2}")
+
+    AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), src=reg, comment=f"ADC with register {reg} as src")
+    # AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), dest=reg, comment=f"ADC with register {reg} as dest")
+
+    AR.generate(instruction_count=10)
+    AR.generate(instruction_count=10, query=(AR.Instruction.steering_class.contains("mx")))
+    AR.generate(instruction_count=10, query=(AR.Instruction.mnemonic.contains("ADC")))
+
+    for _ in range(10):
+        reg = RegisterManager.get()
+        AR.generate(src=reg)
+
+    # mem = MemoryManager.Memory(init_value=0x1234)
+    # AR.generate(src=mem)
+
     with AR.Loop(counter=5):
-        AR.generate(instruction_count=20)
+        AR.generate(instruction_count=10)
+        # with AR.EventTrigger(frequency=Configuration.Frequency.RARE):
+        #     AR.asm("wfi", comment="simple nop instruction")
+
+    # code_segment = MemoryManager.CodeSegment(name="my_segment", byte_size=100, type="code")
+    # with AR.BranchToSegment(segment_name=code_segment):
+    #     AR.generate(instruction_count=10)
+
+    # AR.asm(f"nop")
 
 
 @AR.scenario_decorator(random=True)
 def mx_cross_v2g_scenario():
     AR.comment("inside direct_memory_scenario")
 
-    with AR.Loop(counter=random.randint(10,20)):
+    with AR.Loop(counter=random.randint(10, 20)):
         mem = MemoryManager.Memory(memory_type="uc", init_value=0x456)
+
         AR.comment("inside Loop scope, generating 5 instructions")
         for _ in range(20):
             action = AR.choice(values={"mx": 80, "v2g": 80})
@@ -33,30 +60,34 @@ def mx_cross_v2g_scenario():
                 AR.generate(query=(AR.Instruction.steering_class.contain("vx_v2x")))
 
 
-@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM,
+                       tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
 def direct_memory_scenario():
     AR.comment("inside direct_memory_scenario")
     mem1 = MemoryManager.Memory()
     mem2 = MemoryManager.Memory(name='mem2_shared', shared=True)
-    mem_block = MemoryManager.MemoryBlock(name="blockzz100",byte_size=20, shared=True)
-    mem_block2 = MemoryManager.MemoryBlock(name="blockzz150",byte_size=25, shared=True)
-    mem_block3 = MemoryManager.MemoryBlock(name="blockzz200",byte_size=100, shared=True)
-    mem5 = MemoryManager.Memory(name='mem5_partial', memory_block=mem_block, memory_block_offset=2, byte_size=4, shared=True)
-    mem6 = MemoryManager.Memory(name='mem6_partial', memory_block=mem_block, memory_block_offset=14, byte_size=4, shared=True)
+    mem_block = MemoryManager.MemoryBlock(name="blockzz100", byte_size=20, shared=True)
+    mem_block2 = MemoryManager.MemoryBlock(name="blockzz150", byte_size=25, shared=True)
+    mem_block3 = MemoryManager.MemoryBlock(name="blockzz200", byte_size=100, shared=True)
+    mem5 = MemoryManager.Memory(name='mem5_partial', memory_block=mem_block, memory_block_offset=2, byte_size=4,
+                                shared=True)
+    mem6 = MemoryManager.Memory(name='mem6_partial', memory_block=mem_block, memory_block_offset=14, byte_size=4,
+                                shared=True)
     instr = AR.generate(src=mem5, comment="zzzzzzzzzzzzzzzzz")
-    #instr2 = AR.asm(f'mov {mem2}, rax')
+    # instr2 = AR.asm(f'mov {mem2}, rax')
     instr = AR.generate(src=mem6)
     for _ in range(100):
         instr = AR.generate()
 
 
-@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM,
+                       tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
 def direct_scenario():
     AR.comment("inside direct_scenario")
 
     AR.generate(instruction_count=30)
 
-    #array = AR.MemoryArray("my_array", [10, 20, 30, 40, 50])
+    # array = AR.MemoryArray("my_array", [10, 20, 30, 40, 50])
 
     # AR.comment("doing EventTrigger flow")
     # with AR.EventTrigger(frequency=Configuration.Frequency.LOW):
@@ -72,23 +103,22 @@ def direct_scenario():
     AR.generate(src=reg, dest=mem, comment=f" src reg dest mem ")
     AR.generate(src=mem, dest=reg, comment=f" src mem dest reg ")
 
-
     AR.comment("same memory stress with load store of different size")
     mem = MemoryManager.Memory(init_value=0x123)
     for _ in range(5):
         # Replacing choice with Adaptive_choice, instead of always being 50:50 the adaptive will give wider randomization
         # action = AR.choice(values={"load":50, "store":50})
-        values_with_ranges = {"load": (30, 70),"store": (70, 30)}
+        values_with_ranges = {"load": (30, 70), "store": (70, 30)}
         action = AR.adaptive_choice(values_with_ranges)
-        size = AR.choice(values=[1,2,4,8])
+        size = AR.choice(values=[1, 2, 4, 8])
         offset = random.randint(0, mem.byte_size - size)
-        #partial_mem = mem.get_partial(byte_size=size, offset=offset)
+        # partial_mem = mem.get_partial(byte_size=size, offset=offset)
         if action == "load":
             AR.generate(src=mem, comment=f" Load instruction ")
-        else: # store
+        else:  # store
             AR.generate(dest=mem, comment=f" Store instruction ")
 
-    loop_count = AR.rangeWithPeak(10,20,peak=12)
+    loop_count = AR.rangeWithPeak(10, 20, peak=12)
 
     with AR.Loop(counter=loop_count, counter_direction='increment'):
         AR.comment("inside Loop scope, generating 5 instructions")
@@ -100,7 +130,8 @@ def direct_scenario():
     if Configuration.Architecture.x86:
         AR.generate(src=mem1, dest=reg)
     else:
-        AR.generate(src=mem1, dest=reg, query=(AR.Instruction.group == "load" & AR.Instruction.cyc >3 & AR.Instruction.streed =="mx_pred"))
+        AR.generate(src=mem1, dest=reg, query=(
+                    AR.Instruction.group == "load" & AR.Instruction.cyc > 3 & AR.Instruction.streed == "mx_pred"))
     RegisterManager.free(reg)
 
     # if Configuration.Architecture.x86:
@@ -108,7 +139,8 @@ def direct_scenario():
     #     AR.asm(f"mov {mem2}, 0x1234")
 
 
-@AR.scenario_decorator(random=False, priority=Configuration.Priority.LOW, tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
+@AR.scenario_decorator(random=False, priority=Configuration.Priority.LOW,
+                       tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.SLOW])
 def direct_array_scenario():
     AR.comment("inside direct_array_scenario")
 
