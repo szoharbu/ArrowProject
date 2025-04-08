@@ -25,7 +25,7 @@ def get_operand_type(operand):
     elif isinstance(operand, int):
         return "imm"
     else:
-        raise ValueError("Invalid operand type")
+        raise ValueError(f"Invalid operand type {type(operand)}")
 
 
 def find_possible_locations(operands, role, type):
