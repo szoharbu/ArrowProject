@@ -9,13 +9,16 @@ from Tool.generation_management.generate_arm import generate_arm
 from Tool.generation_management.generate_arm_asl import generate_arm_asl
 from Utils.configuration_management import Configuration
 from Externals.db_manager.models import get_instruction_db
+from Tool.register_management.register import Register
+from Tool.memory_management.memory import Memory
 
 from peewee import Expression, fn
+
 
 # @staticmethod
 def generate(
         instruction_count: Optional[int] = 1,
-        query: Optional[Expression|Dict] = None,
+        query: Optional[Expression | Dict] = None,
         src: Any = None,
         dest: Any = None,
         comment: Optional[str] = None,
@@ -34,14 +37,15 @@ def generate(
     - Instruction: The generated instruction.
     """
 
+    print(f"--------------------- generate -------------------------")
 
-    asl_extract = True
+    asl_extract = True  # TODO:: remove this after testing!!!!
     if Configuration.Architecture.arm and asl_extract:
         from Externals.db_manager.asl_testing import asl_models
         from peewee import SqliteDatabase
 
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        db_path = os.path.join(base_dir, '..', 'Externals' , 'db_manager', 'db', 'arm_instructions_isalib.db')
+        db_path = os.path.join(base_dir, '..', 'Externals', 'db_manager', 'db', 'arm_instructions_isalib.db')
 
         # Check if the file exists
         if not os.path.exists(db_path):
@@ -74,12 +78,12 @@ def generate(
     #             print(f"     attribute: text: {op.text}, Category: {op.type_category}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width} ")
     # exit()
 
-
     # Filter out all random_generate=False instructions
     query_filter = query_filter.where(Instruction.random_generate == True)
 
     # If query is an existing Expression or dict, add it to the query_filter
     if query:
+        # query_filter = query_filter.where(Instruction.mnemonic.contains("mul"))
         if isinstance(query, Expression):
             # If query is a single expression, apply it directly
             query_filter = query_filter.where(query)
@@ -91,27 +95,79 @@ def generate(
         else:
             raise ValueError("Invalid query format. Expected Expression or dict.")
 
-
     # Add operand-based filters (if provided)
-    operands = []
     if src is not None:
-        operands.append(("src", get_operand_type(src)))
-    if dest is not None:
-        operands.append(("dest", get_operand_type(dest)))
+        if isinstance(src, Register):
+            print(f"   Input parameter:: {src} , role = src, type = {src.type}")
 
-    for operand_role,operand_type in operands:
-        query_filter = query_filter.where(
-            fn.json_valid(Instruction.operands) & (
-                    ((fn.json_extract(Instruction.operands, '$[0].type') == operand_type) &
-                     (fn.json_extract(Instruction.operands, '$[0].role') == operand_role)) |
-                    ((fn.json_extract(Instruction.operands, '$[1].type') == operand_type) &
-                     (fn.json_extract(Instruction.operands, '$[1].role') == operand_role)) |
-                    ((fn.json_extract(Instruction.operands, '$[2].type') == operand_type) &
-                     (fn.json_extract(Instruction.operands, '$[2].role') == operand_role))
+            if src.type == "gpr":
+                # reg of type gpr can be used for various types of operands ("gpr_32", "gpr_64", "gpr_var"]
+                query_filter = query_filter.where(
+                    (Instruction.src1_type.startswith("gpr")) |
+                    (Instruction.src2_type.startswith("gpr")) |
+                    (Instruction.src3_type.startswith("gpr")) |
+                    (Instruction.src4_type.startswith("gpr"))
+                )
+            elif src.type == "simdfp":
+                # reg of type simdfp can be used for various types of operands ("simdfp_scalar_128", "simdfp_scalar_16", "simdfp_scalar_32", "simdfp_scalar_64", "simdfp_scalar_8", "simdfp_scalar_var", "simdfp_vec"]
+                query_filter = query_filter.where(
+                    (Instruction.src1_type.startswith("simdfp")) |
+                    (Instruction.src2_type.startswith("simdfp")) |
+                    (Instruction.src3_type.startswith("simdfp")) |
+                    (Instruction.src4_type.startswith("simdfp"))
+                )
+            elif src.type == "sve_pred" and (int(src.name[1:]) >= 8):
+                # if type is of Predicate (P1-P16) and src.name is higher than P7, need to make sure we are querying for width of 4 and not 3. lower Predicates can have both width 3 and 4.
+                # Then join Operand if not already joined, and add filters from Operand
+                query_filter = query_filter.join(Operand).where(
+                    (Operand.role == "src") &
+                    (Operand.type == "sve_pred") &
+                    (Operand.width == 4)
+                )
+            else:
+                query_filter = query_filter.where(
+                    (Instruction.src1_type == src.type) |
+                    (Instruction.src2_type == src.type) |
+                    (Instruction.src3_type == src.type) |
+                    (Instruction.src4_type == src.type)
+                )
+        elif isinstance(src, Memory):
+            print(f"   Input parameter:: {src} , {type(src)}")
+            query_filter = query_filter.where(
+                (Instruction.src1_type == "mem") |
+                (Instruction.src2_type == "mem") |
+                (Instruction.src3_type == "mem") |
+                (Instruction.src4_type == "mem")
             )
-        )
-        # for inst in list(query_filter):
-        #     print_instruction(inst)
+
+    if dest is not None:
+        print(f"   Input parameter:: {dest} , role = dest, type = {dest.type}")
+
+        if dest.type == "gpr":
+            # reg of type gpr can be used for various types of operands ("gpr_32", "gpr_64", "gpr_var"]
+            query_filter = query_filter.where(
+                (Instruction.dest1_type.startswith("gpr")) |
+                (Instruction.dest2_type.startswith("gpr"))
+            )
+        elif dest.type == "simdfp":
+            # reg of type simdfp can be used for various types of operands ("simdfp_scalar_128", "simdfp_scalar_16", "simdfp_scalar_32", "simdfp_scalar_64", "simdfp_scalar_8", "simdfp_scalar_var", "simdfp_vec"]
+            query_filter = query_filter.where(
+                (Instruction.dest1_type.startswith("simdfp")) |
+                (Instruction.dest2_type.startswith("simdfp"))
+            )
+        elif dest.type == "sve_pred" and (int(dest.name[1:]) >= 8):
+            # if type is of Predicate (P1-P16) and dest.name is higher than P7, need to make sure we are querying for width of 4 and not 3. lower Predicates can have both width 3 and 4.
+            # Then join Operand if not already joined, and add filters from Operand
+            query_filter = query_filter.join(Operand).where(
+                (Operand.role == "dest") &
+                (Operand.type == "sve_pred") &
+                (Operand.width == 4)
+            )
+        else:
+            query_filter = query_filter.where(
+                (Instruction.dest1_type == dest.type) |
+                (Instruction.dest2_type == dest.type)
+            )
 
     # Fetch all matching instructions and select one at random
     instructions = list(query_filter)
@@ -121,9 +177,27 @@ def generate(
 
     instruction_list = []
     for _ in range(instruction_count):
-        selected_instruction = random.choice(instructions)
 
-        #print_instruction(selected_instruction)
+        # selected_instruction = random.choice(instructions)
+
+        # modify the logic from a random choice the below logic that will select the first valid instruction, as at this stage the ASL parser is not 100% reliable
+        # TODO:: remove this after the ASL parser is 100% reliable
+
+        # print(f"   Selecting a valid instruction from {len(instructions)} instructions")
+        random.shuffle(instructions)
+
+        selected_instruction = None
+        for instruction in instructions:
+            if instruction.is_valid:
+                selected_instruction = instruction
+                break
+            # else:
+            #     print(f"        ⚠️   Skipping instruction!!! instruction {instruction.syntax} is not parsed correctly yet.")
+
+        if selected_instruction is None:
+            raise ValueError("No valid instructions found matching the specified criteria.")
+
+        # print_instruction(selected_instruction)
 
         if Configuration.Architecture.x86:
             gen_instructions = generate_x86(selected_instruction, src, dest, comment=comment)
