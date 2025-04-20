@@ -7,8 +7,8 @@ import requests
 # URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 
 # Function to upload run statistics
-def upload_run_statistics(template, command_line, duration, architecture, cloud_mode, system_metadata, user_id, run_status:str="Pass"):
-
+def upload_run_statistics(template, command_line, duration, architecture, cloud_mode, system_metadata, user_id,
+                          run_status: str = "Pass"):
     """Send data to the backend for asynchronous Airtable upload."""
 
     UPLOAD_URL = "https://szoharbu.pythonanywhere.com/upload"
@@ -16,7 +16,7 @@ def upload_run_statistics(template, command_line, duration, architecture, cloud_
     '''
     To view Airtable statistics:
     - enter: https://airtable.com/appOJKrcvb4gxH65d/tblWab8HLi2azhcxJ
-    
+
     To debug PythoneAnywhare issues:
     - enter https://www.pythonanywhere.com/user/szoharbu/
     - click on the Web tab
@@ -24,20 +24,22 @@ def upload_run_statistics(template, command_line, duration, architecture, cloud_
     '''
 
     upload_data = {
-            "Template": str(template),
-            "Command Line": command_line,
-            "Duration": duration,
-            "Status": run_status,
-            "Architecture": architecture,
-            "Cloud Mode": str(cloud_mode),
-            "User Identifier": user_id,
-            "System Metadata": system_metadata
+        "Template": str(template),
+        "Command Line": command_line,
+        "Duration": duration,
+        "Status": run_status,
+        "Architecture": architecture,
+        "Cloud Mode": str(cloud_mode),
+        "User Identifier": user_id,
+        "System Metadata": system_metadata
     }
 
+    from Utils.logger_management import get_logger
+    logger = get_logger()
     try:
         headers = {"Content-Type": "application/json"}
         requests.post(UPLOAD_URL, json=upload_data, headers=headers)
-        print("Data sent to backend successfully.")
+        logger.info("Data sent to backend successfully.")
     except requests.exceptions.RequestException as e:
-        print("Failed to send data to backend:", e)
+        logger.error("Failed to send data to backend:", e)
 
