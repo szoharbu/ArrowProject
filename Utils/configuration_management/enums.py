@@ -8,10 +8,12 @@ class Architecture:
     arch_str = False
 
 class Memory_types(Enum):
+    BSP_BOOT_CODE = "bsp_boot_code"
     BOOT_CODE = "boot_code"
     CODE = "code"
     DATA_SHARED = "data_shared"
     DATA_PRESERVE = "data_reserved"
+
 
 # Simplified Enum for standard size constants
 class ByteSize(Enum):
@@ -42,7 +44,7 @@ class Tag(Enum):
     REST = "rest"  # Special tag representing all available tags
     DISPATCH = "dispatch"
     BRANCH = "branch"
-
+    POWER = "power"
 
 class Priority(Enum):
     HIGH = "high"

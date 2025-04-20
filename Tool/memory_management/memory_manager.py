@@ -41,7 +41,9 @@ class MemoryManager:
 
         segment_start, segment_size = self.interval_lib.allocate(byte_size)
 
-        if (memory_type == Configuration.Memory_types.CODE) or (memory_type == Configuration.Memory_types.BOOT_CODE) :
+        if (memory_type == Configuration.Memory_types.CODE) \
+            or (memory_type == Configuration.Memory_types.BOOT_CODE) \
+            or (memory_type == Configuration.Memory_types.BSP_BOOT_CODE):
             memory_segment = CodeSegment(name=name, address=segment_start, byte_size=segment_size, memory_type=memory_type)
         else:
             memory_segment = DataSegment(name=name, address=segment_start, byte_size=segment_size, memory_type=memory_type)

@@ -39,9 +39,12 @@ def switch_code(new_code:CodeSegment):
 
     curr_state = state_manager.get_active_state()
 
-    all_code_blocks = curr_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
+    all_code_blocks = curr_state.memory_manager.get_segments(
+        pool_type=[Configuration.Memory_types.BOOT_CODE,
+                   Configuration.Memory_types.BSP_BOOT_CODE,
+                   Configuration.Memory_types.CODE])
     if not new_code in all_code_blocks:
-        raise ValueError(f"new code block {new_code} doesn't exit ")
+        raise ValueError(f"new code block {new_code} doesn't exist in the current state")
 
     curr_state.current_code_block = new_code
 

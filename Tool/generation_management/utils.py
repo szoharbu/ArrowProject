@@ -1,6 +1,6 @@
 import random
 
-from Utils.configuration_management import Configuration
+from Utils.configuration_management import Configuration, get_config_manager
 from Tool.memory_management.memory import Memory
 from Tool.register_management.register import Register
 
@@ -55,7 +55,10 @@ def find_possible_locations(operands, role, type):
     if not possible_locations:
         raise ValueError(f"Couldn't find possible location that match {role} {type} operand")
     else:
-        print(f"   find_possible_locations for {role} {type} operand: {possible_locations}")
+        config_manager = get_config_manager()
+        debug_mode = config_manager.get_value('Debug_mode')
+        if debug_mode:
+            print(f"   find_possible_locations for {role} {type} operand: {possible_locations}")
         return possible_locations
 
 
