@@ -89,21 +89,25 @@ def generate_arm_asl(
         if not op.is_valid:
             raise TypeError(f"Invalid operand type {op}, please check the instruction and operands in the database")
         if src_location == op_location:
-            print(f"   src_location == op_location == {op_location}")
+            if debug_mode:
+                print(f"   src_location == op_location == {op_location}")
             if isinstance(src, Memory):
                 eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
             else:
                 eval_operand = src.as_size(op.size)
-                print(
-                    f"    src is {src}, size is {op.size}, src.as_size(op.size): {src.as_size(op.size)}  ==> eval_operand: {eval_operand}")
+                if debug_mode:
+                    print(
+                        f"    src is {src}, size is {op.size}, src.as_size(op.size): {src.as_size(op.size)}  ==> eval_operand: {eval_operand}")
         elif dest_location == op_location:
-            print(f"   dest_location == op_location == {op_location}")
+            if debug_mode:
+                print(f"   dest_location == op_location == {op_location}")
             if isinstance(dest, Memory):
                 eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
             else:
                 eval_operand = dest.as_size(op.size)
-                print(
-                    f"    dest is {dest}, size is {op.size}, dest.as_size(op.size): {dest.as_size(op.size)}  ==> eval_operand: {eval_operand}")
+                if debug_mode:
+                    print(
+                        f"    dest is {dest}, size is {op.size}, dest.as_size(op.size): {dest.as_size(op.size)}  ==> eval_operand: {eval_operand}")
 
         elif op.type_category == "register":
             if op.type == "reg" or "gpr_" in op.type:
