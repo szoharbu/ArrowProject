@@ -7,7 +7,7 @@ from Tool.generation_management.generate_x86 import generate_x86
 from Tool.generation_management.generate_riscv import generate_riscv
 from Tool.generation_management.generate_arm import generate_arm
 from Tool.generation_management.generate_arm_asl import generate_arm_asl
-from Utils.configuration_management import Configuration
+from Utils.configuration_management import Configuration, get_config_manager
 from Externals.db_manager.models import get_instruction_db
 from Tool.register_management.register import Register
 from Tool.memory_management.memory import Memory
@@ -37,7 +37,10 @@ def generate(
     - Instruction: The generated instruction.
     """
 
-    print(f"--------------------- generate -------------------------")
+    config_manager = get_config_manager()
+    debug_mode = config_manager.get_value('Debug_mode')
+    if debug_mode:
+        print(f"--------------------- generate -------------------------")
 
     asl_extract = True  # TODO:: remove this after testing!!!!
     if Configuration.Architecture.arm and asl_extract:
@@ -98,7 +101,8 @@ def generate(
     # Add operand-based filters (if provided)
     if src is not None:
         if isinstance(src, Register):
-            print(f"   Input parameter:: {src} , role = src, type = {src.type}")
+            if debug_mode:
+                print(f"   Input parameter:: {src} , role = src, type = {src.type}")
 
             if src.type == "gpr":
                 # reg of type gpr can be used for various types of operands ("gpr_32", "gpr_64", "gpr_var"]
@@ -132,7 +136,8 @@ def generate(
                     (Instruction.src4_type == src.type)
                 )
         elif isinstance(src, Memory):
-            print(f"   Input parameter:: {src} , {type(src)}")
+            if debug_mode:
+                print(f"   Input parameter:: {src} , {type(src)}")
             query_filter = query_filter.where(
                 (Instruction.src1_type == "mem") |
                 (Instruction.src2_type == "mem") |
@@ -141,7 +146,8 @@ def generate(
             )
 
     if dest is not None:
-        print(f"   Input parameter:: {dest} , role = dest, type = {dest.type}")
+        if debug_mode:
+            print(f"   Input parameter:: {dest} , role = dest, type = {dest.type}")
 
         if dest.type == "gpr":
             # reg of type gpr can be used for various types of operands ("gpr_32", "gpr_64", "gpr_var"]
