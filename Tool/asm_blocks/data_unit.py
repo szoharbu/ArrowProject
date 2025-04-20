@@ -4,9 +4,11 @@ from typing import Optional
 from Utils.configuration_management import get_config_manager
 from Utils.logger_management import get_logger
 
+
 def normalize_path(path):
     """Helper function to normalize paths to absolute, lowercase, and consistent separator format."""
     return os.path.normpath(os.path.abspath(path)).lower()
+
 
 def get_last_user_context():
     # Get config values and normalize paths
@@ -17,10 +19,15 @@ def get_last_user_context():
     template_file = normalize_path(config_manager.get_value('template_path'))
 
     test_stage_path = normalize_path('Tool/stages/test_stage')
-    memory_segments_path = normalize_path('Tool/memory_management/memory_segments.py') # initial code label is create there
+    memory_segments_path = normalize_path(
+        'Tool/memory_management/memory_segments.py')  # initial code label is create there
 
     # Capture the stack once as the below code might go over it twice, and it has performance penalty
     stack_snapshot = inspect.stack()
+
+    internal_content_dir_path = str(internal_content_dir_path).lower()
+    external_content_dir_path = str(external_content_dir_path).lower()
+    template_file = str(template_file).lower()
 
     # Traverse the call stack and look for the first instance of user code
     for frame_info in stack_snapshot:
@@ -59,11 +66,11 @@ class DataUnit:
     def __init__(
             self,
             byte_size: int,
-            memory_segment_id:str,
-            memory_block_id:str,
+            memory_segment_id: str,
+            memory_block_id: str,
             address: Optional[int] = None,
-            name:str=None,
-            init_value_byte_representation: list[int]=None,
+            name: str = None,
+            init_value_byte_representation: list[int] = None,
     ):
         """
         Initializes an DataUnit from shared or preserved blocks. later be published into the date_usage file
@@ -75,7 +82,7 @@ class DataUnit:
         self.memory_segment_id = memory_segment_id
         self.init_value_byte_representation = init_value_byte_representation
 
-        #extract context to generated data
+        # extract context to generated data
         self.file_name, self.file_name_shortened_path, self.line_number = get_last_user_context()
 
         config_manager = get_config_manager()
@@ -90,9 +97,9 @@ class DataUnit:
         if address is not None:
             self.data_unit_str += f"address:{hex(self.address)}, "
         self.data_unit_str += f"byte_size:{self.byte_size}, init_value:{formatted_bytes}, file: {self.file_name_shortened_path}, line: {self.line_number}]"
-        #print(self.data_unit_str)
-        #logger = get_logger()
-        #logger.debug(f"DataUnit generated: {self.data_unit_str}")
+        # print(self.data_unit_str)
+        # logger = get_logger()
+        # logger.debug(f"DataUnit generated: {self.data_unit_str}")
 
     def __str__(self):
         return self.data_unit_str
