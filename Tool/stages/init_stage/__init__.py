@@ -9,6 +9,7 @@ from Tool.register_management import register_manager
 from Tool.memory_management import memory_manager, MemoryRange
 from Tool.memory_management.interval_lib import IntervalLib
 
+
 def init_state():
     logger = get_logger()
     logger.info("============ init_state")
@@ -24,8 +25,10 @@ def init_state():
         logger.info(f'--------------- Creating state for {state_id}')
 
         # allocating 2M MemoryRange per core, and set memory_manager withing this range
-        core_memory_region_start, core_memory_region_size = region_intervals.allocate(Configuration.ByteSize.SIZE_2M.in_bytes())
-        core_memory_range = MemoryRange(core=state_id, address=core_memory_region_start, byte_size= core_memory_region_size)
+        core_memory_region_start, core_memory_region_size = region_intervals.allocate(
+            Configuration.ByteSize.SIZE_2M.in_bytes())
+        core_memory_range = MemoryRange(core=state_id, address=core_memory_region_start,
+                                        byte_size=core_memory_region_size)
 
         if Configuration.Architecture.x86:
             base_register_value = core_memory_range.address
@@ -59,9 +62,10 @@ def init_state():
         curr_state = state_manager.get_active_state()
         # Preserving a register to be used as base_register
         curr_state.base_register = curr_state.register_manager.get_and_reserve()
-        #print(curr_state)
+        # print(curr_state)
 
     state_manager.set_active_state('core_0')
+
 
 def init_registers():
     logger = get_logger()
@@ -75,33 +79,50 @@ def init_registers():
         # Preserving a register to be used as base_register
         curr_state.base_register = curr_state.register_manager.get_and_reserve()
 
+
 def init_memory():
     logger = get_logger()
     logger.info("============ init_memory")
     state_manager = get_state_manager()
-    states = state_manager.states_dict
 
+    # Allocate BSP boot block. a single block that act as trampoline for all cores
+    state_manager.set_active_state("core_0")
+    curr_state = state_manager.get_active_state()
+    bsp_boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"BSP__boot_segment", byte_size=0x1000,
+                                                                       memory_type=Configuration.Memory_types.BSP_BOOT_CODE)
+    logger.debug(f"init_memory: allocating BSP boot_block {bsp_boot_block}")
+
+    states = state_manager.states_dict
     for state_id in states.keys():
         state_manager.set_active_state(state_id)
         curr_state = state_manager.get_active_state()
 
-        boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"boot_segment", byte_size=0x1000, memory_type=Configuration.Memory_types.BOOT_CODE)
+        boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__boot_segment",
+                                                                       byte_size=0x1000,
+                                                                       memory_type=Configuration.Memory_types.BOOT_CODE)
         logger.debug(f"init_memory: allocating boot_block {boot_block}")
 
         code_block_count = Configuration.Knobs.Memory.code_block_count.get_value()
         for i in range(code_block_count):
-            code_block = curr_state.memory_manager.allocate_memory_segment(name=f"code_segment_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.CODE)
+            code_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__code_segment_{i}",
+                                                                           byte_size=0x1000,
+                                                                           memory_type=Configuration.Memory_types.CODE)
             logger.debug(f"init_memory: allocating code_block {code_block}")
 
         data_block_count = Configuration.Knobs.Memory.data_block_count.get_value()
         data_shared_count = data_block_count // 2  # First part is half of n (floored)
         data_preserve_count = data_block_count - data_shared_count  # Second part is the remainder
         for i in range(data_shared_count):
-            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"data_shared_segment_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.DATA_SHARED)
+            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__data_shared_segment_{i}",
+                                                                           byte_size=0x1000,
+                                                                           memory_type=Configuration.Memory_types.DATA_SHARED)
             logger.debug(f"init_memory: allocating data_shared_block {data_block}")
         for i in range(data_preserve_count):
-            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"data_preserve_segment_{i}", byte_size=0x1000, memory_type=Configuration.Memory_types.DATA_PRESERVE)
+            data_block = curr_state.memory_manager.allocate_memory_segment(
+                name=f"{state_id}__data_preserve_segment_{i}", byte_size=0x1000,
+                memory_type=Configuration.Memory_types.DATA_PRESERVE)
             logger.debug(f"init_memory: allocating data_preserve_block {data_block}")
+
 
 def init_scenarios():
     logger = get_logger()
@@ -113,7 +134,7 @@ def init_scenarios():
     external_content_dir_path = config_manager.get_value('external_content_dir_path')
     if external_content_dir_path != "External-content-not-available":
 
-        content_path = os.path.join(external_content_dir_path,"__init__.py")
+        content_path = os.path.join(external_content_dir_path, "__init__.py")
 
         # Normalize the path to ensure it's correct for the operating system
         normalized_path = os.path.normpath(content_path)
@@ -124,7 +145,7 @@ def init_scenarios():
             When deploy an app on Community Cloud, the only thing that gets cloned during deployment is the source repo for your app. 
             To access the content_repo submodule we need to execute a 'git submodule update' within the Python code of your app to query your second repo and copy additional files.
             '''
-            #ensure_submodule_initialized()
+            # ensure_submodule_initialized()
 
             # # TODO:: failing on Streamlit cloud, need to fix. at the moment blocking this capability
             # logger.warning("Skipping Content initialization, using only scenarios from main template.")
@@ -135,6 +156,7 @@ def init_scenarios():
         foo = importlib.util.module_from_spec(spec)
         sys.modules["scenarios_path"] = foo
         spec.loader.exec_module(foo)
+
 
 def init_section():
     logger = get_logger()
@@ -154,10 +176,7 @@ def init_section():
     # ...
 
 
-
-
 def ensure_submodule_initialized():
-
     """
     Ensures that the submodule is initialized and updated.
     If the submodule directory doesn't exist, it initializes and updates the submodule.
@@ -168,7 +187,7 @@ def ensure_submodule_initialized():
 
     logger = get_logger()
     config_manager = get_config_manager()
-    #submodule_path = config_manager.get_value("submodule_content_path")
+    # submodule_path = config_manager.get_value("submodule_content_path")
     submodule_path = config_manager.get_value("content_dir_path")
 
     if not os.path.isdir(submodule_path):
