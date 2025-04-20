@@ -51,9 +51,9 @@ def main(args=None):
             f"Test generated {statistics_manager.get('scenario_count')} scenarios and {statistics_manager.get('asm_unit_count')} instructions")
 
         duration = dump_time(start_time, "Test total")
+        upload_statistics(duration, run_status='Pass')
         logger.info("Test was successful :)\n")
         logger.info("Mission accomplished...")
-        upload_statistics(duration, run_status='Pass')
 
     finally:
         config_manager = get_config_manager()

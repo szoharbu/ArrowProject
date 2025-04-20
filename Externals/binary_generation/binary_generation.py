@@ -23,7 +23,7 @@ def generate_binary():
     cpp_asm_file = os.path.join(output_dir, f"{base_name}_cpp_asm.s")
     object_file = os.path.join(output_dir, f"{base_name}.o")
     executable_file = os.path.join(output_dir, f"{base_name}.elf")
-
+    iss_prerun_log_file = os.path.join(output_dir, f"{base_name}_iss_prerun.log")
 
     pipeline = None
     if Configuration.Architecture.x86:
@@ -53,5 +53,8 @@ def generate_binary():
 
     # Step 4: Link the object file into an executable ELF file
     pipeline.link(object_file, executable_file)
+
+    # Step 5: Run the executable on ISS
+    #pipeline.golden_reference_simolator(executable_file, iss_prerun_log_file)
 
     logger.info("---- Build process completed successfully!")

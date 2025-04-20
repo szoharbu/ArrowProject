@@ -50,15 +50,32 @@ class ArmBuildPipeline(BuildPipeline):
         tool = f"{self.toolchain_prefix}-ld"
         check_tool_exists(tool)
 
-        link_cmd = [tool, "-o", executable_file, object_file]
+        section_start = "--section-start=.text=0x80000000" # needed to avoid lower MMIO space which is not DRAM
+        link_cmd = [tool, section_start, "-o", executable_file, object_file]
         check_file_exists(object_file, "Object File")
         run_command(link_cmd, f"Linking '{object_file}' to '{executable_file}'")
 
         # New objdump stage
         tool = f"{self.toolchain_prefix}-objdump"
-        dump_file = f"{executable_file}.dump"
+        dump_file = f"{executable_file}.objdump"
 
         dump_cmd = [tool, "-d", executable_file]  # Corrected command
         with open(dump_file, "w") as f:
             run_command(dump_cmd, f"Dumping ELF file info to '{dump_file}'", output_file=dump_file)
 
+    def golden_reference_simolator(self, executable_file, iss_prerun_log_file):
+        """
+        Rerun executable ELF on ISS simolator.
+        """
+        import shlex
+
+        tool = f"/home/nvcpu-sw-co100/cosim/1.0/cl85653745/debug_arm/x86_64/bin/runsim"
+        check_tool_exists(tool)
+        check_file_exists(executable_file, "Executable File")
+
+        section_start = "0x80000000" # needed to avoid lower MMIO space which is not DRAM
+        iss_flags = f"--cosim_smp --cosim_quant 1 --cosim_memquant 1 --cosim_advance 1 --cosim_cmpvec 0x30016 --cosim_startcmp 0 --cosim_s_ns_mem_duplicate --cosimtr_verbose 1 --cosim_sec_melf {executable_file} --cosim_models 1 --cosim_max 1000201 --dsim=/home/nvcpu-sw-co100/ccplexsim/1.0/cl85653745/debug_arm/x86_64/lib/libdsim_dbg.so --config.sim:platform_ns_bit_position=48 --config.core.sim:disable_tsim_platform=1 --configtsim /home/nvcpu-sw-co100/tsim/1.0/cl85653745/debug_arm/x86_64/lib/libtsim_develop.so --target projectA-dv -cpu projectA -reset_pc {section_start} -trickbox_base 0x0 -smp 1 -activate_coremask 1 -trickbox_log tbox_prerun.log --tsim=/home/nvcpu-sw-co100/tsim/1.0/cl85653745/debug_arm/x86_64/lib/libtsim_develop.so --target projectA-dv -cpu projectA -reset_pc {section_start} -trickbox_base 0x0 -smp 1 -activate_coremask 1"
+        iss_flags_split = shlex.split(iss_flags) # needed before running the command
+        iss_cmd = [tool] + iss_flags_split
+
+        run_command(command=iss_cmd, description=f"Rerunning '{executable_file}' on ISS", output_file=iss_prerun_log_file)

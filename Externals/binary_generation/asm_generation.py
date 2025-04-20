@@ -6,7 +6,8 @@ from Tool.state_management import get_state_manager
 from Utils.singleton_management import SingletonManager
 from Tool.memory_management.utils import convert_bytes_to_words
 
-x86_Assembler_syntax = "NASM" ## other option is "GAS" (GNU Assembler) syntax but not for NASM
+x86_Assembler_syntax = "NASM"  ## other option is "GAS" (GNU Assembler) syntax but not for NASM
+
 
 def get_output(location, block_name=None):
     print_logic = {
@@ -25,7 +26,7 @@ def get_output(location, block_name=None):
         "bss_block_header": {
             "x86_NASM": f"section .bss\nglobal {block_name}_bss\n{block_name}_bss:\n",
             "x86_GAS": f".section .bss.{block_name}\n.global {block_name}_bss\n{block_name}_bss:\n",
-            "riscv":  f".section .bss.{block_name}\n.global {block_name}_bss\n.align 2\n{block_name}_bss:\n",
+            "riscv": f".section .bss.{block_name}\n.global {block_name}_bss\n.align 2\n{block_name}_bss:\n",
             "arm": f".section .bss\n.global {block_name}_bss\n{block_name}_bss:\n",
         },
     }
@@ -39,9 +40,9 @@ def get_output(location, block_name=None):
         else:
             raise ValueError(f"Invalid Assembler syntax used {x86_Assembler_syntax}")
 
-
     # Fetch and return the output for the given section and condition
     return print_logic.get(location, {}).get(arch_syntax, "Default output")
+
 
 def generate_asm_from_AsmUnits(instruction_blocks):
     asm_code = ""
@@ -68,12 +69,12 @@ def generate_asm_from_AsmUnits(instruction_blocks):
 
         # Process each asm unit in the block
         for asm_unit in block.asm_units_list:
-            asm_code_counter +=1
+            asm_code_counter += 1
             tmp_asm_code += f"    {asm_unit}\n"
 
         tmp_asm_code += "\n"
 
-        #planting  .text block only if some entries exist in that section
+        # planting  .text block only if some entries exist in that section
         if asm_code_counter != 0:
             asm_code += tmp_asm_code
             asm_code_counter = 0
@@ -86,13 +87,15 @@ def generate_asm_from_AsmUnits(instruction_blocks):
 
 def generate_data_from_DataUnits(data_blocks):
     state_manager = get_state_manager()
-    current_state = state_manager.get_active_state()
-    memory_manager = current_state.memory_manager
-
 
     data_code = ""
 
-    for block in data_blocks:
+    for block, state in data_blocks:
+
+        state_manager.set_active_state(state)
+        curr_state = state_manager.get_active_state()
+        memory_manager = curr_state.memory_manager
+
         block_name = block.name
         block_address = hex(block.address)
 
@@ -106,17 +109,17 @@ def generate_data_from_DataUnits(data_blocks):
         first_data_unit = True
         for data_unit in data_unit_list:
             name = data_unit.name if data_unit.name is not None else 'no-name'
-            #unique_label = data_dict.get('unique_label', 'None')
-            unique_label = data_unit.memory_block_id  #data data_dict.get('memory_block', 'None')
-            address = data_unit.address # data_dict.get('address', 'None')
-            byte_size = data_unit.byte_size #data_dict.get('byte_size', 'None')
-            init_value = data_unit.init_value_byte_representation # data_dict.get('init_value', 'None')
+            # unique_label = data_dict.get('unique_label', 'None')
+            unique_label = data_unit.memory_block_id  # data data_dict.get('memory_block', 'None')
+            address = data_unit.address  # data_dict.get('address', 'None')
+            byte_size = data_unit.byte_size  # data_dict.get('byte_size', 'None')
+            init_value = data_unit.init_value_byte_representation  # data_dict.get('init_value', 'None')
 
             if init_value is not None:
                 data_code_counter += 1
 
                 words_tuple = convert_bytes_to_words(init_value)
-                break_lines_between_same_data_unit = "\n" if len(words_tuple)>1 else ""
+                break_lines_between_same_data_unit = "\n" if len(words_tuple) > 1 else ""
                 break_lines_between_different_data_units = "" if first_data_unit else "\n"
                 first_data_unit = False
                 tmp_data_code += f"{break_lines_between_different_data_units}{unique_label}:"
@@ -126,21 +129,21 @@ def generate_data_from_DataUnits(data_blocks):
                         if value_type == "word":
                             tmp_data_code += f"{break_lines_between_same_data_unit}    .long 0x{value:08x}  {get_comment_mark()} 4 bytes"
                         elif value_type == "byte":
-                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 bytes"
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 bytes"
                 elif Configuration.Architecture.arm:
                     # ARM Assembly: Use `.word` for 4-byte values
                     for value, value_type in words_tuple:
                         if value_type == "word":
-                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .word 0x{value:08x}  {get_comment_mark()} 4 bytes"
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .word 0x{value:08x}  {get_comment_mark()} 4 bytes"
                         elif value_type == "byte":
-                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte"
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte"
                 elif Configuration.Architecture.riscv:
                     # RISC-V Assembly: Use `.dword` for 8-byte values and `.byte` for smaller chunks
                     for value, value_type in words_tuple:
                         if value_type == "word":
-                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .dword 0x{value:08x}  {get_comment_mark()} 4 bytes"  # 4 bytes (adjust if architecture supports larger)
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .dword 0x{value:08x}  {get_comment_mark()} 4 bytes"  # 4 bytes (adjust if architecture supports larger)
                         elif value_type == "byte":
-                            tmp_data_code+= f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte"
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte"
                 else:
                     raise ValueError('Unsupported Architecture')
 
@@ -154,7 +157,7 @@ def generate_data_from_DataUnits(data_blocks):
 
         tmp_data_code += "\n"
 
-        #planting  .data block only if some entries exist in that section
+        # planting  .data block only if some entries exist in that section
         if data_code_counter != 0:
             data_code += tmp_data_code
             data_code_counter = 0
@@ -168,11 +171,11 @@ def generate_data_from_DataUnits(data_blocks):
         data_unit_list = memory_manager.get_segment_dataUnit_list(block.name)
         for data_unit in data_unit_list:
             name = data_unit.name if data_unit.name is not None else 'no-name'
-            #unique_label = data_dict.get('unique_label', 'None')
-            unique_label = data_unit.memory_block_id  #data data_dict.get('memory_block', 'None')
-            address = data_unit.address # data_dict.get('address', 'None')
-            byte_size = data_unit.byte_size #data_dict.get('byte_size', 'None')
-            init_value = data_unit.init_value_byte_representation # data_dict.get('init_value', 'None')
+            # unique_label = data_dict.get('unique_label', 'None')
+            unique_label = data_unit.memory_block_id  # data data_dict.get('memory_block', 'None')
+            address = data_unit.address  # data_dict.get('address', 'None')
+            byte_size = data_unit.byte_size  # data_dict.get('byte_size', 'None')
+            init_value = data_unit.init_value_byte_representation  # data_dict.get('init_value', 'None')
 
             if init_value is None:
                 data_code_counter += 1
@@ -195,7 +198,7 @@ def generate_data_from_DataUnits(data_blocks):
 
         tmp_data_code += "\n"
 
-        #planting  .bss block only if some entries exist in that section
+        # planting  .bss block only if some entries exist in that section
         if data_code_counter != 0:
             data_code += tmp_data_code
             data_code_counter = 0
@@ -209,13 +212,44 @@ def generate_data_from_DataUnits(data_blocks):
 def generate_assembly():
     logger = get_logger()
     state_manager = get_state_manager()
-    current_state = state_manager.get_active_state()
-    all_code_blocks = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
-    all_data_blocks = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE])
+
+    # need to fix this behavior, make sure there is only one boot, only one _start label.
+    # make sure the segments are in order and not just core0 and then core1 ,...
+    # and make sure all the logic and scenarios exist in the asm file
+
+    all_code_blocks = []
+    all_data_blocks = []
+
+    orig_state = state_manager.get_active_state()
+    cores_states = state_manager.list_states()
+    for core_state in cores_states:
+        state_manager.set_active_state(core_state)
+        curr_state = state_manager.get_active_state()
+
+        all_code_blocks.extend(curr_state.memory_manager.get_segments(
+            pool_type=[Configuration.Memory_types.BSP_BOOT_CODE,
+                       Configuration.Memory_types.BOOT_CODE,
+                       Configuration.Memory_types.CODE]))
+
+        # Need to pass the data blocks along with their state, as its needed for the data generation
+        current_state_data_blocks = curr_state.memory_manager.get_segments(
+            pool_type=[Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE])
+        current_state_data_blocks_with_state = [(datablock, core_state) for datablock in current_state_data_blocks]
+        all_data_blocks.extend(current_state_data_blocks_with_state)
+
+    # Identify the BSP_BOOT_CODE in the all_code_blocks list and move it to the start so it will be the first one in the asm file next to the _start label
+    for i, code_block in enumerate(all_code_blocks):
+        if code_block.memory_type == Configuration.Memory_types.BSP_BOOT_CODE:
+            found = all_code_blocks.pop(i)
+            all_code_blocks.insert(0, found)
+            break
 
     # Generate assembly code for instructions and data blocks
     asm_code = generate_asm_from_AsmUnits(all_code_blocks)
     data_code = generate_data_from_DataUnits(all_data_blocks)
+
+    curr_state = state_manager.get_active_state()
+    state_manager.set_active_state(state_id=orig_state.state_name)
 
     # Combine the instruction and data parts
     full_asm_code = asm_code + "\n" + data_code
