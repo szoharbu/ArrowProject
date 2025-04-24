@@ -206,6 +206,19 @@ def generate_data_from_DataUnits(data_blocks):
         else:
             data_code += f"{get_comment_mark()} No uninitialized data on {block_name} block. skipping .bss section\n\n"
 
+    if Configuration.Architecture.arm:
+        # TODO:: WA WA WA WA WA WA!!!!! need to replace with proper memory allocation!!
+        # adding stack section to the data section
+        data_code += f".section .stack\n"
+        data_code += f".align 12         // 2^12 = 4096 byte alignment\n"
+        data_code += f"_stack_start:\n"
+        data_code += f".space 0x1000     // Reserve 4KB of stack\n"
+        data_code += f"_stack_top:\n"
+
+        # adding end of test string to the data section
+        data_code += f".data\n.balign 0x4000\n"
+        data_code += f"test_pass_str: .string \"** TEST PASSED OK **\n"
+
     return data_code
 
 
