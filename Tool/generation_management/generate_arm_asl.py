@@ -1,5 +1,6 @@
 import random
 import ast
+import re
 from typing import Optional, Any, List
 from Externals.db_manager.asl_testing.asl_models import Instruction
 from Tool.asm_libraries.label import Label
@@ -39,19 +40,16 @@ def generate_arm_asl(
 
     if debug_mode:
         for op in sorted_operands:
-            op_info_str = f"text: {op.text}, Category: {op.type_category}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width}, extensions: {op.extensions}, is_valid: {op.is_valid}"
+            op_info_str = f"text: {op.text}, Full_text: {op.full_text}, Category: {op.type_category}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width}, extensions: {op.extensions}, is_memory: {op.is_memory}, memory_role: {op.memory_role}, is_optional: {op.is_optional}, is_valid: {op.is_valid}"
             if op.is_operand:
                 print(f"        - operand {op.index} : {op_info_str}")
-                # if op.is_valid:
-                #     print(f"        - valid operand {op.index} : {op_info_str}")
-                # else:
-                #     print(f"        - invalid operand {op.index} : {op_info_str}")
             else:
                 print(f"        - attribute : {op_info_str}")
 
     # set True or False if one of the operands has memory type
-    memory_usage = any(operand.type == "mem" for operand in selected_instruction.operands)
+    memory_usage = any(operand.is_memory for operand in selected_instruction.operands)
     if memory_usage:
+        #print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzz memory usage")
         '''
         For every memory usage, we will plant a dynamic_init instruction to place that memory address in a temp register
         this is done to avoid using memories offset due to their formatting requirements and my lack of knowledge.
@@ -61,7 +59,8 @@ def generate_arm_asl(
         elif dest is not None and isinstance(dest, Memory):
             memory_operand = dest
         else:
-            memory_operand = Memory(shared=True)
+            # allocating a new memory operand ,
+            memory_operand = Memory(shared=True) # TODO:: need to set the memory size!!!.
 
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
         dynamic_init_memory_address_reg = RegisterManager.get_and_reserve()
@@ -75,6 +74,7 @@ def generate_arm_asl(
 
         instruction_list.append(dynamic_init_instruction)
 
+    # this function will any src/dest inputs into operands.
     src_location, dest_location = map_inputs_to_operands(selected_instruction, src, dest)
 
     # evaluate operands
@@ -88,11 +88,23 @@ def generate_arm_asl(
             continue
         if not op.is_valid:
             raise TypeError(f"Invalid operand type {op}, please check the instruction and operands in the database")
+
+        op.full_text = op.full_text.replace(" ","") # remove all inner spaces
+
+        match = re.fullmatch(r"\{(.*)\}", op.text)
+        if match:
+            # code is wrapped with curly braces, most likely optional, removing it.
+            # TODO:: need to refactor this code
+            # if not op.is_optional:
+            #    print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz Need to understand how come {op.full_text} has curly braces but is not optional")
+            op.full_text = op.full_text.replace("{", "").replace("}", "")
+
         if src_location == op_location:
             if debug_mode:
                 print(f"   src_location == op_location == {op_location}")
             if isinstance(src, Memory):
-                eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
+                #eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
+                eval_operand = dynamic_init_memory_address_reg  # just placing the register which should point (by the pre dynamic init) to the wanted address
             else:
                 eval_operand = src.as_size(op.size)
                 if debug_mode:
@@ -102,12 +114,26 @@ def generate_arm_asl(
             if debug_mode:
                 print(f"   dest_location == op_location == {op_location}")
             if isinstance(dest, Memory):
-                eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
+                #eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
+                eval_operand = dynamic_init_memory_address_reg # just placing the register which should point (by the pre dynamic init) to the wanted address
             else:
                 eval_operand = dest.as_size(op.size)
                 if debug_mode:
                     print(
                         f"    dest is {dest}, size is {op.size}, dest.as_size(op.size): {dest.as_size(op.size)}  ==> eval_operand: {eval_operand}")
+
+        elif op.is_memory:
+            # TODO:: need to improve that logic and integrate offset allocation and avoid dynamic_init where possible!
+            if op.type_category == "register" and op.memory_role == "base":
+                # For every memory usage, we will plant a dynamic_init instruction to place that memory address in a temp register
+                # this is done to avoid using memories offset due to their formatting requirements and my lack of knowledge.
+                #eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
+                eval_operand = dynamic_init_memory_address_reg  # just placing the register which should point (by the pre dynamic init) to the wanted address
+            elif op.type_category == "register" and op.memory_role != "base":
+                eval_operand = "not_supported"
+            elif op.type_category == "immediate":
+                #TODO:: at the moment I'm not handling offset, and just setting the base to be the wanted address. need to handle!!
+                eval_operand = 0
 
         elif op.type_category == "register":
             if op.type == "reg" or "gpr_" in op.type:
@@ -145,11 +171,6 @@ def generate_arm_asl(
                 eval_operand = generate_random_immediate_based_in_width(op.width)
             else:
                 eval_operand = "unknown"
-        elif op.type == "mem":
-            # For every memory usage, we will plant a dynamic_init instruction to place that memory address in a temp register
-            # this is done to avoid using memories offset due to their formatting requirements and my lack of knowledge.
-            # TODO:: need to improve that logic and integrate offset allocation and avoid dynamic_init where possible!
-            eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
         elif op.type == "label":
             eval_operand = Label(postfix=f"generate")
         elif op.type == "condition":
@@ -159,22 +180,44 @@ def generate_arm_asl(
             eval_operand = "unknown"
             # raise ValueError(f"invalid operand type {operand.type} at selected instruction {selected_instruction.mnemonic}")
 
+        #print(f"zzzzzzzzzzzzzzzzzz operand_str: {str(eval_operand)}")
+        # Replace first token (if any) to be the evaluated operand
+        operand_str = re.sub(r"<[^>]+?>", str(eval_operand), op.full_text, count=1)
+        operand_str.strip()
+        #print(f"zzzzzzzzzzzzzzzzzz operand_str: {operand_str}")
+
+        # TODO:: need to handle SP cases (like Xn|SP)
+        # TODO:: need to handler optional cases (like {something})
+
         # handle extensions
-        if op.extensions != "[]":
+        extension_str = None
+        if op.extensions != "[]":   # check string and not literal as its not a list just yet
             extensions = ast.literal_eval(op.extensions)
             if len(extensions) > 1:
                 if extensions_index is None:
                     extensions_index = random.randint(0, len(extensions) - 1)
-                eval_operand = f"{eval_operand}.{extensions[extensions_index]}"
-            elif "SP" in op.extensions:
-                if "31" in eval_operand:
-                    # when asm_template contains <Xn|SP> , it means the register can be r0..30 or SP, r31 is not allowed
-                    # in this logic, I just replace r31 with SP. #TODO:: need to replace with a smarter logic
-                    eval_operand = RegisterManager.get(reg_type="gpr", reg_name="SP")
+                #eval_operand = f"{eval_operand}.{extensions[extensions_index]}"
+                extension_str = extensions[extensions_index]
+            # elif "SP" in op.extensions:
+            # elif "SP" in op.extensions:
+            #     if "31" in eval_operand:
+            #         # when asm_template contains <Xn|SP> , it means the register can be r0..30 or SP, r31 is not allowed
+            #         # in this logic, I just replace r31 with SP. #TODO:: need to replace with a smarter logic
+            #         eval_operand = RegisterManager.get(reg_type="gpr", reg_name="SP")
             else:
-                eval_operand = f"{eval_operand}{extensions[0]}"
+                #eval_operand = f"{eval_operand}{extensions[0]}"
+                extension_str = extensions[0]
 
-        evaluated_operands.append(eval_operand)
+            prev_operand_str = operand_str
+
+            # Replace 2nd token (if any, its first by now) to be the evaluated operand
+            operand_str = re.sub(r"<[^>]+?>", extension_str, operand_str, count=1)
+            #print(f"zzzzzzzzzzzzzzzzzz operand_str: {operand_str}")
+
+            operand_str.strip()
+
+        print(f"        - Operand{op.index} evaluation: {op.text} ==> {operand_str}")
+        evaluated_operands.append(operand_str)
         op_location += 1
 
     gen_instruction = GeneratedInstruction(mnemonic=selected_instruction.mnemonic, operands=evaluated_operands,

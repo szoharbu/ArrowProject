@@ -37,20 +37,18 @@ def find_possible_locations(operands, role, type):
     possible_locations = []
     index = 1   # index start from 1 not 0
     for op in operands:
-        #print(f'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz op_type {op.type}, op_role {op.role}, wanted_type {type}, wanted_role {role}')
+        #print(f'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz op_type {op.type}, op_role {op.role}, op_memory_role {op.memory_role}, wanted_type {type}, wanted_role {role}')
         if not op.is_operand:
             continue
-        if (op.type == type) or (type == "gpr" and op.type.startswith("gpr")) or (type == "simdfp" and op.type.startswith("simdfp")):
-            if (op.role == role) or (op.role == "src_dest" and (role == "src" or role == "dest")):
+
+        if type == "mem" and op.is_memory:
+            if (op.memory_role == "base"):
+                # this initial code will only handle the base, and will try to set offset to zero!
                 possible_locations.append(index)
-        # if (op.type == type) and (op.role == role):
-        #     possible_locations.append(index)
-        # elif (op.type == type) and (op.role == "src_dest") and ((role == "src") or (role == "dest")):
-        #     possible_locations.append(index)
-        # elif type == "gpr" and op.type.startswith("gpr") and (op.role == role):
-        #     possible_locations.append(index)
-        # elif type == "simdfp" and op.type.startswith("simdfp") and (op.role == role):
-        #     possible_locations.append(index)
+        else:
+            if (op.type == type) or (type == "gpr" and op.type.startswith("gpr")) or (type == "simdfp" and op.type.startswith("simdfp")):
+                if (op.role == role) or (op.role == "src_dest" and (role == "src" or role == "dest")):
+                    possible_locations.append(index)
         index += 1
     if not possible_locations:
         raise ValueError(f"Couldn't find possible location that match {role} {type} operand")
@@ -71,9 +69,11 @@ def map_inputs_to_operands(selected_instruction, src, dest):
     src_location = None
     dest_location = None
     if src is not None:
+        if isinstance(src, Memory): src.type = "mem"
         src_locations = find_possible_locations(selected_instruction.operands, role="src", type=src.type)
         src_location = random.choice(src_locations)
     if dest is not None:
+        if isinstance(src, Memory): src.type = "mem"
         dest_locations = find_possible_locations(selected_instruction.operands, role="dest", type=dest.type)
         dest_location = random.choice(dest_locations)
     if dest is not None and src is not None:
