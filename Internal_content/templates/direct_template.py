@@ -4,7 +4,7 @@ from Utils.configuration_management import Configuration
 from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
 from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
-Configuration.Knobs.Config.core_count.set_value(1)
+Configuration.Knobs.Config.core_count.set_value(2)
 Configuration.Knobs.Template.scenario_count.set_value(1)
 Configuration.Knobs.Template.scenario_query.set_value(
     {"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
@@ -21,9 +21,9 @@ def random_instructions():
     AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), src=reg, comment=f"ADC with register {reg} as src")
     # AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), dest=reg, comment=f"ADC with register {reg} as dest")
 
-    AR.generate(instruction_count=10)
-    AR.generate(instruction_count=10, query=(AR.Instruction.steering_class.contains("mx")))
-    AR.generate(instruction_count=10, query=(AR.Instruction.mnemonic.contains("ADC")))
+    AR.generate(instruction_count=5)
+    AR.generate(instruction_count=5, query=(AR.Instruction.steering_class.contains("mx")))
+    AR.generate(instruction_count=5, query=(AR.Instruction.mnemonic.contains("ADC")))
 
     for _ in range(10):
         reg = RegisterManager.get()
@@ -33,7 +33,7 @@ def random_instructions():
     # AR.generate(src=mem)
 
     with AR.Loop(counter=5):
-        AR.generate(instruction_count=10)
+        AR.generate(instruction_count=5)
         # with AR.EventTrigger(frequency=Configuration.Frequency.RARE):
         #     AR.asm("wfi", comment="simple nop instruction")
 
