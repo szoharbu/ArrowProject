@@ -100,80 +100,10 @@ def generate(
 
     # Add operand-based filters (if provided)
     if src is not None:
-        if isinstance(src, Register):
-            if debug_mode:
-                print(f"   Input parameter:: {src} , role = src, type = {src.type}")
-
-            if src.type == "gpr":
-                # reg of type gpr can be used for various types of operands ("gpr_32", "gpr_64", "gpr_var"]
-                query_filter = query_filter.where(
-                    (Instruction.src1_type.startswith("gpr")) |
-                    (Instruction.src2_type.startswith("gpr")) |
-                    (Instruction.src3_type.startswith("gpr")) |
-                    (Instruction.src4_type.startswith("gpr"))
-                )
-            elif src.type == "simdfp":
-                # reg of type simdfp can be used for various types of operands ("simdfp_scalar_128", "simdfp_scalar_16", "simdfp_scalar_32", "simdfp_scalar_64", "simdfp_scalar_8", "simdfp_scalar_var", "simdfp_vec"]
-                query_filter = query_filter.where(
-                    (Instruction.src1_type.startswith("simdfp")) |
-                    (Instruction.src2_type.startswith("simdfp")) |
-                    (Instruction.src3_type.startswith("simdfp")) |
-                    (Instruction.src4_type.startswith("simdfp"))
-                )
-            elif src.type == "sve_pred" and (int(src.name[1:]) >= 8):
-                # if type is of Predicate (P1-P16) and src.name is higher than P7, need to make sure we are querying for width of 4 and not 3. lower Predicates can have both width 3 and 4.
-                # Then join Operand if not already joined, and add filters from Operand
-                query_filter = query_filter.join(Operand).where(
-                    (Operand.role == "src") &
-                    (Operand.type == "sve_pred") &
-                    (Operand.width == 4)
-                )
-            else:
-                query_filter = query_filter.where(
-                    (Instruction.src1_type == src.type) |
-                    (Instruction.src2_type == src.type) |
-                    (Instruction.src3_type == src.type) |
-                    (Instruction.src4_type == src.type)
-                )
-        elif isinstance(src, Memory):
-            if debug_mode:
-                print(f"   Input parameter:: {src} , {type(src)}")
-            query_filter = query_filter.where(
-                (Instruction.src1_type == "mem") |
-                (Instruction.src2_type == "mem") |
-                (Instruction.src3_type == "mem") |
-                (Instruction.src4_type == "mem")
-            )
+        query_filter = add_operand_filter(query_filter, src, role="src")
 
     if dest is not None:
-        if debug_mode:
-            print(f"   Input parameter:: {dest} , role = dest, type = {dest.type}")
-
-        if dest.type == "gpr":
-            # reg of type gpr can be used for various types of operands ("gpr_32", "gpr_64", "gpr_var"]
-            query_filter = query_filter.where(
-                (Instruction.dest1_type.startswith("gpr")) |
-                (Instruction.dest2_type.startswith("gpr"))
-            )
-        elif dest.type == "simdfp":
-            # reg of type simdfp can be used for various types of operands ("simdfp_scalar_128", "simdfp_scalar_16", "simdfp_scalar_32", "simdfp_scalar_64", "simdfp_scalar_8", "simdfp_scalar_var", "simdfp_vec"]
-            query_filter = query_filter.where(
-                (Instruction.dest1_type.startswith("simdfp")) |
-                (Instruction.dest2_type.startswith("simdfp"))
-            )
-        elif dest.type == "sve_pred" and (int(dest.name[1:]) >= 8):
-            # if type is of Predicate (P1-P16) and dest.name is higher than P7, need to make sure we are querying for width of 4 and not 3. lower Predicates can have both width 3 and 4.
-            # Then join Operand if not already joined, and add filters from Operand
-            query_filter = query_filter.join(Operand).where(
-                (Operand.role == "dest") &
-                (Operand.type == "sve_pred") &
-                (Operand.width == 4)
-            )
-        else:
-            query_filter = query_filter.where(
-                (Instruction.dest1_type == dest.type) |
-                (Instruction.dest2_type == dest.type)
-            )
+        query_filter = add_operand_filter(query_filter, dest, role="dest")
 
     # Fetch all matching instructions and select one at random
     instructions = list(query_filter)
@@ -219,3 +149,86 @@ def generate(
         instruction_list.extend(gen_instructions)
 
     return instruction_list
+
+
+def add_operand_filter(query_filter, operand, role):
+
+    asl_extract = True  # TODO:: remove this after fixing this code!!!!
+    if Configuration.Architecture.arm and asl_extract:
+        from Externals.db_manager.asl_testing import asl_models
+        from peewee import SqliteDatabase
+
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        db_path = os.path.join(base_dir, '..', 'Externals', 'db_manager', 'db', 'arm_instructions_isalib.db')
+
+        # Check if the file exists
+        if not os.path.exists(db_path):
+            raise ValueError(f"SQL DB file not found: {db_path}")
+
+        sql_db = SqliteDatabase(db_path)
+        asl_models.Instruction._meta.database = sql_db
+        asl_models.Operand._meta.database = sql_db
+
+        sql_db.connect()
+        Instruction = asl_models.Instruction
+        Operand = asl_models.Operand
+    else:
+        # Get the bound Instruction model
+        Instruction = get_instruction_db()
+
+    # for instr in query:
+    #     print(f"    Instruction: {instr.unique_id} | {instr.mnemonic} | {instr.syntax} ")
+    #     extracted_operands = Operand.select().where(Operand.instruction == instr)
+    #     for op in extracted_operands:
+    #         print(f"      name: {op.name}, index: {op.index}, Text: {op.text}, Type: {op.type}, Role: {op.role}, Size: {op.size} ")
+    # print(f"Total instructions before filter:  { len(query_filter)}")
+
+    config_manager = get_config_manager()
+    debug_mode = config_manager.get_value('Debug_mode')
+
+
+    if isinstance(operand, Register):
+        if debug_mode:
+            print(f"   Input parameter:: {operand}, role = {role}, type = {operand.type}")
+
+        if operand.type == "sve_pred" and (int(operand.name[1:]) >= 8):
+            # if type is of Predicate (P1-P16) and op.name is higher than P7, need to make sure we are querying for width of 4 and not 3. lower Predicates can have both width 3 and 4.
+            # Then join Operand if not already joined, and add filters from Operand
+
+            query_filter = query_filter.join(Operand).where(
+                (Operand.role == role) &
+                (Operand.type == "sve_pred") &
+                (Operand.width == 4)
+            )
+        elif operand.type == "gpr" or operand.type == "simdfp":
+            # gpr - reg of type gpr can be used for various types of operands ("gpr_32", "gpr_64", "gpr_var"]
+            # simdfp - reg of type simdfp can be used for various types of operands ("simdfp_scalar_128", "simdfp_scalar_16", "simdfp_scalar_32", "simdfp_scalar_64", "simdfp_scalar_8", "simdfp_scalar_var", "simdfp_vec"]
+
+
+            query_filter = query_filter.where(
+                ((Instruction.op1_role.contains("src")) & (Instruction.op1_type.startswith(operand.type))) |
+                ((Instruction.op2_role.contains("src")) & (Instruction.op2_type.startswith(operand.type))) |
+                ((Instruction.op3_role.contains("src")) & (Instruction.op3_type.startswith(operand.type))) |
+                ((Instruction.op4_role.contains("src")) & (Instruction.op4_type.startswith(operand.type)))
+            )
+
+        else:  # sve_reg , sev_pred
+            query_filter = query_filter.where(
+                ((Instruction.op1_role.contains("src")) & (Instruction.op1_type == operand.type)) |
+                ((Instruction.op2_role.contains("src")) & (Instruction.op2_type == operand.type)) |
+                ((Instruction.op3_role.contains("src")) & (Instruction.op3_type == operand.type)) |
+                ((Instruction.op4_role.contains("src")) & (Instruction.op4_type == operand.type))
+            )
+
+    elif isinstance(operand, Memory):
+        if debug_mode:
+            print(f"   Input parameter:: {operand},role = {role}, {type(operand)}")
+
+        query_filter = query_filter.where(
+            ((Instruction.op1_role.contains("src")) & (Instruction.op1_ismemory)) |
+            ((Instruction.op2_role.contains("src")) & (Instruction.op2_ismemory)) |
+            ((Instruction.op3_role.contains("src")) & (Instruction.op3_ismemory)) |
+            ((Instruction.op4_role.contains("src")) & (Instruction.op4_ismemory))
+        )
+
+    return query_filter
