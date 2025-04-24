@@ -1,9 +1,6 @@
 import random
 from Utils.configuration_management import Configuration
 from Arrow_API import AR
-from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
-from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
-
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.DISPATCH])
 def is_mx_v2g_cross_scenario():
@@ -11,10 +8,7 @@ def is_mx_v2g_cross_scenario():
     with AR.Loop(counter=10):
         for _ in range(10):
             action = AR.choice(values={"mx": 80, "v2g": 80})
-            if action == "mx":
-                AR.generate(query=(AR.Instruction.steering_class.contains("mx_pred")))
-            else:  # v2g
-                AR.generate(query=(AR.Instruction.steering_class.contains("vx_v2g")))
+            AR.generate(query=AR.Instruction.steering_class.contains(action))
 
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM,

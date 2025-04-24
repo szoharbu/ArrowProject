@@ -34,18 +34,23 @@ class Instruction(BaseModel):
     usl_info = TextField(null=True)  # Full USL JSON
     is_valid = BooleanField(default=True)  # New boolean flag with a default
     # redundant fields to reduce the number of joins
-    src1_size = IntegerField(null=True)
-    src1_type = CharField(null=True)
-    src2_size = IntegerField(null=True)
-    src2_type = CharField(null=True)
-    src3_size = IntegerField(null=True)
-    src3_type = CharField(null=True)
-    src4_size = IntegerField(null=True)
-    src4_type = CharField(null=True)
-    dest1_size = IntegerField(null=True)
-    dest1_type = CharField(null=True)
-    dest2_size = IntegerField(null=True)
-    dest2_type = CharField(null=True)
+    op1_role = CharField(null=True)
+    op1_type = CharField(null=True)
+    op1_size = IntegerField(null=True)
+    op1_ismemory = BooleanField(default=False)
+    op2_role = CharField(null=True)
+    op2_type = CharField(null=True)
+    op2_size = IntegerField(null=True)
+    op2_ismemory = BooleanField(default=False)
+    op3_role = CharField(null=True)
+    op3_type = CharField(null=True)
+    op3_size = IntegerField(null=True)
+    op3_ismemory = BooleanField(default=False)
+    op4_role = CharField(null=True)
+    op4_type = CharField(null=True)
+    op4_size = IntegerField(null=True)
+    op4_ismemory = BooleanField(default=False)
+
 
     class Meta:
         database = db
@@ -54,6 +59,7 @@ class Instruction(BaseModel):
 class Operand(BaseModel):
     instruction = ForeignKeyField(Instruction, backref="operands", on_delete="CASCADE")
     text = CharField()
+    full_text = CharField()
     syntax = CharField()
     type = CharField()
     type_category = CharField()
@@ -63,7 +69,9 @@ class Operand(BaseModel):
     width = IntegerField(null=True)
     element_size = IntegerField(null=True)
     extensions = TextField(null=True)  # a JSON list of extensions like .T, /M, etc
-    is_optional = IntegerField(default=0)  # 0 = False, 1 = True
+    is_optional = BooleanField(default=False)  # default to False
+    is_memory = BooleanField(default=False)  # default to False
+    memory_role = CharField()
     is_operand = BooleanField(default=True)  # New boolean flag with a default
     is_valid = BooleanField(default=True)  # New boolean flag with a default
     #anchors = TextField(null=True)  # Stored as JSON string

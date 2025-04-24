@@ -4,6 +4,7 @@ import yaml
 from typing import List
 from Externals.db_manager.asl_testing.asl_models import Instruction, Operand, db, initialize_db
 
+valid_instruction_counter = 0  # global variable
 
 def reset_database():
     """Drops existing tables and recreates them to ensure schema consistency."""
@@ -15,7 +16,7 @@ def reset_database():
 ####################################################################################################################### Operand Class
 
 class Operand_class:
-    def __init__(self, ast_data=None, var_encode_data=None):
+    def __init__(self, operand_name, ast_data=None, var_encode_data=None, extensions=None):
         """
         Initialize an Operand object.
 
@@ -33,7 +34,9 @@ class Operand_class:
         :param type_category: Register type (e.g., register, immediate)
         :param role: Similar to "use" field, with slight adjustments and more common name
         """
+        self.operand_name = operand_name
         self.ast_text = "unknown"
+        self.ast_full_text = "unknown" # Full text from asm_template, include characters the ast_test might remove like [ , ] , ]! ...
         self.var_encode_text = "unknown"
         self.index = -1
         self.syntax = "unknown"
@@ -46,9 +49,13 @@ class Operand_class:
         self.type = "unknown"
         self.type_category = "unknown"
         self.role = "unknown"
-        self.extensions = []  # List of extensions
+        self.extensions = extensions
+        self.tokens = []  # List of variable tokens <*>
         self.is_operand = True  # Flag to indicate if Operand came from ast_operands or just a data field from var_encoding
         self.is_valid = True  # Flag to indicate if the Operand is valid or still contain unknown values
+        self.is_optional = False
+        self.is_memory = False
+        self.memory_role = "None"
 
         if var_encode_data:
             for key, val in var_encode_data.items():
@@ -66,9 +73,10 @@ class Operand_class:
             self.is_operand = False
 
         if var_encode_data is None or ast_data is None:
+            print(f"             - Invalid operand `{self.operand_name}`, var_encode or ast_data is None ")
             self.is_valid = False
 
-        # print(f"       - Operand init: {self}")
+        print(f"          - Operand init : {self}")
 
     def set(self, key, value):
         if hasattr(self, key):
@@ -80,31 +88,54 @@ class Operand_class:
         attrs = vars(self)  # returns the object's __dict__
         return f"{self.__class__.__name__}({', '.join(f'{k}={v}' for k, v in attrs.items())})"
 
-    # def to_dict(self):
-    #     """
-    #     Convert the Operand object to a dictionary.
-    #
-    #     :return: Dictionary representation of the Operand
-    #     """
-    #     return {
-    #         "ast_text": self.ast_text,
-    #         "var_encode_text": self.var_encode_text,
-    #         "index": self.index,
-    #         "syntax": self.syntax,
-    #         "size": self.size,
-    #         "hibit": self.hibit,
-    #         "width": self.width,
-    #         "encode": self.encode,
-    #         "cnt": self.cnt,
-    #         "r31": self.r31,
-    #         "type": self.type,
-    #         "type_category": self.type_category,
-    #         "role": self.role,
-    #     }
 
 
-#
 ######################################################################################################################## asm_template parsing
+
+def parse_asmtemplate_memory_struct(asm_template):
+
+    memory_struct_dict = { "base" : None, "offset_immediate" : None, "post_offset_immediate" : None, "offset_register" : None, "extended_register": None }
+
+    # Regular expression to match the memory operand
+    mem_struct_regex = r',\s*\[(.*?)\](?:$|, #([^\s,]+)|, )?'
+    ##    ,\s*: This matches make sure there is at least one whitespace characters, which separates previous operands from the memory operand.
+    ##    \[(.*?)\]: This captures the contents inside the [], which is the memory operand.
+    ##    (?:$|, #([^\s,]+)|, )?: This matches an optional comma, a space, a # character, and an optional sign followed all characters that are not spaces or commas. This captures the immediate value.
+
+    match = re.search(mem_struct_regex, asm_template)
+    if match:
+        memory_struct = match.group(1)  # contents inside the []
+        post_index = match.group(2)  # immediate value (if present)
+        post_index_str = " #"+post_index if post_index is not None else ""
+        #print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz found memory struct: '[{memory_struct}]{post_index_str}'")
+
+        if post_index is not None:
+            # if a post_index exist, it means the inner memory struct is just a single base operand, and the
+            memory_struct_dict["base"] = memory_struct
+            memory_struct_dict["post_offset_immediate"] = "#"+post_index
+        else:
+            # the inner memory struct can be a list of operands, like [<Xn>, <imm>], need to split them
+            inner_operands = re.sub(r"{,\s*", ",{", memory_struct) # Convert "{, " into ",{"
+            inner_operands = re.split(r",\s*", inner_operands)
+            memory_struct_dict["base"] = inner_operands[0]  # First operand is the base
+
+            if len(inner_operands) > 1:
+                # if a 2nd operand exist, if its start with # its an immediate offset, else its a register offset
+                if inner_operands[1].startswith("#"):
+                    memory_struct_dict["offset_immediate"] = inner_operands[1]
+                else:
+                    memory_struct_dict["offset_register"] = inner_operands[1]
+
+                if len(inner_operands) > 2:
+                    # if a 3rd operand exist, if its start with # its an immediate offset, else it's an extended register
+                    if inner_operands[1].startswith("#"):
+                        memory_struct_dict["offset_immediate"] = inner_operands[2]
+                    else:
+                        memory_struct_dict["extended_register"] = inner_operands[2]
+
+        print(f"       - Memory struct found: {memory_struct_dict}")
+
+    return memory_struct_dict
 
 
 def parse_asmtemplate(asm_template):
@@ -116,8 +147,10 @@ def parse_asmtemplate(asm_template):
             - operand3 : Vm      extra info: contain T, optional
 
     """
+
     clean_asm_template = re.sub(r"\s+", " ", asm_template).strip()
-    print(f"    - asm template : {clean_asm_template} ")
+    print(f"   = asm template : {clean_asm_template} ")
+    print(f"     = extract asmtemplate")
 
     # Step 1: Extract the mnemonic (first word before a space)
     parts = clean_asm_template.split(" ", 1)
@@ -129,13 +162,13 @@ def parse_asmtemplate(asm_template):
 
     operands_str = parts[1]  # Everything after the mnemonic
 
-    # Step 2: Handle the special case of [], like `ZA.<T>[<Wv>, <offs>{, VGx2}]`
-    # Convert "[...]" into "[unknown]" # TODO:: need to handle later
-    operands_str = re.sub(r"\[.*?\]", "[unknown]", operands_str)
-
-    # Step 3: Handle the special case `{, op3}` -> `, {op3}`
+    # Step 2: Handle the special case `{, op3}` -> `, {op3}`
     # Convert "{, " into ",{"
     operands_str = re.sub(r"{,\s*", ",{", operands_str)
+
+    # Step 3: Mapping the memory struct, as multiple operands can be included in the same memory struct. like [<Xn>, <imm>]
+    is_memory = False
+    memory_struct_dict = parse_asmtemplate_memory_struct(clean_asm_template)
 
     # Step 4: Split operands while keeping all symbols (except commas)
     # This ensures {op3} is treated as one operand
@@ -143,34 +176,69 @@ def parse_asmtemplate(asm_template):
 
     operands_data = []
     index = 0
+
     for op in operands:
-        clean_op = op
-        extensions = []
+        orig_syntax = op
+        clean_syntax = op
         index += 1
+        is_optional = False
+        memory_role = "None"
+
         # Check if the operand is fully wrapped in {}
-        match = re.fullmatch(r"\{(.*)\}", clean_op)
+        match = re.fullmatch(r"\{(.*)\}", orig_syntax)
         if match:
-            clean_op = match.group(1)  # Extract the content inside {}
-            # optional = True  # Mark as optional
-            extensions.append("optional")
+            is_optional = True  # Mark as optional
 
-        clean_op = re.sub(r"[{}<>]", "", clean_op)
+        # # Check if the operand is fully wrapped in {}
+        # match = re.fullmatch(r"\[(.*)\]", orig_syntax)
+        # if match:
+        #     is_memory = True  # Mark as Memory
 
-        # Check if the operand ends with .<T> .D /P ...
-        # match = re.fullmatch(r"(.+?)(?:\.(\w+)|\.\<(\w+)\>|/(\w+)|\|(\w+)|\[(.+)\])?", clean_op)
-        match = re.fullmatch(r"(.+?)(?:(\.\w+)|(\.\<\w+\>)|(/\w+)|(\|\w+)|(\[.+\]))?", clean_op)
-        if match:
-            clean_op = match.group(1)
-            for i in range(2, 7):
-                if match.group(i) is not None:
-                    extensions.append(match.group(i))
+        if orig_syntax.startswith("["):
+            clean_syntax = orig_syntax[1:]   # remove [ from the start
+            is_memory = True    # Mark as Memory that can include multiple operands like [<Xn>, <imm8>}]
+
+        # Extract tokens inside <...>
+        tokens = re.findall(r"<(.*?)>", orig_syntax)
+
+        #print(f'zzzzzz asm_template orig_syntax= {orig_syntax}, index= {index}, tokens= {tokens}, optional= {optional}')
+
+        clear_is_memory = False
+        if orig_syntax.endswith("]"):
+            clean_syntax = clean_syntax.removesuffix("]")
+            clear_is_memory = True
+        if orig_syntax.endswith("]!"):
+            clean_syntax = clean_syntax.removesuffix("]!")
+            clear_is_memory = True
+
+        if clean_syntax in memory_struct_dict.values():
+            # Find and print the key(s) that match this value
+            match = False
+            for key, value in memory_struct_dict.items():
+                if value == clean_syntax:
+                    match = True
+                    memory_role = key
+                    if key == "post_offset_immediate":
+                        is_memory = True # to handle cases of post_index memory like [<Xn|SP>], #<simm>
+                        clear_is_memory = True
+                    break
+            if not match and is_memory:
+                raise ValueError(f"Operand '{clean_syntax}' is marked as memory but does not match any known memory structure.")
 
         new_operand = {
-            "ast_text": op,
-            "clean_name": clean_op,
+            "ast_full_text": orig_syntax,
+            "ast_text": clean_syntax,
             "index": index,
-            "extensions": extensions,
+            "tokens": tokens,
+            "is_optional": is_optional,
+            "is_memory": is_memory,
+            "memory_role": memory_role,
         }
+
+        if clear_is_memory:
+            is_memory = False
+
+        print(f"       - asm_template parsed '{clean_syntax}' : {new_operand}")
         operands_data.append(new_operand)
 
     return operands_data
@@ -205,8 +273,7 @@ def assign_operand_category(operand, yaml_entry):
     elif operand["use"] == "src_dst":
         operand["role"] = "src_dest"
 
-    print(
-        f"          - updating type_category of type {operand["type"]} to '{operand["type_category"]}' category, and role to '{operand["role"]}'")
+    #print(f"          - updating type_category of type {operand["type"]} to '{operand["type_category"]}' category, and role to '{operand["role"]}'")
 
     yaml_entry["type_category"] = operand["type_category"]
     yaml_entry["role"] = operand["role"]
@@ -245,7 +312,7 @@ def assign_operand_size(operand, yaml_entry):
     else:
         operand["size"] = None
 
-    print(f"          - updating size of type {operand["type"]} to '{operand["size"]}'")
+    #print(f"          - updating size of type {operand["type"]} to '{operand["size"]}'")
     yaml_entry["size"] = operand["size"]
 
 
@@ -299,11 +366,12 @@ def assign_operand_syntax_name(operand, yaml_entry):
         syntax = operand["text"]
 
     operand["syntax"] = syntax
-    print(f"          - updating syntax from '{operand["text"]}' to '{operand["syntax"]}'")
+    #print(f"          - updating syntax from '{operand["text"]}' to '{operand["syntax"]}'")
     yaml_entry["syntax"] = operand["syntax"]
 
 
 def extract_var_encode(inst_data):
+    print(f"     = extract var_encoding")
     var_encode_data = []
     var_encode = inst_data.get("var_encode", {})
     if var_encode is not None:
@@ -323,10 +391,12 @@ def extract_var_encode(inst_data):
             }
             var_encode_data.append(var_encode_entry)
 
-            print(f"       - var_encode_entry: {var_encode_entry["text"]}")
+            #print(f"       - var_encode_entry: {var_encode_entry["text"]}")
             assign_operand_category(var_encode_entry, operand_info)
             assign_operand_size(var_encode_entry, operand_info)
             assign_operand_syntax_name(var_encode_entry, operand_info)
+            print(f"       - var_encode_entry '{var_encode_entry["text"]}' : {var_encode_entry}")
+
 
     return var_encode_data
 
@@ -374,7 +444,7 @@ def extract_aligned_options(constraint_block):
             int_keys = [k for k, v in entry.items()
                         if k not in ("label", "boolean") and isinstance(v, int)]
 
-            print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  int_keys: {int_keys}")
+            print(f"          - int_keys: {int_keys}")
             if len(int_keys) != 1:
                 raise ValueError(f"Group '{group_name}' must have exactly one int-valued key, got: {int_keys}")
 
@@ -389,7 +459,7 @@ def extract_aligned_options(constraint_block):
             key_to_label[value] = label
 
         label_map[group_name] = {"key_name": key_name, "entries": key_to_label}
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz  label_map: {label_map}")
+        print(f"          - label_map: {label_map}")
 
     # Determine alignment strategy
     all_keys = [v["key_name"] for v in label_map.values()]
@@ -422,6 +492,7 @@ def extract_constraints(inst_data):
     Constraints group: T : B → { size: 0 }, H → { size: 1 }, S → { size: 10 }, D → { size: 11 }
     Constraints group: shift : LSL → { shift: 0 }, LSR → { shift: 1 }, ASR → { shift: 10 }
     '''
+    print(f"     = extract constraints")
     aligned_options = {}
     constraint_groups = inst_data.get("constraint", {})
 
@@ -431,10 +502,10 @@ def extract_constraints(inst_data):
             aligned_options = extract_aligned_options(constraint_groups)
         except Exception as e:
             # Code to handle the exception
-            print(f"extract_constraints:: error: {e}")
+            print(f"zzzzzzzzzzz extract_constraints:: error: {e}")
             return False, {}
 
-        print(f"aligned_options: {aligned_options}")
+        print(f"          - aligned_options: {aligned_options}")
 
     return True, aligned_options
 
@@ -444,6 +515,7 @@ def extract_constraints(inst_data):
 
 # Function to extract Operands information from Yaml
 def extract_operands(inst_data):
+    print(f"  === extract operands flow")
     success = True
     # extract operands from the asm_templates
     asm_template_operands_data = parse_asmtemplate(inst_data.get("asmtemplate", ""))
@@ -452,73 +524,119 @@ def extract_operands(inst_data):
 
     success = success and success_constraints  # accumulate successes or failure as you go
 
+    '''
+    There are multiple variation of how an operand can look like,
+    yet, if there are tokens <*> then the var_encoding is always first and the rest can be Type specifier/modifiers/...   in the operand structure. This is consistent across all instruction types. For example:
+    for examples: 
+        <Xd> - Xd is the var_encoding
+        <Zdn>.<T> - Zdn is the var_encoding, T is a type specifier 
+        <Pg>/M - Pg is the var_encoding, M is a modifier
+        <Xn|SP> - Xn is the var_encoding, SP is an optional stack 
+    '''
+
+    print(f"     = extract operands")
+
     operands_data: List[Operand_class] = []
     if asm_template_operands_data:  # if asm_template_operands_data is not empty
+
         asm_template_operands_data.sort(key=lambda op: op["index"])
         for asmt_op in asm_template_operands_data:
-            # print(operand)
-            match = False
-            for var in var_encode_data:
-                if asmt_op["clean_name"] == var["syntax"]:
-                    operand_entry = Operand_class(ast_data=asmt_op, var_encode_data=var)
-                    operands_data.append(operand_entry)
-                    match = True
-                    break
-                elif "imm" in asmt_op["clean_name"] and "imm" in var["syntax"]:
-                    # In ARM AArch64, most instruction with immediate will have immX, some will have immr, imms, or both.
-                    # These imm require special calculation logic, which I skip implementing at this early stage. # TODO:: need to eventually model it
-                    # FYI, there are some cases (~5) when immr and imms are used together in an instruction, which require "logical immediate"
-                    operand_entry = Operand_class(ast_data=asmt_op, var_encode_data=var)
-                    if var["text"] == "imms" or var["text"] == "immr":
-                        operand_entry.set("is_valid", False)
-                    match = True
-                    operands_data.append(operand_entry)
-                    break
+            print(f"       - operand_entry: {asmt_op['ast_text']}")
+            tokens = asmt_op["tokens"]
 
-            if not match:
-                operand_entry = Operand_class(ast_data=asmt_op)
+            if not tokens:
+                operand_entry = Operand_class(operand_name=asmt_op["ast_text"], ast_data=asmt_op)
+                operands_data.append(operand_entry)
+                break
+
+            # handle the first token - if there are several tokens in the operand, the var_encode is always the first.
+            asmt_first_token = tokens.pop(0)    # pop the first element
+
+            asmt_token_to_var_encode = None
+            #print(f"zzzzzzzzzzzzzzz  asmt_first_token: {asmt_first_token}")
+            if (match := re.match(r'([^|]+)\|W?SP', asmt_first_token)): # check if asmt_op_var looks like Xn|SP or WSP|WSP
+                asmt_first_token = match.group(1)  # Remove the "|SP" part
+
+            for var in var_encode_data:
+                # check for exact match
+                if asmt_first_token == var["syntax"]:
+                    asmt_token_to_var_encode = var
+                    break
+                # check for partial immediate match
+                elif "imm" in asmt_first_token and "imm" in var["syntax"]:
+                    asmt_token_to_var_encode = var
+                    break
+                # handle cases when counter is involved, like Wt1, Wt2
+                elif (match := re.match(r'^(\w+?)(\d)$', asmt_first_token)):
+                    if (match.group(1) == var["syntax"]) and (match.group(2)=="1"):
+                        asmt_token_to_var_encode = var
+                        break
+                # handle cases of <V><d|n|m>
+                elif (match := re.match(r'<V><([dnm])>\s*$', asmt_op['ast_text'])):
+                    if ("V"+match.group(1) == var["syntax"]):
+                        asmt_token_to_var_encode = var
+                        break
+
+
+            if asmt_token_to_var_encode is None:
+                #raise ValueError(f"Operand {asmt_op['ast_text']} is without a matching var_encode")
+                print(f"zzzzzzzzzzzz  Invalid operand: {asmt_token_to_var_encode} - without a matching var_encode")
+                operand_entry = Operand_class(operand_name=asmt_op["ast_text"] , ast_data=asmt_op)
                 operand_entry.set("is_valid", False)
                 operands_data.append(operand_entry)
+                break
                 #    raise ValueError(f"Operand {asmt_op['clean_name']} not found in var_encode_data")
+            else:
+                print(f"          - asmt_token `{asmt_first_token}` matched with: {asmt_token_to_var_encode}")
+
+            # handle extensions field
+            extensions = []
+            if tokens: # the first was used for var_encode. if there is a second its a constraint TODO:: need to check that assumption
+                second_token = tokens.pop(0)
+                if constraints_data:
+                    print(f"          - constraint: {constraints_data}")
+                    field_name = second_token + "_options"
+                    if field_name in constraints_data:
+                        print(f"          - updating extensions of {asmt_op["ast_text"]} to '{constraints_data[field_name]}'")
+                        extensions = constraints_data[field_name]
+                    # elif asmt_op['ast_text'] == "<V><d>":
+                    #     # handle special case of <V><d> where the constraint name is V_option and not d_option
+                    #     field_name = "V_options"
+                    #     print(f"          - updating extensions of {asmt_op["ast_text"]} to '{constraints_data[field_name]}'")
+                    #     extensions = constraints_data[field_name]
+                    else:
+                        print(f"          - operand {asmt_op["ast_text"]} has no matching extension in constraints data")
+
+            # In most cases, there are maximum of 2 tokens. there are some rare cases like "<Vn>.<Ts>[<index>]" or even (<systemreg>|S<op0>_<op1>_<Cn>_<Cm>_<op2>)
+            # This cases will be skipped for now. TODO:: need to address it later on
+            if tokens: # two tokens were already removed from the list. checking if there are more
+                print(f"             - Invalid operand `{asmt_op["ast_text"]}`, Tokens left without a match: {tokens}")
+                # raise ValueError(f"Tokens left in operand {asmt_op['ast_text']}: {tokens}")
+
+            operand_entry = Operand_class(operand_name=asmt_op["ast_text"],
+                                          ast_data=asmt_op,
+                                          var_encode_data=asmt_token_to_var_encode,
+                                          extensions=extensions)
+
+            if tokens:
+                operand_entry.set("is_valid", False)
+
+            operands_data.append(operand_entry)
+
 
     # Identify unmatched items from the var_encode_data
-    # Extract existing syntaxes from operands_list
-    existing_syntaxes = {operand.syntax for operand in operands_data}
-    # Extract vars that do not exist in the operands_list based on the 'syntax' field
-    non_matching_vars = [var for var in var_encode_data if var['syntax'] not in existing_syntaxes]
-
+    existing_syntaxes = {operand.syntax for operand in operands_data} # Extract existing syntaxes from operands_list
+    non_matching_vars = [var for var in var_encode_data if var['syntax'] not in existing_syntaxes] # Extract vars that do not exist in the operands_list based on the 'syntax' field
     for var in non_matching_vars:
-        operand_entry = Operand_class(var_encode_data=var)
+        print(f"       - operand_entry: {var["text"]}")
+        operand_entry = Operand_class(operand_name=var["text"], var_encode_data=var)
         operand_entry.set("index", -1)
         operand_entry.set("is_valid", False)
         operand_entry.set("is_operand", False)
-
         operands_data.append(operand_entry)
 
-    # handle extensions field
-    for op in operands_data:
 
-        if op.extensions and constraints_data:  # if both extensions and constraints_data are not None
-            processed_list = [item.lstrip('.') + '_options' for item in op.extensions]
-            for item in processed_list:  # Process the list to match dictionary keys
-                if item in constraints_data:
-                    print(
-                        f"          - updating extensions of {op.syntax} from '{op.extensions}' to '{constraints_data[item]}'")
-                    op.set("extensions", constraints_data[item])
-                    break  # Stops after finding the first match
 
-        # if ".Tb" in op.extensions or ".Ta" in op.extensions:
-        #     # In Arm, there is a special case when T and Tb/Ta are used, and it require special referencing to the size filed
-        #     # I will skip implementing that logic at this early stage. # TODO:: need to eventually model it
-        #     op.set("is_valid", False)
-        # if op.type == "simdfp_scalar_var":
-        #     # Here's a summary of the register mapping:
-        #     #   32 x 128-bit SIMD registers (v0 to v31)
-        #     #      - Can be used for SIMD operations (NEON and Advanced SIMD instructions)
-        #     #      - Can be used for double-precision floating-point operations (d0 to d15)
-        #     #      - Can be used for single-precision floating-point operations (s0 to s15)
-        #     # TODO:: this require additional logic which not yet implemented, so I will skip it for now .
-        #     op.set("is_valid", False)
 
     operands_data.sort(key=lambda op: op.index)
 
@@ -526,48 +644,32 @@ def extract_operands(inst_data):
 
 
 # Function to extend operands and upload basic fields into Instruction object, like src1, src2, dest1. They will be added to Instruction entry to reduce usage of join queries.
-def extended_operands(operands_data):
-    """Extracts up to 4 source and 2 destination operands explicitly."""
+def extended_fake_knobs(operands_data):
+    """Extracts up to 4 operands explicitly."""
 
-    # Initialize variables with default values
-    src1_type, src2_type, src3_type, src4_type = None, None, None, None
-    src1_size, src2_size, src3_size, src4_size = None, None, None, None
-    dest1_type, dest2_type = None, None
-    dest1_size, dest2_size = None, None
+    op1_role, op2_role, op3_role, op4_role = None, None, None, None
+    op1_type, op2_type, op3_type, op4_type = None, None, None, None
+    op1_size, op2_size, op3_size, op4_size = None, None, None, None
+    op1_ismemory, op2_ismemory, op3_ismemory, op4_ismemory = False, False, False, False
 
-    src_index = 1
-    dest_index = 1
-
+    index = 1
     for op in operands_data:
-        # op_type = operand['type']
-        # op_role = operand['role']
-        # op_size = operand['size']
-
-        if op.role == "src" or op.role == "src_dest":
-            if src_index == 1:
-                src1_type, src1_size = op.type, op.role
-            elif src_index == 2:
-                src2_type, src2_size = op.type, op.role
-            elif src_index == 3:
-                src3_type, src3_size = op.type, op.role
-            elif src_index == 4:
-                src4_type, src4_size = op.type, op.role
-            src_index += 1
-
-        elif op.role == "dest" or op.role == "src_dest":
-            if dest_index == 1:
-                dest1_type, dest1_size = op.type, op.size
-            elif dest_index == 2:
-                dest2_type, dest2_size = op.type, op.size
-            dest_index += 1
+        if op.is_operand:
+            # print(f"zzzzzzzzzzzzzz name = {op.operand_name}, index = {op.index}, role = {op.role}, type = {op.type}, size = {op.size}, is_memory = {op.is_memory}")
+            if op.index == 1:
+                op1_role, op1_type, op1_size, op1_ismemory = op.role, op.type, op.size, op.is_memory
+            elif op.index == 2:
+                op2_role, op2_type, op2_size, op2_ismemory = op.role, op.type, op.size, op.is_memory
+            elif op.index == 3:
+                op3_role, op3_type, op3_size, op3_ismemory = op.role, op.type, op.size, op.is_memory
+            elif op.index == 4:
+                op4_role, op4_type, op4_size, op4_ismemory = op.role, op.type, op.size, op.is_memory
 
     return {
-        "src1_type": src1_type, "src1_size": src1_size,
-        "src2_type": src2_type, "src2_size": src2_size,
-        "src3_type": src3_type, "src3_size": src3_size,
-        "src4_type": src4_type, "src4_size": src4_size,
-        "dest1_type": dest1_type, "dest1_size": dest1_size,
-        "dest2_type": dest2_type, "dest2_size": dest2_size,
+        "op1_role": op1_role, "op1_type": op1_type, "op1_size": op1_size, "op1_ismemory": op1_ismemory,
+        "op2_role": op2_role, "op2_type": op2_type, "op2_size": op2_size, "op2_ismemory": op2_ismemory,
+        "op3_role": op3_role, "op3_type": op3_type, "op3_size": op3_size, "op3_ismemory": op3_ismemory,
+        "op4_role": op4_role, "op4_type": op4_type, "op4_size": op4_size, "op4_ismemory": op4_ismemory,
     }
 
 
@@ -575,6 +677,10 @@ def populate_database(yaml_dict, force_reset=False):
     """
     Populates the database with instruction data.
     """
+
+    global valid_instruction_counter
+    valid_instruction_counter = 0
+
     if force_reset:
         reset_database()
 
@@ -582,6 +688,7 @@ def populate_database(yaml_dict, force_reset=False):
     with db.atomic():
 
         for inst_id, inst_data in yaml_dict.items():
+            print("=========================================================================================================================")
             print(f"--------------------------------------------- Processing: {inst_id} ")
 
             asm_template = inst_data.get("asmtemplate", "")  # Assume one ASM_templates per entry
@@ -616,13 +723,18 @@ def populate_database(yaml_dict, force_reset=False):
 
             if not success:
                 is_instruction_valid = False
-                print(f"zzzzzzzzzzzz  Invalid instruction: {inst_id}")
-            for op in operands_data:
-                if op.is_operand and not op.is_valid:
-                    is_instruction_valid = False
-                    print(f"zzzzzzzzzzzz  Invalid instruction: {inst_id}")
+                print(f"       - Invalid instruction: {inst_id}")
+            else:
+                for op in operands_data:
+                    if op.is_operand and not op.is_valid:
+                        is_instruction_valid = False
+                        print(f"       - Invalid instruction: {inst_id} due to invalid operand {op.syntax}")
+                        break
 
-            instr_extended_operands = extended_operands(operands_data)
+            if is_instruction_valid:
+                valid_instruction_counter += 1
+
+            instr_extended_fake_knobs = extended_fake_knobs(operands_data)
 
             print(f"    - syntax: {asm_template}")
             for op in operands_data:
@@ -650,7 +762,7 @@ def populate_database(yaml_dict, force_reset=False):
                 # max_latency=max_latency,
                 steering_class=str(steering_classes_list),
                 is_valid=is_instruction_valid,
-                **instr_extended_operands
+                **instr_extended_fake_knobs
             )
 
             # Handle random_generate flag
@@ -660,7 +772,8 @@ def populate_database(yaml_dict, force_reset=False):
             for operand in operands_data:
                 Operand.create(
                     instruction=instruction,  # Foreign key reference
-                    text=operand.ast_text,  # Wd, Xn, Vn (and not Rd, Rm, Rn)
+                    text=operand.ast_text,  # <Wd>, <Xn>, <Vn> (and not Rd, Rm, Rn)
+                    full_text=operand.ast_full_text, # include all tokens and characters like []!
                     syntax=operand.syntax,  # X0, V1
                     type=operand.type,  # gpr_64, gpr_32
                     type_category=operand.type_category,  # register, immediate, unknown # TODO:: need to extend it
@@ -669,12 +782,19 @@ def populate_database(yaml_dict, force_reset=False):
                     index=operand.index,  # 1,2..
                     width=operand.width,
                     extensions=operand.extensions,
-                    is_optional=0,  # Default to 0, can be adjusted if needed
+                    is_optional=operand.is_optional,
+                    is_memory=operand.is_memory,
+                    memory_role=operand.memory_role,
                     is_operand=operand.is_operand,
                     is_valid=operand.is_valid
                 )
 
     print(f"Total instructions: {Instruction.select().count()}")
+
+    # dont show the full percentage, just the last 2 digits
+    valid_precentage = valid_instruction_counter/Instruction.select().count()
+    valid_precentage = str(valid_precentage).split(".")[1][:2]
+    print(f"Total valid instructions: {valid_instruction_counter} ({valid_precentage}%)")
     print("Database populated successfully!")
 
     print(f"Database is stored at: {db.database}")
@@ -724,7 +844,7 @@ if __name__ == "__main__":
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     isa_lib_path = os.path.join(base_dir, 'instruction_jsons', 'arm_isa_lib.yml')
-    # isa_lib_path = os.path.join(base_dir, 'instruction_jsons', 'arm_isa_lib_mini.yml')
+    #isa_lib_path = os.path.join(base_dir, 'instruction_jsons', 'arm_isa_lib_mini.yml')
 
     if not os.path.exists(isa_lib_path):
         raise ValueError(f" Yaml path doesn't exist: {isa_lib_path}")
