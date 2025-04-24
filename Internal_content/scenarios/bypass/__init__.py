@@ -8,7 +8,7 @@ from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManage
 from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
 
-@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A])
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.DISPATCH])
 def bypass_bursts():
     num_burst = random.randint(8,15)
     for _ in range(num_burst):
