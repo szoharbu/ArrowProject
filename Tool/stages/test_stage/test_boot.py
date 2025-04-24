@@ -32,17 +32,67 @@ def do_boot():
     logger.debug(f"BODY:: Running BSP boot code")
     # all threads will pass through this BSP boot code, and will jump from here to thier indevidual boot segment
 
-    boot_blocks = curr_state.memory_manager.get_segments(pool_type=Configuration.Memory_types.BOOT_CODE)
+    register_manager = curr_state.register_manager
+    tmp_reg1 = register_manager.get_and_reserve(reg_type="gpr")
+    # # Load vector table
+    # AsmLogger.comment("Load vector table")
+    # AsmLogger.asm(f"ldr {tmp_reg1}, =vector_table_base")
+    # AsmLogger.asm(f"msr vbar_el3, {tmp_reg1}")
+    # AsmLogger.asm(f"msr vbar_el2, {tmp_reg1}")
+    # AsmLogger.asm(f"msr vbar_el1, {tmp_reg1}")
 
-    # TODO:: need to add a logic that query which core is running and jump to the corresponding boot block
-    # TEMP WA, I'm jumping to the first boot block for now
-    boot_block = boot_blocks[0]
-    branch_to_segment.BranchToSegment(boot_block).one_way_branch()
+    # Load the stack pointer
+    sp_reg = register_manager.get(reg_name="sp")
+    register_manager.reserve(sp_reg)
+    AsmLogger.comment("Load the stack pointer")
+    AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
+    AsmLogger.asm(f"mov {sp_reg}, {tmp_reg1}")
+    register_manager.free(sp_reg)
 
-    # setting back to boot code for the print, later return to selected block
-    switch_code(bsp_boot_block)
-    AsmLogger.comment(f"========================= BSP BOOT CODE - end =====================")
-    switch_code(boot_block)
+    # Configure CPU
+    # AsmLogger.comment("cpu_if_cfg")
+    # AsmLogger.asm("bl      cpu_if_cfg")
+    # AsmLogger.comment("isb")
+    # AsmLogger.asm("isb")
+    # AsmLogger.comment("core_interrupt_en")
+    # AsmLogger.asm("bl      core_interrupt_en")
+    # AsmLogger.comment("Jump to the test")
+    # AsmLogger.asm("b       test")
+
+    # switch according to thread
+    tmp_reg2 = register_manager.get_and_reserve(reg_type="gpr")
+    AsmLogger.comment("switch according to thread")
+    AsmLogger.asm(f"mrs {tmp_reg1}, mpidr_el1")
+    AsmLogger.asm(f"ubfx {tmp_reg2}, {tmp_reg1}, #0, #1    //thread_id")
+
+    curr_state = state_manager.get_active_state()
+
+    for state_id in state_manager.states_dict:
+
+        # TODO:: this is a hack, need to fix this and allow ability to get state without switching to it!!!
+
+        state_manager.set_active_state(state_id)
+        tmp_state = state_manager.get_active_state()
+        boot_blocks = tmp_state.memory_manager.get_segments(pool_type=Configuration.Memory_types.BOOT_CODE)
+        if len(boot_blocks) != 1:
+            raise ValueError(
+                "boot_blocks must contain exactly one element, but it contains: {}".format(len(boot_blocks)))
+        boot_block = boot_blocks[0]
+        boot_code_start_label = boot_block.code_label
+        state_manager.set_active_state(curr_state.state_name)
+
+        # state_id is something like "core_0", "core_1", etc. I want to extract the index from it # TODO:: this is a hack, need to fix this and map cores with CPUIDs !!!
+        core_index = int(state_id.split("_")[1])
+        AsmLogger.asm(f"cmp {tmp_reg2}, #{core_index}")
+        AsmLogger.asm(f"beq {boot_code_start_label}")
+
+    register_manager.free(tmp_reg1)
+    register_manager.free(tmp_reg2)
+
+    # # setting back to boot code for the print, later return to selected block
+    # switch_code(bsp_boot_block)
+    # AsmLogger.comment(f"========================= BSP BOOT CODE - end =====================")
+    # switch_code(boot_block)
 
     for state in state_manager.states_dict:
         state_manager.set_active_state(state)
