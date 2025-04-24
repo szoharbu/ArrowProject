@@ -41,6 +41,36 @@ def code_switching_scenario():
     ingredient_manager.call_ingredients_final(joint_ing)
 
 
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.HIGH)
+def nested_code_sequence2():
+    # Creates a randomly nested code structure (like brackets [[[]][]]) to stress call/return flow
+    max_iter = random.randint(5, 20)
+    max_depth = random.randint(3, 5)
+    generate_nested_branch(0, max_depth, 0, max_iter)
+
+def generate_nested_branch2(depth, max_depth, iteration, max_iter):
+    code = MemoryManager.MemorySegment(f"branch_{iteration}", 0x100, Configuration.Memory_types.CODE)
+    with AR.BranchToSegment(code_block=code):
+        while True:
+            if iteration >= max_iter:
+                AR.comment("Max iteration reached.")
+                return depth, iteration
+
+            weights = {"generate": 30, "deeper": 40, "exit": 30}
+            if depth == 0: weights.pop("exit")
+            if depth == max_depth: weights.pop("deeper")
+            if iteration > 0.7 * max_iter: weights["exit"] += 20
+
+            action = AR.choice(values=weights)
+            AR.comment(f"action: {action}")
+
+            if action == "generate":
+                AR.generate(instruction_count=random.randint(1, 3))
+            elif action == "deeper":
+                depth, iteration = generate_nested_branch(depth + 1, max_depth, iteration + 1, max_iter)
+            else:
+                return depth - 1, iteration + 1
+
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.HIGH, tags=[Configuration.Tag.BRANCH])
 def nested_code_sequence():
@@ -105,3 +135,7 @@ def generate_nested_branch(depth, max_depth, current_iteration, max_iteration):
             else: # exit
                 AR.comment(f'exiting code {code}')
                 return depth-1, current_iteration+1  # ensure we return at depth 0
+
+
+
+
