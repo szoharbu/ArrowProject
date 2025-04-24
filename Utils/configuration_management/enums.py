@@ -14,7 +14,6 @@ class Memory_types(Enum):
     DATA_SHARED = "data_shared"
     DATA_PRESERVE = "data_reserved"
 
-
 # Simplified Enum for standard size constants
 class ByteSize(Enum):
     SIZE_1K = 1024                # Kilobyte (1K = 1024 bytes)
