@@ -55,6 +55,6 @@ def generate_binary():
     pipeline.link(object_file, executable_file)
 
     # Step 5: Run the executable on ISS
-    #pipeline.golden_reference_simolator(executable_file, iss_prerun_log_file)
+    pipeline.golden_reference_simolator(executable_file, iss_prerun_log_file)
 
     logger.info("---- Build process completed successfully!")

@@ -1,7 +1,7 @@
 from peewee import Expression
 from typing import Union, List, Dict, Any, Optional, Tuple
 from Utils.logger_management import get_logger
-from Utils.configuration_management import get_config_manager, Configuration
+from Utils.configuration_management import Configuration
 from Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
 from Tool.register_management.register import Register
 from Tool.memory_management.memory_segments import CodeSegment
@@ -18,7 +18,6 @@ from Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as Event
 class AR:
     logger = get_logger()
     logger.info("======================== AR_API")
-    config_manager = get_config_manager()
 
     from Tool.decorators.scenario_decorator import scenario_decorator
     from Tool.ingredient_management.ingredient import Ingredient
