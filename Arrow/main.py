@@ -3,7 +3,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from Externals.cloud.upload_run_statistics import upload_statistics
+from Arrow.Externals.cloud.upload_run_statistics import upload_statistics
 
 def main(args=None):
 
