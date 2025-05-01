@@ -1,5 +1,5 @@
-from Utils.logger_management import get_logger
-from Utils.singleton_management import SingletonManager
+from ...Utils.logger_management import get_logger
+from ...Utils.singleton_management import SingletonManager
 from typing import Any
 
 class ConfigManager:

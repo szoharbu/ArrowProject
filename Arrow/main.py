@@ -1,9 +1,8 @@
-import os
 import sys
 import time
 import traceback
 from pathlib import Path
-from Arrow.Externals.cloud.upload_run_statistics import upload_statistics
+from .Externals.cloud.upload_run_statistics import upload_statistics
 
 def main(args=None):
 
@@ -11,9 +10,9 @@ def main(args=None):
 
     ensure_correct_setting()
 
-    from Utils.arg_parser.arg_parser import parse_arguments
-    from Utils.logger_management import get_logger
-    from Utils.configuration_management import get_config_manager
+    from .Utils.arg_parser.arg_parser import parse_arguments
+    from .Utils.logger_management import get_logger
+    from .Utils.configuration_management import get_config_manager
 
     set_basedir_path()
 
@@ -23,7 +22,7 @@ def main(args=None):
 
     try:
 
-        from Tool.stages import input_stage, evaluation_stage, init_stage, test_stage, final_stage
+        from .Tool.stages import input_stage, evaluation_stage, init_stage, test_stage, final_stage
 
         input_stage.read_inputs()          # Read inputs, read template, read configuration, ARM/riscv, ...
         evaluation_stage.evaluate_section() # review all configs and knobs, set them according to some logic and seal them ...
@@ -62,7 +61,7 @@ def main(args=None):
 
 
 def dump_time(start_time, message_header = None) -> str:
-    from Utils.logger_management import get_logger
+    from .Utils.logger_management import get_logger
     logger = get_logger()
 
     current_time = time.time()  # Capture current time
@@ -78,8 +77,8 @@ def set_basedir_path():
     - `submodule_content_path`: The resolved path to the submodule content directory.
     The paths are stored in the configuration manager for easy access throughout the application.
     """
-    from Utils.logger_management import get_logger
-    from Utils.configuration_management import get_config_manager
+    from .Utils.logger_management import get_logger
+    from .Utils.configuration_management import get_config_manager
 
     logger = get_logger()
     config_manager = get_config_manager()
@@ -101,16 +100,6 @@ def ensure_correct_setting():
         raise RuntimeError(
             f"Arrow requires Python 3.12 or higher. You are using Python {sys.version_info.major}.{sys.version_info.minor}."
         )
-
-    """Ensure the script is being run from the project root directory."""
-    required_dirs = ["Arrow", "Externals", "Submodules"]  # Directories that should exist in the project root
-    cwd = os.getcwd()
-    for dir_name in required_dirs:
-        if not os.path.isdir(os.path.join(cwd, dir_name)):
-            raise RuntimeError(
-                f"Invalid working directory: {cwd}\n"
-                f"Please run this script from the project root directory, e.g., 'ArrowProject/' and not 'ArrowProject/Arrow/'."
-            )
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,6 @@
 import logging
 import os
-from Utils.singleton_management import SingletonManager
+from ..Utils.singleton_management import SingletonManager
 
 class Logger:
     """

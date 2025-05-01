@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 import shutil
-from Utils.logger_management import get_logger
-from Utils.configuration_management import get_config_manager
-from Utils.configuration_management.enums import Architecture
+from ...Utils.logger_management import get_logger
+from ...Utils.configuration_management import get_config_manager
+from ...Utils.configuration_management.enums import Architecture
 
 def setup_chosen_architecture():
     config_manager = get_config_manager()
@@ -66,7 +66,7 @@ def setup_template_and_content(template_file_path, input_content_path=None):
             external_content_base_path = f"External-content-not-available"
     config_manager.set_value('external_content_dir_path', external_content_base_path)
 
-    internal_content_base_path = Path(base_dir).resolve() / ".." / 'Internal_content'
+    internal_content_base_path = Path(base_dir).resolve() / 'Internal_content'
     internal_content_base_path = Path(internal_content_base_path).resolve()
     config_manager.set_value('internal_content_dir_path', internal_content_base_path)
 

@@ -1,7 +1,7 @@
 import json
 from peewee import SqliteDatabase, OperationalError
-from Externals.db_manager.models import get_instruction_db, get_json_path, get_db_path
-from Utils.logger_management import get_logger
+from Arrow.Externals.db_manager.models import get_instruction_db, get_json_path, get_db_path
+from Arrow.Utils.logger_management import get_logger
 import os
 
 """

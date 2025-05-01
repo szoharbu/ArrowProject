@@ -1,6 +1,6 @@
 from typing import Callable, Any, Dict, List
-from Utils.logger_management import get_logger
-from Utils.singleton_management import SingletonManager
+from ...Utils.logger_management import get_logger
+from ...Utils.singleton_management import SingletonManager
 
 class Knob:
     def __init__(self, name: str, value_func: [Callable[[], Any],List[Callable[[], Any]]], read_only: bool, dynamic: bool, global_knob: bool, description:str=None):

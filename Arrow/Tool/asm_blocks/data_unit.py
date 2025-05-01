@@ -1,8 +1,8 @@
 import inspect
 import os
 from typing import Optional
-from Utils.configuration_management import get_config_manager
-from Utils.logger_management import get_logger
+from ...Utils.configuration_management import get_config_manager
+from ...Utils.logger_management import get_logger
 
 def normalize_path(path):
     """Helper function to normalize paths to absolute, lowercase, and consistent separator format."""
@@ -16,8 +16,9 @@ def get_last_user_context():
     external_content_dir_path = config_manager.get_value('external_content_dir_path')
     template_file = normalize_path(config_manager.get_value('template_path'))
 
-    test_stage_path = normalize_path('Tool/stages/test_stage')
-    memory_segments_path = normalize_path('Tool/memory_management/memory_segments.py') # initial code label is create there
+    arrow_root = config_manager.get_value('base_dir_path')
+    test_stage_path = normalize_path(arrow_root + '/Tool/stages/test_stage')
+    memory_segments_path = normalize_path(arrow_root + '/Tool/memory_management/memory_segments.py') # initial code label is create there
 
     # Capture the stack once as the below code might go over it twice, and it has performance penalty
     stack_snapshot = inspect.stack()

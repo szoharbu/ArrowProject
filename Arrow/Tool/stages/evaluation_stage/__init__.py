@@ -1,5 +1,5 @@
 
-from Utils.logger_management import get_logger
+from ....Utils.logger_management import get_logger
 
 def evaluate_section():
     logger = get_logger()

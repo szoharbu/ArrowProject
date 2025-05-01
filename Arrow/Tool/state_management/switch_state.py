@@ -1,7 +1,7 @@
-from Tool.state_management import get_state_manager
-from Tool.memory_management.memory_segments import CodeSegment
-from Utils.configuration_management import Configuration
-from Utils.logger_management import get_logger
+from ...Tool.state_management import get_state_manager
+from ...Tool.memory_management.memory_segments import CodeSegment
+from ...Utils.configuration_management import Configuration
+from ...Utils.logger_management import get_logger
 
 def switch_state(state_id:str):
     """

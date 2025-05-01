@@ -1,13 +1,13 @@
 import os
 import importlib.util
 import sys
-from Utils.configuration_management import get_config_manager, Configuration
-from Utils.logger_management import get_logger
-from Tool.state_management import get_state_manager
-from Tool.state_management.state_manager import State
-from Tool.register_management import register_manager
-from Tool.memory_management import memory_manager, MemoryRange
-from Tool.memory_management.interval_lib import IntervalLib
+from ....Utils.configuration_management import get_config_manager, Configuration
+from ....Utils.logger_management import get_logger
+from ....Tool.state_management import get_state_manager
+from ....Tool.state_management.state_manager import State
+from ....Tool.register_management import register_manager
+from ....Tool.memory_management import memory_manager, MemoryRange
+from ....Tool.memory_management.interval_lib import IntervalLib
 
 def init_state():
     logger = get_logger()
@@ -107,7 +107,7 @@ def init_scenarios():
     logger = get_logger()
     logger.info("============ init_scenarios")
     logger.info("================ import Internal_content")
-    import Internal_content
+    import Arrow.Internal_content
 
     config_manager = get_config_manager()
     external_content_dir_path = config_manager.get_value('external_content_dir_path')

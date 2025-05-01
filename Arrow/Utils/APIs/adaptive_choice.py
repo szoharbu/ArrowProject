@@ -1,7 +1,7 @@
 import random
 import inspect
 from typing import Union, Dict, Any, Tuple
-from Utils.singleton_management import SingletonManager
+from ...Utils.singleton_management import SingletonManager
 
 
 class AdaptiveChoiceManager:

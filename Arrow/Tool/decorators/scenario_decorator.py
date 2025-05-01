@@ -1,7 +1,7 @@
 
 from typing import Optional, Callable, List
-from Utils.configuration_management import Configuration
-from Tool.scenario_management import ScenarioWrapper, get_scenario_manager
+from ...Utils.configuration_management import Configuration
+from ...Tool.scenario_management import ScenarioWrapper, get_scenario_manager
 
 
 def scenario_decorator(

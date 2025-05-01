@@ -1,11 +1,11 @@
 import random
 from typing import Optional
-from Utils.configuration_management import Configuration, get_config_manager
-from Utils.logger_management import get_logger
-from Utils.APIs import choice
-from Tool.memory_management.memory_block import MemoryBlock
-from Tool.register_management.register import Register
-from Tool.state_management import get_state_manager
+from ...Utils.configuration_management import Configuration, get_config_manager
+from ...Utils.logger_management import get_logger
+from ...Utils.APIs import choice
+from ...Tool.memory_management.memory_block import MemoryBlock
+from ...Tool.register_management.register import Register
+from ...Tool.state_management import get_state_manager
 
 
 VALID_SIZES = [1, 2, 4, 8]  # Valid memory operand sizes

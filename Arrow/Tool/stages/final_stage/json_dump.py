@@ -1,8 +1,8 @@
 import json
 import os
-from Utils.configuration_management import Configuration, get_config_manager
-from Utils.logger_management import get_logger
-from Tool.state_management import get_state_manager
+from ....Utils.configuration_management import Configuration, get_config_manager
+from ....Utils.logger_management import get_logger
+from ....Tool.state_management import get_state_manager
 
 def generation_json_dump():
     logger = get_logger()

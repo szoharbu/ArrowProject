@@ -1,6 +1,6 @@
 import random
-from Utils.configuration_management.enums import Tag
-from Utils.configuration_management.knob_manager import Knob
+from ...Utils.configuration_management.enums import Tag
+from ...Utils.configuration_management.knob_manager import Knob
 
 
 class Knobs:

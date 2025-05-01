@@ -1,6 +1,6 @@
-from Tool.asm_libraries.loop.loop_base import LoopBase
-from Tool.asm_libraries.asm_logger import AsmLogger
-from Tool.state_management import get_current_state
+from ....Tool.asm_libraries.loop.loop_base import LoopBase
+from ....Tool.asm_libraries.asm_logger import AsmLogger
+from ....Tool.state_management import get_current_state
 
 class Loop_x86(LoopBase):
 

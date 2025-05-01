@@ -1,8 +1,8 @@
 import random
-from Utils.configuration_management import Configuration
+from ....Utils.configuration_management import Configuration
 
-from Arrow_API import AR
-from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
+from ....Arrow_API import AR
+from ....Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
 
 @AR.ingredient_decorator(random=True, priority=Configuration.Priority.HIGH, tags=[Configuration.Tag.STACK])

@@ -1,6 +1,6 @@
 import random
 from typing import List, Optional, Union
-import Tool
+from .ingredient_manager import get_random_ingredients
 """
 
 Flavor Management System Overview:
@@ -110,7 +110,7 @@ class FlavorManager:
 
         # If it's a Flavor, resolve ingredients dynamically based on its tags
         if isinstance(selected, Flavor):
-            selected_ingredients = Tool.ingredient_manager.get_random_ingredients(count=selected.count, tags=selected.tags)
+            selected_ingredients = get_random_ingredients(count=selected.count, tags=selected.tags)
             return Flavor(name=selected.name, description=selected.description,
                           weight=selected.weight, ingredients=selected_ingredients)
 

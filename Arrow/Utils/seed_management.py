@@ -1,6 +1,6 @@
 import random
 import numpy as np
-from Utils.configuration_management import get_config_manager
+from ..Utils.configuration_management import get_config_manager
 
 def set_seed(seed):
     """

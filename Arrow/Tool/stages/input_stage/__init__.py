@@ -1,7 +1,7 @@
 import importlib.util
 import sys
-from Utils.configuration_management import get_config_manager
-from Utils.logger_management import get_logger
+from ....Utils.configuration_management import get_config_manager
+from ....Utils.logger_management import get_logger
 
 def read_template():
     logger = get_logger()

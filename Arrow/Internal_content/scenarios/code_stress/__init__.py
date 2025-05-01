@@ -1,10 +1,10 @@
 import random
 
-from Internal_content.ingredients.feature_a import ing_A
-from Utils.configuration_management import Configuration
-from Arrow_API import AR
-from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
-from Tool.ingredient_management import get_ingredient_manager
+from ....Internal_content.ingredients.feature_a import ing_A
+from ....Utils.configuration_management import Configuration
+from ....Arrow_API import AR
+from ....Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
+from ....Tool.ingredient_management import get_ingredient_manager
 
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.FEATURE_A, Configuration.Tag.RECIPE])

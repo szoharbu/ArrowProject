@@ -1,13 +1,13 @@
 import random
 from typing import List, Dict
 
-from Utils.configuration_management import Configuration, get_config_manager
-from Utils.logger_management import get_logger
-from Tool.asm_blocks import DataUnit
+from ...Utils.configuration_management import Configuration, get_config_manager
+from ...Utils.logger_management import get_logger
+from ...Tool.asm_blocks import DataUnit
 
-from Tool.memory_management.memory_segments import MemorySegment, CodeSegment, DataSegment, MemoryRange
-from Tool.memory_management.memory_block import MemoryBlock
-from Tool.memory_management import interval_lib
+from ...Tool.memory_management.memory_segments import MemorySegment, CodeSegment, DataSegment, MemoryRange
+from ...Tool.memory_management.memory_block import MemoryBlock
+from ...Tool.memory_management import interval_lib
 
 class MemoryManager:
     def __init__(self, memory_range:MemoryRange):

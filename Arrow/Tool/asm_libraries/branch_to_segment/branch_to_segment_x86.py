@@ -1,7 +1,7 @@
 
-from Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegmentBase
-from Tool.state_management.switch_state import switch_code
-from Tool.asm_libraries.asm_logger import AsmLogger
+from ....Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegmentBase
+from ....Tool.state_management.switch_state import switch_code
+from ....Tool.asm_libraries.asm_logger import AsmLogger
 
 class BranchToSegment_x86(BranchToSegmentBase):
     def __enter__(self):

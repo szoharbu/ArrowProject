@@ -1,9 +1,9 @@
 
 from typing import List
-from Utils.configuration_management import Configuration
-from Tool.register_management.register import Register
-from Tool.asm_libraries.asm_logger import AsmLogger
-from Tool.state_management import get_current_state
+from ...Utils.configuration_management import Configuration
+from ...Tool.register_management.register import Register
+from ...Tool.asm_libraries.asm_logger import AsmLogger
+from ...Tool.state_management import get_current_state
 
 class Stack:
 

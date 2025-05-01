@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from Utils.APIs.choice import choice
-from Tool.asm_libraries.label import Label
-from Tool.state_management import get_current_state
+from ....Utils.APIs.choice import choice
+from ....Tool.asm_libraries.label import Label
+from ....Tool.state_management import get_current_state
 
 class LoopBase(ABC):
     def __init__(

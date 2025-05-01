@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 import random
-from Tool.asm_libraries.label import Label
-from Utils.configuration_management import Configuration
-from Tool.state_management import get_current_state
-from Tool.memory_management.memory import Memory
+from ....Tool.asm_libraries.label import Label
+from ....Utils.configuration_management import Configuration
+from ....Tool.state_management import get_current_state
+from ....Tool.memory_management.memory import Memory
 
 class EventTriggerBase(ABC):
     def __init__(
@@ -14,7 +14,7 @@ class EventTriggerBase(ABC):
         Constructor for the EventTrigger class.
 
         Parameters:
-        - frequancy (Frequency): Defines the pattern to use
+        - frequency (Frequency): Defines the pattern to use
 
         Initializes and validates the input parameters.
         """

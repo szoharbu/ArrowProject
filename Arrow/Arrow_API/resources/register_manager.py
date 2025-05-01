@@ -1,11 +1,11 @@
-from Tool.state_management import get_current_state as _get_current_state
+from ...Tool.state_management import get_current_state as _get_current_state
 
 # Expose the classes under the resources package
 __all__ = ["RegisterManager_API"]  # Only export RegisterManager_API
 
 class RegisterManager_API:
 
-    from Tool.register_management import register_manager
+    from ...Tool.register_management import register_manager
 
     @staticmethod
     def get_free_registers() -> list[register_manager.Register]:

@@ -1,31 +1,31 @@
 from peewee import Expression
 from typing import Union, List, Dict, Any, Optional, Tuple
-from Utils.logger_management import get_logger
-from Utils.configuration_management import get_config_manager, Configuration
-from Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
-from Tool.register_management.register import Register
-from Tool.memory_management.memory_segments import CodeSegment
-from Utils.APIs import choice, range_with_peak, adaptive_choice
-from Tool.asm_libraries import label, asm_logger, stack, store_value
-from Tool.asm_libraries.memory_array.memory_array import MemoryArray as MemoryArray_wrapper
-from Tool.asm_libraries.loop.loop_base import LoopBase
-from Tool.asm_libraries.loop.loop import Loop as Loop_wrapper
-from Tool.asm_libraries.branch_to_segment.branch_to_segment_base import BranchToSegmentBase
-from Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegment as BranchToSegment_wrapper
-from Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
-from Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as EventTrigger_wrapper
+from ..Utils.logger_management import get_logger
+from ..Utils.configuration_management import get_config_manager, Configuration
+from ..Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
+from ..Tool.register_management.register import Register
+from ..Tool.memory_management.memory_segments import CodeSegment
+from ..Utils.APIs import choice, range_with_peak, adaptive_choice
+from ..Tool.asm_libraries import label, asm_logger, stack, store_value
+from ..Tool.asm_libraries.memory_array.memory_array import MemoryArray as MemoryArray_wrapper
+from ..Tool.asm_libraries.loop.loop_base import LoopBase
+from ..Tool.asm_libraries.loop.loop import Loop as Loop_wrapper
+from ..Tool.asm_libraries.branch_to_segment.branch_to_segment_base import BranchToSegmentBase
+from ..Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegment as BranchToSegment_wrapper
+from ..Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
+from ..Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as EventTrigger_wrapper
 
 class AR:
     logger = get_logger()
     logger.info("======================== AR_API")
     config_manager = get_config_manager()
 
-    from Tool.decorators.scenario_decorator import scenario_decorator
-    from Tool.ingredient_management.ingredient import Ingredient
-    from Tool.decorators.ingredient_decorator import ingredient_decorator
+    from ..Tool.decorators.scenario_decorator import scenario_decorator
+    from ..Tool.ingredient_management.ingredient import Ingredient
+    from ..Tool.decorators.ingredient_decorator import ingredient_decorator
 
     # Instruction query
-    from Externals.db_manager.models import Instruction
+    from ..Externals.db_manager.models import Instruction
 
     @staticmethod
     def asm(asm_code:str, comment:str=None):

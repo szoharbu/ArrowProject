@@ -1,5 +1,5 @@
-# from Tool.state_management import get_state_manager
-# from Tool.register_management import register_manager
+# from ...Tool.state_management import get_state_manager
+# from ...Tool.register_management import register_manager
 #
 # class RegisterManagerWrapper:
 #

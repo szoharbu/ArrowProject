@@ -1,9 +1,9 @@
 
-from Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
-from Tool.asm_libraries.event_trigger.event_trigger_x86 import EventTrigger_x86
-from Tool.asm_libraries.event_trigger.event_trigger_riscv import EventTrigger_riscv
-from Tool.asm_libraries.event_trigger.event_trigger_arm import EventTrigger_arm
-from Utils.configuration_management import Configuration
+from ....Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
+from ....Tool.asm_libraries.event_trigger.event_trigger_x86 import EventTrigger_x86
+from ....Tool.asm_libraries.event_trigger.event_trigger_riscv import EventTrigger_riscv
+from ....Tool.asm_libraries.event_trigger.event_trigger_arm import EventTrigger_arm
+from ....Utils.configuration_management import Configuration
 
 def EventTrigger(
         frequency: Configuration.Frequency = Configuration.Frequency.LOW,

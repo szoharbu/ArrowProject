@@ -1,9 +1,9 @@
 import argparse
 import sys
-from Utils.logger_management import get_logger
-from Utils.configuration_management import get_config_manager, get_knob_manager
-from Utils.seed_management import set_seed
-from Utils.arg_parser.utils import setup_template_and_content, setup_output_directory, setup_chosen_architecture
+from ...Utils.logger_management import get_logger
+from ...Utils.configuration_management import get_config_manager, get_knob_manager
+from ...Utils.seed_management import set_seed
+from ...Utils.arg_parser.utils import setup_template_and_content, setup_output_directory, setup_chosen_architecture
 
 def parse_arguments(input_args=None):
     """

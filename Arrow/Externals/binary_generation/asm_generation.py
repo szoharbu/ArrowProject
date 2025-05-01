@@ -1,10 +1,10 @@
 import os
-from Utils.logger_management import get_logger
-from Utils.configuration_management import get_config_manager, Configuration
-from Tool.asm_blocks.asm_unit import get_comment_mark
-from Tool.state_management import get_state_manager
-from Utils.singleton_management import SingletonManager
-from Tool.memory_management.utils import convert_bytes_to_words
+from ...Utils.logger_management import get_logger
+from ...Utils.configuration_management import get_config_manager, Configuration
+from ...Tool.asm_blocks.asm_unit import get_comment_mark
+from ...Tool.state_management import get_state_manager
+from ...Utils.singleton_management import SingletonManager
+from ...Tool.memory_management.utils import convert_bytes_to_words
 
 x86_Assembler_syntax = "NASM" ## other option is "GAS" (GNU Assembler) syntax but not for NASM
 

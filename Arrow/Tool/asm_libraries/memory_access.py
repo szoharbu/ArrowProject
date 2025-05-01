@@ -1,8 +1,8 @@
-from Tool.asm_libraries.asm_logger import AsmLogger
-from Utils.configuration_management import Configuration
-from Tool.register_management.register import Register
-from Tool.memory_management.memory import Memory
-from Tool.state_management import get_state_manager
+from ...Tool.asm_libraries.asm_logger import AsmLogger
+from ...Utils.configuration_management import Configuration
+from ...Tool.register_management.register import Register
+from ...Tool.memory_management.memory import Memory
+from ...Tool.state_management import get_state_manager
 
 
 def load_value(memory: Memory, register: Register) -> None:
