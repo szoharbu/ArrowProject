@@ -98,5 +98,19 @@ class ArmBuildPipeline(BuildPipeline):
         iss_flags_split = shlex.split(iss_flags)  # needed before running the command
         iss_cmd = [runsim_tool] + iss_flags_split
 
-        run_command(command=iss_cmd, description=f"Rerunning '{executable_file}' on ISS",
-                    output_file=iss_prerun_log_file)
+        try:
+            run_command(command=iss_cmd, description=f"Rerunning '{executable_file}' on ISS",
+                        output_file=iss_prerun_log_file)
+        except Exception as e:
+            # checking last 10 lines of the output, if matches few knowns issues raise them, else raise the error message
+            known_issues = ["time limit reached", "memory limit reached", "instruction limit reached"]
+            with open(iss_prerun_log_file, 'r') as f:
+                lines = f.readlines()[-10:]
+                for line in lines:
+                    for issue in known_issues:
+                        if issue in line:
+                            # Create a new clean exception that won't get wrapped
+                            e = RuntimeError(f"ISS failure: {line.strip()}")
+                            e.__cause__ = None  # This prevents the "During handling..." messages
+                            raise e
+            raise  # If no known issues found, re-raise the original exception
