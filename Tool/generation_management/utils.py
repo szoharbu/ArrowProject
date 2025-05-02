@@ -73,7 +73,7 @@ def map_inputs_to_operands(selected_instruction, src, dest):
         src_locations = find_possible_locations(selected_instruction.operands, role="src", type=src.type)
         src_location = random.choice(src_locations)
     if dest is not None:
-        if isinstance(src, Memory): src.type = "mem"
+        if isinstance(dest, Memory): dest.type = "mem"
         dest_locations = find_possible_locations(selected_instruction.operands, role="dest", type=dest.type)
         dest_location = random.choice(dest_locations)
     if dest is not None and src is not None:
