@@ -9,9 +9,10 @@ class State:
     Each state contains attributes such as privilege level, processor mode, memory and register managers, and control knobs.
     """
 
-    def __init__(self, state_name: str, privilege_level: int, processor_mode: str, register_manager: RegisterManager,
+    def __init__(self, state_name: str, state_id: int, privilege_level: int, processor_mode: str, register_manager: RegisterManager,
                  memory_manager: MemoryManager, current_code: MemorySegment, base_register: Register, base_register_value: int, memory_range: MemoryRange):
         self.state_name: str = state_name
+        self.state_id: int = state_id
         self.privilege_level: int = privilege_level
         self.processor_mode: str = processor_mode
         self.register_manager: RegisterManager = register_manager
@@ -23,6 +24,7 @@ class State:
 
     def __repr__(self):
         return (f"State(name={self.state_name}, "
+                f"state_id={self.state_id}, "
                 f"privilege_level={self.privilege_level}, "
                 f"processor_mode={self.processor_mode}, "
                 f"register_manager={self.register_manager}, "

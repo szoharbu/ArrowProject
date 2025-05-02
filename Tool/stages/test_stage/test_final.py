@@ -9,12 +9,14 @@ def do_final():
     logger.info("============ do_final")
 
     asm_logger.AsmLogger.comment(f"in do_final, ending test body")
-    end_test.end_test_asm_convention(test_pass=True)
-
-    logger.debug("============ freeing_resources")
-    states = state_manager.states_dict
-    for state_id in states.keys():
+    available_states = state_manager.states_dict
+    for state_id in available_states:
+        state_manager.set_active_state(state_id)
         curr_state = state_manager.get_active_state()
+        logger.debug("============ Test end convention")
+        end_test.end_test_asm_convention(test_pass=True)
+
+        logger.debug("============ freeing_resources")
         curr_state.register_manager.free(curr_state.base_register)
 
 

@@ -14,6 +14,7 @@ from Tool.asm_libraries.branch_to_segment.branch_to_segment_base import BranchTo
 from Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegment as BranchToSegment_wrapper
 from Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
 from Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as EventTrigger_wrapper
+from Tool.asm_libraries.barrier.barrier import Barrier as Barrier_wrapper
 
 class AR:
     logger = get_logger()
@@ -104,6 +105,9 @@ class AR:
     def BranchToSegment(code_block: CodeSegment) -> BranchToSegmentBase:
         return BranchToSegment_wrapper(code_block)  # Return an instance of the branch_to_segment class
 
+    @staticmethod
+    def Barrier(barrier_name: str):
+        return Barrier_wrapper(barrier_name)  # Return an instance of the barrier class
 
     @staticmethod
     def store_value_into_register(register: Register, value: int) -> None:
