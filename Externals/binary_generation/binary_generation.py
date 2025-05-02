@@ -23,7 +23,7 @@ def generate_binary():
     cpp_asm_file = os.path.join(output_dir, f"{base_name}_cpp_asm.s")
     object_file = os.path.join(output_dir, f"{base_name}.o")
     executable_file = os.path.join(output_dir, f"{base_name}.elf")
-    iss_prerun_log_file = os.path.join(output_dir, f"{base_name}_iss_prerun.log")
+    iss_prerun_log_file = os.path.join(output_dir, f"iss_prerun.log")
 
     pipeline = None
     if Configuration.Architecture.x86:

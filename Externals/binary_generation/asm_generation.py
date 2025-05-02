@@ -5,6 +5,7 @@ from Tool.asm_blocks.asm_unit import get_comment_mark
 from Tool.state_management import get_state_manager
 from Utils.singleton_management import SingletonManager
 from Tool.memory_management.utils import convert_bytes_to_words
+from Tool.asm_libraries.barrier.barrier_manager import get_barrier_manager
 
 x86_Assembler_syntax = "NASM"  ## other option is "GAS" (GNU Assembler) syntax but not for NASM
 
@@ -75,12 +76,28 @@ def generate_asm_from_AsmUnits(instruction_blocks):
         tmp_asm_code += "\n"
 
         # planting  .text block only if some entries exist in that section
-        if asm_code_counter != 0:
-            asm_code += tmp_asm_code
-            asm_code_counter = 0
-            tmp_asm_code = ""
-        else:
+
+        skip_text_section = False
+        if asm_code_counter == 0:
+            skip_text_section = True
+        elif asm_code_counter == 1:
+            lines = tmp_asm_code.split("\n")
+            lines = [line for line in lines if line.strip()]
+            if len(lines) == 4:
+                # Some text sections contain only labels like the below - skipping them
+                '''
+                .global core_1__code_segment_5_1316
+                core_1__code_segment_5_1316:
+                label_4858_core_1__code_segment_5_code_segment: 
+                '''
+                skip_text_section = True
+
+        if skip_text_section:
             asm_code += f"{get_comment_mark()} No code on {block_name} block. skipping .text section\n\n"
+        else:
+            asm_code += tmp_asm_code
+        asm_code_counter = 0
+        tmp_asm_code = ""
 
     return asm_code
 
@@ -98,7 +115,7 @@ def generate_data_from_DataUnits(data_blocks):
 
         block_name = block.name
         block_address = hex(block.address)
-
+        block_size = block.byte_size
         data_code_counter = 0
         tmp_data_code = ""
 
@@ -114,6 +131,31 @@ def generate_data_from_DataUnits(data_blocks):
             address = data_unit.address  # data_dict.get('address', 'None')
             byte_size = data_unit.byte_size  # data_dict.get('byte_size', 'None')
             init_value = data_unit.init_value_byte_representation  # data_dict.get('init_value', 'None')
+
+            # Handling barrier code, identified all the registered cores of that barrier
+            # and setting its init data only to the registered cores.
+            if "barrier_vector" in data_unit.name:
+                barrier_manager = get_barrier_manager()
+                barriers = barrier_manager.get_all_barriers()
+                for barrier in barriers:
+                    if barrier.memory.name in data_unit.name:
+                        # go over all the registered cores and set the init value to the barrier vector
+                        core_vector = 0x0
+                        registered_cores = barrier.get_all_registered_cores()
+                        for core_id in registered_cores:
+                            core_vector = core_vector | (1 << core_id)
+
+                        # Create new byte array with same size as original
+                        original_bytes = data_unit.init_value_byte_representation
+                        byte_array = []
+                        remaining_vector = core_vector
+                        for i in range(len(original_bytes)):
+                            byte_array.append(remaining_vector & 0xFF)
+                            remaining_vector >>= 8
+
+                        print(
+                            f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz replacing {data_unit.init_value_byte_representation} with core_vector: {byte_array}")
+                        init_value = byte_array
 
             if init_value is not None:
                 data_code_counter += 1
@@ -155,15 +197,17 @@ def generate_data_from_DataUnits(data_blocks):
                 # elif Configuration.Architecture.riscv:
                 #     tmp_data_code += f"    {unique_label}: .quad {address}, {init_value}  # {name} - {byte_size} bytes initialized\n"
 
-        tmp_data_code += "\n"
+        # tmp_data_code += "\n"
 
         # planting  .data block only if some entries exist in that section
         if data_code_counter != 0:
+            tmp_data_code += "\n"
             data_code += tmp_data_code
-            data_code_counter = 0
-            tmp_data_code = ""
         else:
-            data_code += f"{get_comment_mark()} No initialized data on {block_name} block. skipping .data section\n\n"
+            data_code += f"{get_comment_mark()} No uninitialized data on {block_name} data block. skipping .data section\n\n"
+            # tmp_data_code += f".space {block_size}\n"
+        data_code_counter = 0
+        tmp_data_code = ""
 
         # Now, process uninitialized data (go to .bss section)
         tmp_data_code += get_output(location="bss_block_header", block_name=block_name)
@@ -196,15 +240,18 @@ def generate_data_from_DataUnits(data_blocks):
                 else:
                     raise ValueError('Unsupported Architecture')
 
-        tmp_data_code += "\n"
+        # tmp_data_code += "\n"
 
-        # planting  .bss block only if some entries exist in that section
+        # always planting the .bss block, even if empty # TODO:: need to refactor this logic
         if data_code_counter != 0:
-            data_code += tmp_data_code
-            data_code_counter = 0
-            tmp_data_code = ""
+            tmp_data_code += "\n"
         else:
-            data_code += f"{get_comment_mark()} No uninitialized data on {block_name} block. skipping .bss section\n\n"
+            tmp_data_code += f"{get_comment_mark()} No uninitialized data on {block_name} bss block.\n"
+            tmp_data_code += f".space {block_size}\n"
+        tmp_data_code += "\n"
+        data_code += tmp_data_code
+        data_code_counter = 0
+        tmp_data_code = ""
 
     if Configuration.Architecture.arm:
         # TODO:: WA WA WA WA WA WA!!!!! need to replace with proper memory allocation!!
@@ -218,6 +265,8 @@ def generate_data_from_DataUnits(data_blocks):
         # adding end of test string to the data section
         data_code += f".data\n.balign 0x4000\n"
         data_code += f"test_pass_str: .string \"** TEST PASSED OK **\n"
+        # keep the above as is, and dont change to something like the below! regardless to the extra "
+        # data_code += f"test_pass_str: .string \"** TEST PASSED OK **\"\n"
 
     return data_code
 

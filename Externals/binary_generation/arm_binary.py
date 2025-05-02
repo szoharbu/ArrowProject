@@ -19,7 +19,7 @@ class ArmBuildPipeline(BuildPipeline):
             3. Optionally verify the ELF file using `objdump`.
         """
         self.toolchain_prefix = "aarch64-unknown-linux-gnu"
-        self.toolchain_extensions = "-march=armv9-a+cssc+bf16+crypto"
+        self.toolchain_extensions = "-march=armv9.2-a+cssc+bf16+crypto"
         # self.toolchain_emulation_extensions = "aarch64elf" # Supported emulations: aarch64linux aarch64elf aarch64elf32 aarch64elf32b aarch64elfb armelf armelfb aarch64linuxb aarch64linux32 aarch64linux32b armelfb_linux_eabi armelf_linux_eabi
 
     def cpp_to_asm(self, cpp_file, asm_file):
@@ -52,7 +52,7 @@ class ArmBuildPipeline(BuildPipeline):
         tool = f"{self.toolchain_prefix}-ld"
         check_tool_exists(tool)
 
-        section_start = "--section-start=.text=0x80000000 --section-start=.data=0x80010000 --section-start=.bss=0x80020000 --section-start=.stack=0x80030000"  # needed to avoid lower MMIO space which is not DRAM
+        section_start = "--section-start=.text=0x80000000 --section-start=.data=0x80020000 --section-start=.bss=0x80040000 --section-start=.stack=0x80060000"  # needed to avoid lower MMIO space which is not DRAM
         section_start_split = shlex.split(
             section_start)  # needed to split the section start command before running the command
         link_cmd = [tool] + section_start_split + ["-o", executable_file, object_file]

@@ -5,6 +5,9 @@ from Tool.asm_libraries.asm_logger import AsmLogger
 
 
 def store_value_into_register(register:Register, value:int) -> None:
+
+    AsmLogger.comment(f"writing value {hex(value)} into {register}")
+
     if Configuration.Architecture.x86:
         # Ensure the value is a 64-bit integer (to fit into a 64-bit register)
         if value < 0 or value > 0xFFFFFFFFFFFFFFFF:
@@ -42,21 +45,26 @@ def store_value_into_register(register:Register, value:int) -> None:
             AsmLogger.comment("No need for ADDI, the value is already handled by LUI.")
     elif Configuration.Architecture.arm:
         # Ensure the value is a 64-bit integer (to fit into a 64-bit register)
-        if value < 0 or value > 0xFFFFFFFFFFFFFFFF:
-            raise ValueError("The value must be a 64-bit integer (0 to 0xFFFFFFFFFFFFFFFF)")
+        if not (0 <= value <= 0xFFFFFFFFFFFFFFFF):
+                raise ValueError("Value must be a 64-bit unsigned integer")
+
         # ARM AArch64 MOV instruction can handle immediate values up to 16 bits directly.
         # The MOV instruction with an immediate can only take 12-bit wide constants with rotations.
 
-        # Step 1: Split the value into 32-bit chunks
-        high_32 = (value >> 32) & 0xFFFFFFFF  # High 32 bits
-        low_32 = value & 0xFFFFFFFF  # Low 32 bits
+        parts = []
+        for i in range(4):
+            part = (value >> (i * 16)) & 0xFFFF
+            if part != 0:
+                parts.append((part, i * 16))
 
-        # Step 2: Check if the high and low parts can be loaded directly using MOVZ/MOVK
-        if high_32 != 0:
-            AsmLogger.asm(f"movz {register}, 0x{high_32:X}, LSL #32", comment="Load the high 32 bits")
-            AsmLogger.asm(f"movk {register}, 0x{low_32:X}, LSL #0", comment="Load the low 32 bits")
-        else:
-            # If only low part exists, load using MOVZ
-            AsmLogger.asm(f"movz {register}, 0x{low_32:X}, LSL #0", comment="Load the low 32 bits directly")
+        if not parts:  # Value is 0
+            AsmLogger.asm(f"movz {register}, #0", comment="Load zero")
+            return
+
+        AsmLogger.asm(f"movz {register}, 0x{parts[0][0]:X}, LSL #{parts[0][1]}", comment=f"Load first non-zero part")
+
+        for part, shift in parts[1:]:
+            AsmLogger.asm(f"movk {register}, 0x{part:X}, LSL #{shift}", comment=f"Load subsequent part")
+
     else:
         raise ValueError(f"Unsupported architecture")
