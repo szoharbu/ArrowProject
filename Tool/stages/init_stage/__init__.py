@@ -45,6 +45,7 @@ def init_state():
 
         curr_state = State(
             state_name=state_id,
+            state_id=i,
             processor_mode=Configuration.Knobs.Config.processor_mode,
             privilege_level=Configuration.Knobs.Config.privilege_level,
             register_manager=register_manager.RegisterManager(),
