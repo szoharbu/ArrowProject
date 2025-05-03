@@ -29,6 +29,7 @@ dependencies = [
     "requests",
     "numpy",
     "streamlit",
+    "peewee",
 ]
 
 [project.scripts]
