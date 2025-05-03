@@ -675,13 +675,13 @@
             "operands": [
                 {
                     "name": "pred",
-                    "type": "imm",
+                    "type": "iorw",
                     "role": "src",
                     "size": "4_bits_unsigned"
                 },
                 {
                     "name": "succ",
-                    "type": "imm",
+                    "type": "iorw",
                     "role": "src",
                     "size": "4_bits_unsigned"
                 }
@@ -690,6 +690,15 @@
             "group": "memory",
             "description": "Ensures ordering of memory operations as specified by the pred and succ fields. Pred defines prior memory operations, and succ defines subsequent memory operations affected by the fence.",
             "syntax": "FENCE pred, succ",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "fence.tso",
+            "operands": [],
+            "type": "I",
+            "group": "memory",
+            "description": "Ensures ordering of memory operations in Total Store Order.",
+            "syntax": "FENCE.TSO",
             "architecture_modes": ["RV32", "RV64"]
         },
         {

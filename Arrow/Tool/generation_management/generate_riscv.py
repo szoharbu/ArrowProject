@@ -80,6 +80,12 @@ def generate_riscv(
         elif operand['type'] == "imm":
             random_imm = generate_random_imm_with_size(operand['size'])
             eval_operand = random_imm
+            if selected_instruction.mnemonic in ['auipc', 'lui']:
+                # For the li instruction, we need to set the immediate value in the next register as well
+                eval_operand = f"%hi(({random_imm}) << 12)"
+        elif operand['type'] == "iorw":
+            random_iorw = random.randint(1, 15)
+            eval_operand = ''.join("iorw"[i] for i in range(4) if random_iorw & (1 << (3 - i)))
         elif operand['type'] == "offset_plus_basereg":
             # For every memory usage, we will plant a dynamic_init instruction to place that memory address in a temp register
             # this is done to avoid using memories offset due to their formatting requirements and my lack of knowledge.
