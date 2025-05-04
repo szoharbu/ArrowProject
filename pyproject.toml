@@ -1,17 +1,22 @@
-
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["Arrow", "Arrow.*"]
 
+[tool.setuptools.package-data]
+"Arrow.Externals" = ["db_manager/db/*.db"]
+
 [project]
 readme.content-type = "text/markdown"
 readme.file = "README.md"
 name = "Arrow"
-version = "0.2.0"
+version = "0.2.2"
 description = "An architecture-agnostic stimuli generator for architectural and micro-architectural contexts"
 authors = [
     { name = "Zohar Buchris", email = "szoharbu@gmail.com" },
