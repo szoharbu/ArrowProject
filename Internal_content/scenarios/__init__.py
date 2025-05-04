@@ -3,4 +3,5 @@ from Internal_content.scenarios import code_stress
 from Internal_content.scenarios import memory_stress
 from Internal_content.scenarios import bypass
 from Internal_content.scenarios import dispatch_is
-#from Internal_content.scenarios import power
+from Internal_content.scenarios import power
+from Internal_content.scenarios import cache

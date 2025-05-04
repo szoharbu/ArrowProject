@@ -138,7 +138,7 @@ class MemoryManager:
             raise ValueError(f"Invalid segment type {segment.memory_type}. Segment need to be of type DATA_SHARED or DATA_PRESERVE.")
         return segment.data_units_list
 
-    def allocate_data_memory(self, name:str, memory_block_id:str, pool_type:Configuration.Memory_types, byte_size:int=8, init_value_byte_representation:list[int]=None) -> DataUnit:
+    def allocate_data_memory(self, name:str, memory_block_id:str, pool_type:Configuration.Memory_types, byte_size:int=8, init_value_byte_representation:list[int]=None, alignment:int=None) -> DataUnit:
         """
         Retrieve data memory operand from the given pools .
 
@@ -181,7 +181,7 @@ class MemoryManager:
         else:  # 'linked_elf'
             address = None
 
-        data_unit = DataUnit(name=name, memory_block_id=memory_block_id, address=address, byte_size=byte_size,memory_segment_id=selected_segment.name, init_value_byte_representation=init_value_byte_representation)
+        data_unit = DataUnit(name=name, memory_block_id=memory_block_id, address=address, byte_size=byte_size,memory_segment_id=selected_segment.name, init_value_byte_representation=init_value_byte_representation, alignment=alignment)
         selected_segment.data_units_list.append(data_unit)
 
         return data_unit
