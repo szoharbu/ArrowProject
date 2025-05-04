@@ -68,8 +68,9 @@ class DataUnit:
             byte_size: int,
             memory_segment_id: str,
             memory_block_id: str,
-            address: Optional[int] = None,
             name: str = None,
+            address: Optional[int] = None,
+            alignment: Optional[int] = None,
             init_value_byte_representation: list[int] = None,
     ):
         """
@@ -80,13 +81,11 @@ class DataUnit:
         self.byte_size = byte_size
         self.memory_block_id = memory_block_id
         self.memory_segment_id = memory_segment_id
+        self.alignment = alignment
         self.init_value_byte_representation = init_value_byte_representation
 
         # extract context to generated data
         self.file_name, self.file_name_shortened_path, self.line_number = get_last_user_context()
-
-        config_manager = get_config_manager()
-        execution_platform = config_manager.get_value('Execution_platform')
 
         if self.init_value_byte_representation is not None:
             formatted_bytes = ", ".join(f"0x{byte:02x}" for byte in self.init_value_byte_representation)
@@ -96,7 +95,7 @@ class DataUnit:
         self.data_unit_str = f"[name:{self.name}, memory_block:{self.memory_block_id}, memory_segment:{self.memory_segment_id}, "
         if address is not None:
             self.data_unit_str += f"address:{hex(self.address)}, "
-        self.data_unit_str += f"byte_size:{self.byte_size}, init_value:{formatted_bytes}, file: {self.file_name_shortened_path}, line: {self.line_number}]"
+        self.data_unit_str += f"byte_size:{self.byte_size}, alignment:{self.alignment}, init_value:{formatted_bytes}, file: {self.file_name_shortened_path}, line: {self.line_number}]"
         # print(self.data_unit_str)
         # logger = get_logger()
         # logger.debug(f"DataUnit generated: {self.data_unit_str}")

@@ -110,7 +110,7 @@ class ArmBuildPipeline(BuildPipeline):
                     for issue in known_issues:
                         if issue in line:
                             # Create a new clean exception that won't get wrapped
-                            e = RuntimeError(f"ISS failure: {line.strip()}")
+                            e = RuntimeError(f"ISS failure: {line.strip()}\n - please check the {iss_prerun_log_file} for more details")
                             e.__cause__ = None  # This prevents the "During handling..." messages
                             raise e
             raise  # If no known issues found, re-raise the original exception

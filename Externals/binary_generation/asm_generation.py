@@ -131,6 +131,7 @@ def generate_data_from_DataUnits(data_blocks):
             address = data_unit.address  # data_dict.get('address', 'None')
             byte_size = data_unit.byte_size  # data_dict.get('byte_size', 'None')
             init_value = data_unit.init_value_byte_representation  # data_dict.get('init_value', 'None')
+            alignment = data_unit.alignment
 
             # Handling barrier code, identified all the registered cores of that barrier
             # and setting its init data only to the registered cores.
@@ -146,6 +147,7 @@ def generate_data_from_DataUnits(data_blocks):
                             core_vector = core_vector | (1 << core_id)
 
                         # Create new byte array with same size as original
+                        # original_bytes = data_unit.init_value_byte_representation
                         original_bytes = data_unit.init_value_byte_representation
                         byte_array = []
                         remaining_vector = core_vector
@@ -153,8 +155,7 @@ def generate_data_from_DataUnits(data_blocks):
                             byte_array.append(remaining_vector & 0xFF)
                             remaining_vector >>= 8
 
-                        print(
-                            f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz replacing {data_unit.init_value_byte_representation} with core_vector: {byte_array}")
+                        # print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz replacing {data_unit.init_value_byte_representation} with core_vector: {byte_array}")
                         init_value = byte_array
 
             if init_value is not None:
@@ -165,6 +166,9 @@ def generate_data_from_DataUnits(data_blocks):
                 break_lines_between_different_data_units = "" if first_data_unit else "\n"
                 first_data_unit = False
                 tmp_data_code += f"{break_lines_between_different_data_units}{unique_label}:"
+                if alignment is not None:
+                    tmp_data_code += f"\n.align {alignment}"
+
                 if Configuration.Architecture.x86:
                     # x86 Assembly: Use `.long` for 4-byte values
                     for value, value_type in words_tuple:
@@ -222,6 +226,11 @@ def generate_data_from_DataUnits(data_blocks):
             init_value = data_unit.init_value_byte_representation  # data_dict.get('init_value', 'None')
 
             if init_value is None:
+
+                tmp_data_code += f"{unique_label}:\n"
+                if data_unit.alignment is not None:
+                    tmp_data_code += f".align {data_unit.alignment}\n"
+
                 data_code_counter += 1
                 # Reserve space for uninitialized data in the .bss section
                 if Configuration.Architecture.x86:
@@ -234,9 +243,9 @@ def generate_data_from_DataUnits(data_blocks):
                     else:
                         data_code += f"    resb {byte_size}  ; {name} - Reserved {byte_size} bytes\n"  # 1 byte = byte
                 elif Configuration.Architecture.arm:
-                    tmp_data_code += f"    {unique_label}: .skip {byte_size}  // {name} - Reserved {byte_size} bytes\n"  # 1,2,4,8 bytes
+                    tmp_data_code += f".skip {byte_size}  // {name} - Reserved {byte_size} bytes\n"  # 1,2,4,8 bytes
                 elif Configuration.Architecture.riscv:
-                    tmp_data_code += f"    {unique_label}: .skip {byte_size}  # {name} - Reserved {byte_size} bytes\n"
+                    tmp_data_code += f".skip {byte_size}  # {name} - Reserved {byte_size} bytes\n"
                 else:
                     raise ValueError('Unsupported Architecture')
 
