@@ -15,6 +15,7 @@ from Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegme
 from Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
 from Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as EventTrigger_wrapper
 from Tool.asm_libraries.barrier.barrier import Barrier as Barrier_wrapper
+from Tool.state_management.switch_state import SwitchState as SwitchState_wrapper
 
 class AR:
     logger = get_logger()
@@ -77,6 +78,12 @@ class AR:
             comment: Optional[str] = None,
     ) -> List[GeneratedInstruction]:
         return generate_wrapper(instruction_count, query, src, dest, comment)
+
+    @staticmethod
+    def SwitchState(
+            state_name: str,
+    ):
+        return SwitchState_wrapper(state_name)
 
     @staticmethod
     def Loop(

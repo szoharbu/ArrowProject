@@ -2,7 +2,7 @@ from typing import Optional
 from Utils.logger_management import get_logger
 from Utils.configuration_management import Configuration
 from Tool.state_management import get_state_manager
-from Tool.state_management.switch_state import switch_code, switch_state
+from Tool.state_management.switch_state import SwitchState
 from Tool.scenario_management import ScenarioWrapper, get_scenario_manager
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Utils.APIs import choice
@@ -62,11 +62,8 @@ def do_body():
         core = state_id
         per_core_scenario_count[core] = (1, int(Configuration.Knobs.Template.scenario_count)) # TODO:: replace this with per state knob state_manager.scenario_count
 
-        switch_state(core)
-        #Tool.switch_state(core)
-        current_state = state_manager.get_active_state()
-        switch_code(current_state.current_code_block)
-        AsmLogger.comment(f"========================= core {core} - TEST BODY - start =====================")
+        with SwitchState(core):
+            AsmLogger.comment(f"========================= core {core} - TEST BODY - start =====================")
 
     available_cores = list(available_states.keys())
     while available_cores:
@@ -75,16 +72,14 @@ def do_body():
 
         # Iterate over a copy of the list to avoid modifying the list during iteration
         for core in available_cores[:]:  # Create a shallow copy of the list
-            switch_state(core)
-            current_scenario, max_scenario = per_core_scenario_count.get(core)
-            per_core_scenario_count[core] = (current_scenario + 1, max_scenario)
-            if current_scenario == max_scenario:
-                available_cores.remove(core)
-            do_scenario(current_scenario, max_scenario)
+            with SwitchState(core):
+                current_scenario, max_scenario = per_core_scenario_count.get(core)
+                per_core_scenario_count[core] = (current_scenario + 1, max_scenario)
+                if current_scenario == max_scenario:
+                    available_cores.remove(core)
+                do_scenario(current_scenario, max_scenario)
 
     available_cores = list(available_states.keys())
     for core in available_cores:
-        switch_state(core)
-        current_state = state_manager.get_active_state()
-        AsmLogger.comment(f"========================= core {core} - TEST BODY - end =====================")
-
+        with SwitchState(core):
+            AsmLogger.comment(f"========================= core {core} - TEST BODY - end =====================")
