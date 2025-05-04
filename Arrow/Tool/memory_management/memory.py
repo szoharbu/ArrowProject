@@ -47,7 +47,7 @@ class Memory:
 
         Memory._memory_initial_seed_id += 1
         self.name = name if name is not None else f"mem{Memory._memory_initial_seed_id}"
-        self.unique_label = self.name if name is None else f"{self.name}_mem{Memory._memory_initial_seed_id}"
+        self.unique_label = self.name if name is None else name
         self.address = address
         self.byte_size = byte_size
         self.memory_type = memory_type
