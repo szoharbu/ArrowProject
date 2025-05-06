@@ -42,6 +42,7 @@ class Tag(Enum):
     STACK = "stack"
     REST = "rest"  # Special tag representing all available tags
     DISPATCH = "dispatch"
+    CACHE = "cache"
     BRANCH = "branch"
     POWER = "power"
 

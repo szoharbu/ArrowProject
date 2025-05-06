@@ -2,7 +2,7 @@ import random
 from Utils.configuration_management import Configuration
 from Arrow_API import AR
 # from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
-# from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
+from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.DISPATCH])
@@ -37,3 +37,17 @@ def is_bx_stress_scenario():
                     values={"bx": 10, "div": 10, "spr": 0, "fadda": 10})  # SPR is not supported at the moment
                 AR.generate(query=(AR.Instruction.mnemonic.contains(action)))
 
+
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.DISPATCH])
+def ix_ports_stressing_scenario():
+    '''
+    Stressing all the different IX ports with different instructions, to see if there is any imbalance in the issue ports...
+    '''
+    #AR.comment("inside is_mx_v2g_cross_scenario")
+    reg = RegisterManager.get(reg_name="x6") # this will exclude the x6 register from being used in the instructions
+    RegisterManager.reserve(reg)
+    with AR.Loop(counter=10):
+        for _ in range(10):
+            steering_class = AR.choice(values={"mx": 20, "ix": 80})
+            AR.generate(query=(AR.Instruction.steering_class.contains(steering_class)), instruction_count=4, comment=f"stressing the issue ports with {steering_class} instructions")
+    RegisterManager.free(reg)

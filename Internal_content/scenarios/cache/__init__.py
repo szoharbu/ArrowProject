@@ -5,7 +5,7 @@ from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManage
 from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
 
-@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.DISPATCH])
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.CACHE])
 def simple_cache_scenario():
     '''
     Repeatedly load/store memory across cache lines to stress data cache behavior.
@@ -37,17 +37,23 @@ def simple_cache_scenario():
     RegisterManager.free(offset_reg)
     RegisterManager.free(base_reg)
 
-# _start:
-#     ldr x0, =data_block          // Base address
-#     mov x1, #0                   // Loop counter
-#     mov x2, #64                  // Stride: 64 bytes (cache line)
-#     mov x3, #64                  // Number of iterations
 
-# loop:
-#     add x4, x0, x1               // x4 = base + offset
-#     ldr x5, [x4]                 // Load from memory (cause cache load)
-#     add x5, x5, #1               // Do some arithmetic
-#     str x5, [x4]                 // Store back (write to cache)
-#     add x1, x1, x2               // Increment offset by cache line size
-#     subs x3, x3, #1              // Decrement loop counter
-#     bne loop
+@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.CACHE])
+def factorial():
+    '''
+    ------------------------------------------------------------------------------
+    Function: factorial
+    Input:   x0 - Non-negative integer
+    Output:  x0 - Factorial of x0 (x0!)
+    Clobbers: x1
+    ------------------------------------------------------------------------------
+    '''
+    factorial_value = random.randint(4, 6)
+    AR.asm(f"mov x0, #1")
+    AR.asm(f"mov x1, #1", comment="")
+
+    with AR.Loop(counter=factorial_value - 1):
+        AR.asm("add x0, x0, #1      // Increment n")
+        AR.asm("mul x1, x1, x0      // result = result * (n-1)")
+
+    AR.asm("mov x0, x1          // Move the result back to x0")
