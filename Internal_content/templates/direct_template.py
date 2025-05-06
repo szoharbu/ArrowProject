@@ -7,6 +7,8 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 # Done:: debug code branching issue with WFIT (thread0 is waking after sleep state to threa1 code)
 # Done:: Add ability to use "with core" that will allow same scenario to address multiple cores
 # Done:: Need to add ability for Memblock to me aligned, using .align(4) or .align(8), and set some default
+# TODO:: Work to enable EL1
+# TODO:: add latency info to DB.
 # TODO:: create an lst like file, that shows both lips from the objdump and the asm+comment+file+line from the asm file
 # TODO:: Barrier
     # Done:: Work on barrier , add barrier manager to take care of uniuq names and mem addresses
