@@ -31,14 +31,13 @@ def generate_arm_asl(
     if isinstance(selected_instruction.operands, str):
         selected_instruction.operands = ast.literal_eval(selected_instruction.operands)
 
-    debug_mode = config_manager.get_value('Debug_mode')
-    if debug_mode:
-        print(f"   Selected Instruction: {selected_instruction.syntax}")
-
     # Sort the operands list by index
     sorted_operands = sorted(selected_instruction.operands, key=lambda op: op.index)
 
-    if debug_mode:
+    #debug_mode = config_manager.get_value('Debug_mode')
+    instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
+    if instruction_debug_prints:
+        print(f"   Selected Instruction: {selected_instruction.syntax}")
         for op in sorted_operands:
             op_info_str = f"text: {op.text}, Full_text: {op.full_text}, Category: {op.type_category}, Type: {op.type}, Role: {op.role}, Size: {op.size}, Width: {op.width}, extensions: {op.extensions}, is_memory: {op.is_memory}, memory_role: {op.memory_role}, is_optional: {op.is_optional}, is_valid: {op.is_valid}"
             if op.is_operand:
@@ -68,9 +67,14 @@ def generate_arm_asl(
         if memory_operand.reused_memory:
             comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} for next instruction"
 
+        #print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz memory_operand: {memory_operand}")
+        # dynamic_init_instruction = GeneratedInstruction(mnemonic='ldr', operands=[dynamic_init_memory_address_reg,
+        #                                                                           f"={memory_operand._memory_initial_seed_id}"],
+        #                                                 comment=comment)
         dynamic_init_instruction = GeneratedInstruction(mnemonic='ldr', operands=[dynamic_init_memory_address_reg,
-                                                                                  f"={memory_operand._memory_initial_seed_id}"],
+                                                                                  f"={memory_operand.memory_block.name}"],
                                                         comment=comment)
+        
 
         instruction_list.append(dynamic_init_instruction)
 
@@ -100,25 +104,25 @@ def generate_arm_asl(
             op.full_text = op.full_text.replace("{", "").replace("}", "")
 
         if src_location == op_location:
-            if debug_mode:
+            if instruction_debug_prints:
                 print(f"   src_location == op_location == {op_location}")
             if isinstance(src, Memory):
                 #eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
                 eval_operand = dynamic_init_memory_address_reg  # just placing the register which should point (by the pre dynamic init) to the wanted address
             else:
                 eval_operand = src.as_size(op.size)
-                if debug_mode:
+                if instruction_debug_prints:
                     print(
                         f"    src is {src}, size is {op.size}, src.as_size(op.size): {src.as_size(op.size)}  ==> eval_operand: {eval_operand}")
         elif dest_location == op_location:
-            if debug_mode:
+            if instruction_debug_prints:
                 print(f"   dest_location == op_location == {op_location}")
             if isinstance(dest, Memory):
                 #eval_operand = memory_operand.format_reg_as_label(dynamic_init_memory_address_reg)
                 eval_operand = dynamic_init_memory_address_reg # just placing the register which should point (by the pre dynamic init) to the wanted address
             else:
                 eval_operand = dest.as_size(op.size)
-                if debug_mode:
+                if instruction_debug_prints:
                     print(
                         f"    dest is {dest}, size is {op.size}, dest.as_size(op.size): {dest.as_size(op.size)}  ==> eval_operand: {eval_operand}")
 
@@ -134,6 +138,8 @@ def generate_arm_asl(
             elif op.type_category == "immediate":
                 #TODO:: at the moment I'm not handling offset, and just setting the base to be the wanted address. need to handle!!
                 eval_operand = 0
+                if memory_operand.reused_memory:
+                    eval_operand = memory_operand.memory_block_offset
 
         elif op.type_category == "register":
             if op.type == "reg" or "gpr_" in op.type:
@@ -216,7 +222,10 @@ def generate_arm_asl(
 
             operand_str.strip()
 
-        print(f"        - Operand{op.index} evaluation: {op.text} ==> {operand_str}")
+        instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
+        if instruction_debug_prints:
+            print(f"        - Operand{op.index} evaluation: {op.text} ==> {operand_str}")
+            
         evaluated_operands.append(operand_str)
         op_location += 1
 

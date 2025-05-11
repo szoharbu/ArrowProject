@@ -45,7 +45,7 @@ check if relevant to ARM?
 
 '''
 
-@AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.MEMORY])
+@AR.scenario_decorator(random=False, priority=Configuration.Priority.MEDIUM, tags=[Configuration.Tag.MEMORY])
 def Data_Flow_Graph_DFG_Expansion_scenario():
     '''
     A directed graph representing instruction dependencies at execution time.
@@ -68,7 +68,7 @@ def Data_Flow_Graph_DFG_Expansion_scenario():
     # Initialize Root Instruction
     root_mem = MemoryManager.Memory(name="root_memory", init_value=random.randint(0, 0x1000))
     dest_reg = RegisterManager.get()
-    AR.generate(query=(AR.Instruction.group == "load"), src=root_mem, dest=dest_reg, comment="root load instruction")
+    AR.asm(f"ldr {dest_reg}, [{root_mem.name}]", comment="root load instruction")
     curr_resources = [dest_reg]
 
     # Expansion Phase: Each instruction generates X new dependent instructions

@@ -62,6 +62,9 @@ def parse_arguments(input_args=None):
     parser.add_argument('--debug_mode', choices=['True', 'False'],
                         help="Run Arrow with additional debug prints checking logic, ('True', 'False').")
 
+    parser.add_argument('--instruction_debug_prints', choices=['True', 'False'],
+                        help="Run Arrow with additional debug prints checking logic, ('True', 'False').")
+
 
     # Optional argument: --define or -D (multiple key-value pairs)
     parser.add_argument('-D', '--define', action='append',
@@ -150,6 +153,14 @@ def parse_arguments(input_args=None):
         debug_mode = True
         logger.info(f"--------------- debug_mode: {debug_mode} (defaults)")
     config_manager.set_value('Debug_mode', debug_mode)
+
+    if args.instruction_debug_prints:
+        instruction_debug_prints = True if (args.instruction_debug_prints == "True") else False
+        logger.info(f"--------------- instruction_debug_prints: {instruction_debug_prints}")
+    else:
+        instruction_debug_prints = False
+        logger.info(f"--------------- instruction_debug_prints: {instruction_debug_prints} (defaults)")
+    config_manager.set_value('Instruction_debug_prints', instruction_debug_prints)
 
 
     if args.create_binary:

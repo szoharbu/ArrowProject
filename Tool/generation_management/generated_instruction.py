@@ -48,13 +48,17 @@ class GeneratedInstruction:
             if debug_mode:
                 success, error = test_asm_instruction(str(self.asm_unit))
                 if success:
-                    print(f"        ✅  Debug mode: Generated Instruction: {self.asm_unit}")
+                    instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
+                    if instruction_debug_prints:
+                        print(f"        ✅  Debug mode: Generated Instruction: {self.asm_unit}")
                     current_code_block = current_state.current_code_block
                     current_code_block.asm_units_list.append(self.asm_unit)
                 else:
-                    print(f"        ❌  Skipping invalid instruction: {self.asm_unit}")
-                    single_line_error = error.replace("\n", " ")
-                    print(f"                {single_line_error}")
+                    instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
+                    if instruction_debug_prints:
+                        print(f"        ❌  Skipping invalid instruction: {self.asm_unit}")
+                        single_line_error = error.replace("\n", " ")
+                        print(f"                {single_line_error}")
             else:
                 # print(f"    Generated Instruction: {self.asm_unit}")
                 current_code_block = current_state.current_code_block

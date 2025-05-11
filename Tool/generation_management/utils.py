@@ -54,8 +54,8 @@ def find_possible_locations(operands, role, type):
         raise ValueError(f"Couldn't find possible location that match {role} {type} operand")
     else:
         config_manager = get_config_manager()
-        debug_mode = config_manager.get_value('Debug_mode')
-        if debug_mode:
+        instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
+        if instruction_debug_prints:
             print(f"   find_possible_locations for {role} {type} operand: {possible_locations}")
         return possible_locations
 

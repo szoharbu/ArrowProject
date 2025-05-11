@@ -6,6 +6,8 @@ from Tool.asm_libraries.barrier.barrier_manager import get_barrier_manager
 
 def barrier_arm(barrier_name: str):
 
+    AsmLogger.comment(f"==== starting barrier sequence - {barrier_name} ====")
+
     current_state = get_current_state()
     register_manager = current_state.register_manager
 
@@ -27,10 +29,14 @@ def barrier_arm(barrier_name: str):
 
     AsmLogger.comment("Set this core's bit in the barrier vector (active low)")
 
+    #TODO:: replace the below with an atomic operation
+
     AsmLogger.asm(f"adr {reg1}, {barrier_nem.unique_label}")
     AsmLogger.asm(f"ldr {reg3.as_size(32)}, [{reg1}]")
     AsmLogger.asm(f"bic {reg3.as_size(32)}, {reg3.as_size(32)}, {reg2.as_size(32)}", comment=f"Clear the bit")
     AsmLogger.asm(f"str {reg3.as_size(32)}, [{reg1}]")
+    #AsmLogger.asm(f"ldclr {reg3.as_size(32)}, {reg2.as_size(32)}, [{reg1}]", comment=f"Atomic Load and Clear operation")
+
 
     spin_label = Label("spin_label")
     AsmLogger.comment("Spin until all bits are clear (active low)")
@@ -39,3 +45,4 @@ def barrier_arm(barrier_name: str):
     AsmLogger.asm(f"cbnz {reg3.as_size(32)}, {spin_label}", comment=f"Continue spinning if any bit is set")
 
     AsmLogger.comment("Barrier reached - all cores have arrived")
+    AsmLogger.comment(f"==== finished barrier sequence - {barrier_name} ====")

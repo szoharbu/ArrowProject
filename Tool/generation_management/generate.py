@@ -38,8 +38,8 @@ def generate(
     """
 
     config_manager = get_config_manager()
-    debug_mode = config_manager.get_value('Debug_mode')
-    if debug_mode:
+    instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
+    if instruction_debug_prints:
         print(f"--------------------- generate -------------------------")
 
     asl_extract = True  # TODO:: remove this after testing!!!!
@@ -127,8 +127,10 @@ def generate(
             if instruction.is_valid:
                 selected_instruction = instruction
                 break
-            # else:
-            #     print(f"        ⚠️   Skipping instruction!!! instruction {instruction.syntax} is not parsed correctly yet.")
+
+            instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
+            if instruction_debug_prints:
+                print(f"        ⚠️   Skipping instruction!!! instruction {instruction.syntax} is not parsed correctly yet.")
 
         if selected_instruction is None:
             raise ValueError("No valid instructions found matching the specified criteria.")
@@ -184,11 +186,10 @@ def add_operand_filter(query_filter, operand, role):
     # print(f"Total instructions before filter:  { len(query_filter)}")
 
     config_manager = get_config_manager()
-    debug_mode = config_manager.get_value('Debug_mode')
-
+    instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
 
     if isinstance(operand, Register):
-        if debug_mode:
+        if instruction_debug_prints:
             print(f"   Input parameter:: {operand}, role = {role}, type = {operand.type}")
 
         if operand.type == "sve_pred" and (int(operand.name[1:]) >= 8):
@@ -198,37 +199,35 @@ def add_operand_filter(query_filter, operand, role):
             query_filter = query_filter.join(Operand).where(
                 (Operand.role == role) &
                 (Operand.type == "sve_pred") &
-                (Operand.width == 4)
+                (Operand.width == 4) &
+                (Operand.is_memory == False)
             )
         elif operand.type == "gpr" or operand.type == "simdfp":
             # gpr - reg of type gpr can be used for various types of operands ("gpr_32", "gpr_64", "gpr_var"]
             # simdfp - reg of type simdfp can be used for various types of operands ("simdfp_scalar_128", "simdfp_scalar_16", "simdfp_scalar_32", "simdfp_scalar_64", "simdfp_scalar_8", "simdfp_scalar_var", "simdfp_vec"]
-
-
             query_filter = query_filter.where(
-                ((Instruction.op1_role.contains("src")) & (Instruction.op1_type.startswith(operand.type))) |
-                ((Instruction.op2_role.contains("src")) & (Instruction.op2_type.startswith(operand.type))) |
-                ((Instruction.op3_role.contains("src")) & (Instruction.op3_type.startswith(operand.type))) |
-                ((Instruction.op4_role.contains("src")) & (Instruction.op4_type.startswith(operand.type)))
+                ((Instruction.op1_role.contains(role)) & (Instruction.op1_type.startswith(operand.type)) & (Instruction.op1_ismemory == False)) |
+                ((Instruction.op2_role.contains(role)) & (Instruction.op2_type.startswith(operand.type)) & (Instruction.op2_ismemory == False)) |
+                ((Instruction.op3_role.contains(role)) & (Instruction.op3_type.startswith(operand.type)) & (Instruction.op3_ismemory == False)) |
+                ((Instruction.op4_role.contains(role)) & (Instruction.op4_type.startswith(operand.type)) & (Instruction.op4_ismemory == False))
             )
-
         else:  # sve_reg , sev_pred
             query_filter = query_filter.where(
-                ((Instruction.op1_role.contains("src")) & (Instruction.op1_type == operand.type)) |
-                ((Instruction.op2_role.contains("src")) & (Instruction.op2_type == operand.type)) |
-                ((Instruction.op3_role.contains("src")) & (Instruction.op3_type == operand.type)) |
-                ((Instruction.op4_role.contains("src")) & (Instruction.op4_type == operand.type))
+                ((Instruction.op1_role.contains(role)) & (Instruction.op1_type == operand.type) & (Instruction.op1_ismemory == False)) |
+                ((Instruction.op2_role.contains(role)) & (Instruction.op2_type == operand.type) & (Instruction.op2_ismemory == False)) |
+                ((Instruction.op3_role.contains(role)) & (Instruction.op3_type == operand.type) & (Instruction.op3_ismemory == False)) |
+                ((Instruction.op4_role.contains(role)) & (Instruction.op4_type == operand.type) & (Instruction.op4_ismemory == False))
             )
 
     elif isinstance(operand, Memory):
-        if debug_mode:
-            print(f"   Input parameter:: {operand},role = {role}, {type(operand)}")
+        if instruction_debug_prints:
+            print(f"   Input parameter:: {operand}, role = {role}, type = {type(operand)}")
 
         query_filter = query_filter.where(
-            ((Instruction.op1_role.contains("src")) & (Instruction.op1_ismemory)) |
-            ((Instruction.op2_role.contains("src")) & (Instruction.op2_ismemory)) |
-            ((Instruction.op3_role.contains("src")) & (Instruction.op3_ismemory)) |
-            ((Instruction.op4_role.contains("src")) & (Instruction.op4_ismemory))
+            ((Instruction.op1_role.contains(role)) & (Instruction.op1_ismemory == True)) |
+            ((Instruction.op2_role.contains(role)) & (Instruction.op2_ismemory == True)) |
+            ((Instruction.op3_role.contains(role)) & (Instruction.op3_ismemory == True)) |
+            ((Instruction.op4_role.contains(role)) & (Instruction.op4_ismemory == True))
         )
 
     return query_filter
