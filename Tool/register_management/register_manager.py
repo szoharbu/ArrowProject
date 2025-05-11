@@ -106,6 +106,12 @@ class RegisterManager:
             raise ValueError(f"Unknown Architecture requested")
 
 
+    def is_valid_register(self, reg_name:str=None, reg_type:str=None) -> bool:
+        if reg_name is None:
+            return reg_type in [reg.type for reg in self._registers_pool]
+        else:
+            return reg_name in [reg.name for reg in self._registers_pool]
+
     def get_free_registers(self, reg_type:str=None) -> list[Register]:
         """
         Returns a list of all free registers.
@@ -164,6 +170,11 @@ class RegisterManager:
         Selects a random free register, marks them as used (reserved = True),
         and returns the selected register. If no available child is found, raise Error
         """
+        if not self.is_valid_register(reg_type=reg_type):
+            reg_types = [reg.type for reg in self._registers_pool]
+            unique_reg_types = list(set(reg_types))            # get unique types
+            raise ValueError(f"Invalid register type: `{reg_type}`. Please use one of the following types: {', '.join(unique_reg_types)}")
+
         free_regs = self.get_free_registers(reg_type=reg_type)
         if free_regs:
             if Configuration.Architecture.riscv:

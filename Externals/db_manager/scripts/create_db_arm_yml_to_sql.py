@@ -4,6 +4,13 @@ import yaml
 from typing import List
 from Externals.db_manager.asl_testing.asl_models import Instruction, Operand, db, initialize_db
 
+import logging
+
+#from Externals.db_manager.scripts.arm_islib_parser.asmtemplate_parser import parse_asm_template
+
+
+logger = logging.getLogger(__name__)
+
 valid_instruction_counter = 0  # global variable
 
 def reset_database():
@@ -16,77 +23,162 @@ def reset_database():
 ####################################################################################################################### Operand Class
 
 class Operand_class:
-    def __init__(self, operand_name, ast_data=None, var_encode_data=None, extensions=None):
-        """
-        Initialize an Operand object.
+    def __init__(self,
+                 operand_name: str,
+                 ast_data: dict = None,
+                 var_encode_data: dict = None,
+                 extensions: list = None):
+        # 1) set defaults in one block
+        defaults = {
+            "operand_name":   operand_name,
+            "ast_text":       "unknown",
+            "ast_full_text":  "unknown",
+            "var_encode_text":"unknown",
+            "index":          -1,
+            "syntax":         "unknown",
+            "size":           None,
+            "hibit":          None,
+            "width":          None,
+            "encode":         "",
+            "cnt":            1,
+            "r31":            "N/A",
+            "type":           "unknown",
+            "type_category":  "unknown",
+            "role":           "unknown",
+            "extensions":     extensions or [],
+            "tokens":         [],
+            "is_operand":     True,
+            "is_valid":       True,
+            "is_optional":    False,
+            "is_memory":      False,
+            "memory_role":    "None",
+        }
+        for k, v in defaults.items():
+            setattr(self, k, v)
 
-        :param ast_text: Operand identifier as appeared in the asm_template (e.g., Xd, Vm, Wn)
-        :param var_encode_text: operand text as appeared in the Var_encoding (e.g., Rd, Rm, Rn)
-        :param index: Operand index (1, 2, 3, 4) or -1 for non Operands entries (e.g., Q, size)
-        :param syntax: Syntax representation (e.g., X0, V1)
-        :param size: Operand size (e.g., 32, 64)
-        :param hibit: High bit position
-        :param width: Bit width
-        :param encode: Encoding pattern
-        :param cnt: Register count
-        :param r31: Special register condition
-        :param type: Register type (e.g., gpr_64)
-        :param type_category: Register type (e.g., register, immediate)
-        :param role: Similar to "use" field, with slight adjustments and more common name
-        """
-        self.operand_name = operand_name
-        self.ast_text = "unknown"
-        self.ast_full_text = "unknown" # Full text from asm_template, include characters the ast_test might remove like [ , ] , ]! ...
-        self.var_encode_text = "unknown"
-        self.index = -1
-        self.syntax = "unknown"
-        self.size = None
-        self.hibit = None
-        self.width = None
-        self.encode = ""
-        self.cnt = 1
-        self.r31 = "N/A"
-        self.type = "unknown"
-        self.type_category = "unknown"
-        self.role = "unknown"
-        self.extensions = extensions
-        self.tokens = []  # List of variable tokens <*>
-        self.is_operand = True  # Flag to indicate if Operand came from ast_operands or just a data field from var_encoding
-        self.is_valid = True  # Flag to indicate if the Operand is valid or still contain unknown values
-        self.is_optional = False
-        self.is_memory = False
-        self.memory_role = "None"
-
+        # 2) apply var_encode_data, with renaming of "text" → "var_encode_text"
         if var_encode_data:
-            for key, val in var_encode_data.items():
-                if key == "text":
-                    key = "var_encode_text"  # Rename field
-                if hasattr(self, key):  # only set if the attribute is defined
-                    setattr(self, key, val)
-
-        if ast_data:
-            for key, val in ast_data.items():
-                if hasattr(self, key):  # only set if the attribute is defined
-                    setattr(self, key, val)
-
-        if ast_data is None:
-            self.is_operand = False
-
-        if var_encode_data is None or ast_data is None:
-            print(f"             - Invalid operand `{self.operand_name}`, var_encode or ast_data is None ")
+            rename_map = {"text": "var_encode_text"}
+            self._assign_fields(var_encode_data, rename_map)
+        else:
             self.is_valid = False
+            logger.warning("Operand `%s` missing var_encode_data", operand_name)
 
-        print(f"          - Operand init : {self}")
+        # 3) apply ast_data
+        if ast_data:
+            self._assign_fields(ast_data)
+        else:
+            self.is_valid = False
+            logger.warning("Operand `%s` missing ast_data", operand_name)
+
+        logger.debug("Initialized %r", self)
+
+    def _assign_fields(self,
+                       data: dict,
+                       rename_keys: dict = None):
+        """
+        For each key,val in data:
+          - if rename_keys maps it, use the new name
+          - if the attribute exists, setattr
+          - else log.debug and skip
+        """
+        for raw_key, val in data.items():
+            key = rename_keys.get(raw_key, raw_key) if rename_keys else raw_key
+            if hasattr(self, key):
+                setattr(self, key, val)
+                logger.debug("  %s ← %r", key, val)
+            else:
+                logger.debug("  Ignored unknown field `%s` for operand `%s`", key, self.operand_name)
+
+    def __repr__(self):
+        # concise repr showing only a few core fields, drop the rest if you like
+        return (f"<Operand_class "
+                f"name={self.operand_name!r} "
+                f"idx={self.index} "
+                f"syntax={self.syntax!r} "
+                f"type={self.type!r} "
+                f"valid={self.is_valid}>")
 
     def set(self, key, value):
+        """Set an attribute dynamically, used by extract_operands to flag or update fields."""
         if hasattr(self, key):
             setattr(self, key, value)
+            logger.debug("Set `%s` to %r on operand `%s`", key, value, self.operand_name)
         else:
             raise AttributeError(f"Unknown attribute: {key}")
 
-    def __str__(self):
-        attrs = vars(self)  # returns the object's __dict__
-        return f"{self.__class__.__name__}({', '.join(f'{k}={v}' for k, v in attrs.items())})"
+# class Operand_class:
+#     def __init__(self, operand_name: str, ast_data=None, var_encode_data=None, extensions=None):
+#         """
+#         Initialize an Operand object.
+
+#         :param ast_text: Operand identifier as appeared in the asm_template (e.g., Xd, Vm, Wn)
+#         :param var_encode_text: operand text as appeared in the Var_encoding (e.g., Rd, Rm, Rn)
+#         :param index: Operand index (1, 2, 3, 4) or -1 for non Operands entries (e.g., Q, size)
+#         :param syntax: Syntax representation (e.g., X0, V1)
+#         :param size: Operand size (e.g., 32, 64)
+#         :param hibit: High bit position
+#         :param width: Bit width
+#         :param encode: Encoding pattern
+#         :param cnt: Register count
+#         :param r31: Special register condition
+#         :param type: Register type (e.g., gpr_64)
+#         :param type_category: Register type (e.g., register, immediate)
+#         :param role: Similar to "use" field, with slight adjustments and more common name
+#         """
+#         self.operand_name = operand_name
+#         self.ast_text = "unknown"
+#         self.ast_full_text = "unknown" # Full text from asm_template, include characters the ast_test might remove like [ , ] , ]! ...
+#         self.var_encode_text = "unknown"
+#         self.index = -1
+#         self.syntax = "unknown"
+#         self.size = None
+#         self.hibit = None
+#         self.width = None
+#         self.encode = ""
+#         self.cnt = 1
+#         self.r31 = "N/A"
+#         self.type = "unknown"
+#         self.type_category = "unknown"
+#         self.role = "unknown"
+#         self.extensions = extensions
+#         self.tokens = []  # List of variable tokens <*>
+#         self.is_operand = True  # Flag to indicate if Operand came from ast_operands or just a data field from var_encoding
+#         self.is_valid = True  # Flag to indicate if the Operand is valid or still contain unknown values
+#         self.is_optional = False
+#         self.is_memory = False
+#         self.memory_role = "None"
+
+#         if var_encode_data:
+#             for key, val in var_encode_data.items():
+#                 if key == "text":
+#                     key = "var_encode_text"  # Rename field
+#                 if hasattr(self, key):  # only set if the attribute is defined
+#                     setattr(self, key, val)
+
+#         if ast_data:
+#             for key, val in ast_data.items():
+#                 if hasattr(self, key):  # only set if the attribute is defined
+#                     setattr(self, key, val)
+
+#         if ast_data is None:
+#             self.is_operand = False
+
+#         if var_encode_data is None or ast_data is None:
+#             print(f"             - Invalid operand `{self.operand_name}`, var_encode or ast_data is None ")
+#             self.is_valid = False
+
+#         print(f"          - Operand init : {self}")
+
+#     def set(self, key, value):
+#         if hasattr(self, key):
+#             setattr(self, key, value)
+#         else:
+#             raise AttributeError(f"Unknown attribute: {key}")
+
+#     def __str__(self):
+#         attrs = vars(self)  # returns the object's __dict__
+#         return f"{self.__class__.__name__}({', '.join(f'{k}={v}' for k, v in attrs.items())})"
 
 
 
@@ -148,6 +240,27 @@ def parse_asmtemplate(asm_template):
 
     """
 
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # print('TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO')
+    # print('TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO')
+    # print(f"   = asm template : {asm_template} ")
+    # testing_ast = parse_asm_template(asm_template)
+    # print(testing_ast)
+    # print('TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO')
+    # print('TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO')
+    
+
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+    # ####################### TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+
+    # Parse the asm template into a structured AST
     clean_asm_template = re.sub(r"\s+", " ", asm_template).strip()
     print(f"   = asm template : {clean_asm_template} ")
     print(f"     = extract asmtemplate")

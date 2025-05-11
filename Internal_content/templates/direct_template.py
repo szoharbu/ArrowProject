@@ -7,8 +7,6 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 # Done:: debug code branching issue with WFIT (thread0 is waking after sleep state to threa1 code)
 # Done:: Add ability to use "with core" that will allow same scenario to address multiple cores
 # Done:: Need to add ability for Memblock to me aligned, using .align(4) or .align(8), and set some default
-# TODO:: Work to enable EL1
-# TODO:: add latency info to DB.
 # TODO:: create an lst like file, that shows both lips from the objdump and the asm+comment+file+line from the asm file
 # TODO:: Barrier
     # Done:: Work on barrier , add barrier manager to take care of uniuq names and mem addresses
@@ -27,13 +25,19 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 
 Configuration.Knobs.Config.core_count.set_value(2)
 Configuration.Knobs.Template.scenario_count.set_value(1)
-Configuration.Knobs.Template.scenario_query.set_value(
-    {"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
+#Configuration.Knobs.Template.scenario_query.set_value({"simple_cache_scenario":100, "WFIT_CROSS_SPE_scenario": 0, Configuration.Tag.REST: 1})
+Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
 
 
 @AR.scenario_decorator(random=True, )
 def random_instructions():
     AR.comment("inside random_instructions")
+
+    AR.generate(instruction_count=5)
+    AR.generate(instruction_count=5, query=(AR.Instruction.steering_class.contains("mx")))
+    AR.generate(instruction_count=5, query=(AR.Instruction.mnemonic.contains("ADC")))
+
+    return 
 
     reg = RegisterManager.get(reg_type="gpr")
     reg2 = RegisterManager.get(reg_type="gpr")
@@ -42,27 +46,47 @@ def random_instructions():
     AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), src=reg, comment=f"ADC with register {reg} as src")
     # AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), dest=reg, comment=f"ADC with register {reg} as dest")
 
-    AR.generate(instruction_count=5)
-    AR.generate(instruction_count=5, query=(AR.Instruction.steering_class.contains("mx")))
-    AR.generate(instruction_count=5, query=(AR.Instruction.mnemonic.contains("ADC")))
-
     for _ in range(10):
         reg = RegisterManager.get()
         AR.generate(src=reg)
 
+
+    # AR.Barrier("barrier_1")
+    # AR.asm("nop")
+    # return
+
+    # for i in range(10):
+    #     value = 0x12340+i
+
+    #     # mem = MemoryManager.Memory(init_value=value, byte_size=8)
+    #     # AR.generate(src=mem, comment=f"load {hex(value)} to mem")
+    #     # AR.generate(dest=mem, comment=f"store {hex(value)} to mem")
+        
+    #     reg = RegisterManager.get_and_reserve()
+    #     ld_mem = MemoryManager.Memory(init_value=value, byte_size=8)
+    #     AR.generate(src=ld_mem, dest=reg, query=(AR.Instruction.mnemonic.contains("ldr")))
+    #     AR.generate(src=reg, query=(AR.Instruction.mnemonic.contains("str")))
+    #     RegisterManager.free(reg)
+
+    # AR.asm("nop")
+    # AR.asm("nop")
+    # AR.asm("nop")
+    
+    # return
+
     # mem = MemoryManager.Memory(init_value=0x1234)
     # AR.generate(src=mem)
 
-    with AR.Loop(counter=5):
-        AR.generate(instruction_count=5)
-        # with AR.EventTrigger(frequency=Configuration.Frequency.RARE):
-        #     AR.asm("wfi", comment="simple nop instruction")
+    # with AR.Loop(counter=5):
+    #     AR.generate(instruction_count=5)
+    #     # with AR.EventTrigger(frequency=Configuration.Frequency.RARE):
+    #     #     AR.asm("wfi", comment="simple nop instruction")
 
-    # code_segment = MemoryManager.CodeSegment(name="my_segment", byte_size=100, type="code")
-    # with AR.BranchToSegment(segment_name=code_segment):
-    #     AR.generate(instruction_count=10)
+    # # code_segment = MemoryManager.CodeSegment(name="my_segment", byte_size=100, type="code")
+    # # with AR.BranchToSegment(segment_name=code_segment):
+    # #     AR.generate(instruction_count=10)
 
-    # AR.asm(f"nop")
+    # # AR.asm(f"nop")
 
 
 @AR.scenario_decorator(random=True)
