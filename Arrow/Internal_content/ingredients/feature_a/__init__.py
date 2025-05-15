@@ -1,9 +1,9 @@
 
 import random
-from ....Utils.configuration_management import Configuration
-from ....Arrow_API import AR
-from ....Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
-from ....Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Arrow_API import AR
+from Arrow.Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
+from Arrow.Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
 
 
 @AR.ingredient_decorator(random=True, priority=Configuration.Priority.HIGH)

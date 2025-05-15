@@ -1,7 +1,7 @@
-from ...Utils.configuration_management import Configuration
-from ...Tool.memory_management.memory import Memory
-from ...Tool.asm_libraries.asm_logger import AsmLogger
-from ...Tool.asm_libraries.label import Label
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Tool.memory_management.memory import Memory
+from Arrow.Tool.asm_libraries.asm_logger import AsmLogger
+from Arrow.Tool.asm_libraries.label import Label
 
 def end_test_asm_convention(test_pass:bool=True, status_code=0) -> None:
     """

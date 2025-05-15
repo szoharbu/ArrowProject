@@ -5,10 +5,10 @@ __all__ = ["MemoryManager_API"]  # Only export MemoryManager_API
 
 class MemoryManager_API:
 
-    from ...Tool.memory_management.memory import Memory as _Memory
-    from ...Tool.memory_management.memory_block import MemoryBlock as _MemoryBlock
-    from ...Tool.memory_management.memory_segments import MemorySegment as _MemorySegment
-    from ...Utils.configuration_management import Configuration as _Configuration
+    from Arrow.Tool.memory_management.memory import Memory as _Memory
+    from Arrow.Tool.memory_management.memory_block import MemoryBlock as _MemoryBlock
+    from Arrow.Tool.memory_management.memory_segments import MemorySegment as _MemorySegment
+    from Arrow.Utils.configuration_management import Configuration as _Configuration
 
     @staticmethod
     def Memory(
@@ -24,7 +24,7 @@ class MemoryManager_API:
         """
         Allocate a Memory to be used as memory operand.
         """
-        from ...Tool.memory_management.memory import Memory as _Memory
+        from Arrow.Tool.memory_management.memory import Memory as _Memory
 
         return _Memory(name=name, address=address, byte_size=byte_size, memory_type=memory_type, shared=shared,
                       init_value=init_value, memory_block=memory_block, memory_block_offset=memory_block_offset )
@@ -43,7 +43,7 @@ class MemoryManager_API:
         """
         Allocate a MemoryBlock.
         """
-        from ...Tool.memory_management.memory_block import MemoryBlock as _MemoryBlock
+        from Arrow.Tool.memory_management.memory_block import MemoryBlock as _MemoryBlock
 
         return _MemoryBlock(byte_size=byte_size, name=name, address=address, memory_type=memory_type,shared=shared,init_value=init_value, init_value_byte_representation=init_value_byte_representation)
 
@@ -56,6 +56,6 @@ class MemoryManager_API:
         """
         Allocate a segment of memory for either code or data
         """
-        from ...Tool.state_management import get_current_state
+        from Arrow.Tool.state_management import get_current_state
         current_state = get_current_state()
         return current_state.memory_manager.allocate_memory_segment(name=name, byte_size=byte_size, memory_type=memory_type)

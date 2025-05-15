@@ -1,7 +1,7 @@
 import random
-from ...Tool.register_management.register import Register
-from ...Utils.logger_management import get_logger
-from ...Utils.configuration_management import Configuration
+from Arrow.Tool.register_management.register import Register
+from Arrow.Utils.logger_management import get_logger
+from Arrow.Utils.configuration_management import Configuration
 
 
 class RegisterManager:

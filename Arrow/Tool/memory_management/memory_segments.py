@@ -1,10 +1,10 @@
 import random
 from abc import ABC
-from ...Tool.asm_blocks import DataUnit, AsmUnit
-from ...Utils.configuration_management import Configuration
-from ...Tool.asm_libraries.label import Label
-from ...Tool.memory_management import interval_lib
-from ...Tool.memory_management.memory_block import MemoryBlock
+from Arrow.Tool.asm_blocks import DataUnit, AsmUnit
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Tool.asm_libraries.label import Label
+from Arrow.Tool.memory_management import interval_lib
+from Arrow.Tool.memory_management.memory_block import MemoryBlock
 
 # Abstract base class for MemorySegment
 class MemorySegment(ABC):

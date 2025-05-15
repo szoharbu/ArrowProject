@@ -1,9 +1,9 @@
 import os
-from ...Utils.logger_management import get_logger
-from ...Utils.configuration_management import Configuration, get_config_manager
-from ...Externals.binary_generation.arm_binary import ArmBuildPipeline
-from ...Externals.binary_generation.riscv_binary import RiscvBuildPipeline
-from ...Externals.binary_generation.x86_binary import x86BuildPipeline
+from Arrow.Utils.logger_management import get_logger
+from Arrow.Utils.configuration_management import Configuration, get_config_manager
+from Arrow.Externals.binary_generation.arm_binary import ArmBuildPipeline
+from Arrow.Externals.binary_generation.riscv_binary import RiscvBuildPipeline
+from Arrow.Externals.binary_generation.x86_binary import x86BuildPipeline
 
 
 def generate_binary():

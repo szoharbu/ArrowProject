@@ -1,19 +1,19 @@
 # from peewee import Expression
 # from typing import Union, List, Dict, Any, Optional
-# from ...Utils.logger_management import get_logger
-# from ...Utils.configuration_management import get_config_manager, Configuration
-# from ...Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
-# from ...Tool.register_management.register import Register
-# from ...Tool.memory_management.memory_segments import CodeSegment
-# from ...Tool.frontend import choice, range_with_peak
-# from ...Tool.asm_libraries import label, asm_logger, stack, store_value
-# from ...Tool.asm_libraries.memory_array.memory_array import MemoryArray as MemoryArray_wrapper
-# from ...Tool.asm_libraries.loop.loop_base import LoopBase
-# from ...Tool.asm_libraries.loop.loop import Loop as Loop_wrapper
-# from ...Tool.asm_libraries.branch_to_segment.branch_to_segment_base import BranchToSegmentBase
-# from ...Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegment as BranchToSegment_wrapper
-# from ...Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
-# from ...Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as EventTrigger_wrapper
+# from Arrow.Utils.logger_management import get_logger
+# from Arrow.Utils.configuration_management import get_config_manager, Configuration
+# from Arrow.Tool.generation_management.generate import GeneratedInstruction, generate as generate_wrapper
+# from Arrow.Tool.register_management.register import Register
+# from Arrow.Tool.memory_management.memory_segments import CodeSegment
+# from Arrow.Tool.frontend import choice, range_with_peak
+# from Arrow.Tool.asm_libraries import label, asm_logger, stack, store_value
+# from Arrow.Tool.asm_libraries.memory_array.memory_array import MemoryArray as MemoryArray_wrapper
+# from Arrow.Tool.asm_libraries.loop.loop_base import LoopBase
+# from Arrow.Tool.asm_libraries.loop.loop import Loop as Loop_wrapper
+# from Arrow.Tool.asm_libraries.branch_to_segment.branch_to_segment_base import BranchToSegmentBase
+# from Arrow.Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegment as BranchToSegment_wrapper
+# from Arrow.Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
+# from Arrow.Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as EventTrigger_wrapper
 #
 #
 # class AR:

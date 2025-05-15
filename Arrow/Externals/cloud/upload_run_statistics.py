@@ -10,8 +10,8 @@ def upload_statistics(duration, run_status):
     - Duration
     '''
     import os
-    from ...Externals.cloud.Airtable import upload_run_statistics
-    from ...Utils.configuration_management import get_config_manager
+    from Arrow.Externals.cloud.Airtable import upload_run_statistics
+    from Arrow.Utils.configuration_management import get_config_manager
 
     config_manager = get_config_manager()
     upload_stats = config_manager.get_value('Upload_statistics')

@@ -1,7 +1,7 @@
-from ...Tool.memory_management.memory import Memory
-from ...Tool.asm_blocks import AsmUnit
-from ...Utils.configuration_management import Configuration
-from ...Tool.state_management import get_current_state
+from Arrow.Tool.memory_management.memory import Memory
+from Arrow.Tool.asm_blocks import AsmUnit
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Tool.state_management import get_current_state
 
 class GeneratedInstruction:
     def __init__(

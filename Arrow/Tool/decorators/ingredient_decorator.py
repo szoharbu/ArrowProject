@@ -1,6 +1,6 @@
 from typing import Callable, List, Optional, Dict, Union
-from ...Utils.configuration_management import Configuration
-from ...Tool.ingredient_management import get_ingredient_manager
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Tool.ingredient_management import get_ingredient_manager
 
 # Decorator for registering ingredients with optional params
 def ingredient_decorator(

@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 import random
-from ....Tool.asm_libraries.label import Label
-from ....Utils.configuration_management import Configuration
-from ....Tool.state_management import get_current_state
-from ....Tool.memory_management.memory import Memory
+from Arrow.Tool.asm_libraries.label import Label
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Tool.state_management import get_current_state
+from Arrow.Tool.memory_management.memory import Memory
 
 class EventTriggerBase(ABC):
     def __init__(

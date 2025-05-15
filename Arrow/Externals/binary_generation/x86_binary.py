@@ -2,10 +2,10 @@ import subprocess
 import os
 import re
 
-from ...Utils.configuration_management import get_config_manager
-from ...Utils.logger_management import get_logger
+from Arrow.Utils.configuration_management import get_config_manager
+from Arrow.Utils.logger_management import get_logger
 
-from ...Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
+from Arrow.Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
 
 
 class x86BuildPipeline(BuildPipeline):

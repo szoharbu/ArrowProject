@@ -1,5 +1,5 @@
-from ...Utils.singleton_management import SingletonManager
-from ...Tool.ingredient_management import ingredient, ingredient_manager
+from Arrow.Utils.singleton_management import SingletonManager
+from Arrow.Tool.ingredient_management import ingredient, ingredient_manager
 
 # Factory function to retrieve the IngredientManager instance
 def get_ingredient_manager() -> ingredient_manager.IngredientManager:

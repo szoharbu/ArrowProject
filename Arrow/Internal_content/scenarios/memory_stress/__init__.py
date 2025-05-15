@@ -1,8 +1,8 @@
 import random
-from ....Arrow_API import AR
-from ....Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
-from ....Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
-from ....Utils.configuration_management import Configuration
+from Arrow.Arrow_API import AR
+from Arrow.Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
+from Arrow.Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
+from Arrow.Utils.configuration_management import Configuration
 
 '''
 some well-known assembly-level execution stress models that expand dependency graphs with memory dependencies and bypass stress:

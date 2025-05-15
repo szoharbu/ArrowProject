@@ -1,13 +1,13 @@
 
-from ....Utils.logger_management import get_logger
-from ....Utils.configuration_management import Configuration, get_config_manager
-from ....Tool.state_management import get_state_manager
-from ....Tool.state_management.switch_state import switch_code
-from ....Tool.asm_libraries.asm_logger import AsmLogger
-from ....Tool.asm_libraries.branch_to_segment import branch_to_segment
-from ....Tool.generation_management.generate import generate
+from Arrow.Utils.logger_management import get_logger
+from Arrow.Utils.configuration_management import Configuration, get_config_manager
+from Arrow.Tool.state_management import get_state_manager
+from Arrow.Tool.state_management.switch_state import switch_code
+from Arrow.Tool.asm_libraries.asm_logger import AsmLogger
+from Arrow.Tool.asm_libraries.branch_to_segment import branch_to_segment
+from Arrow.Tool.generation_management.generate import generate
 
-from ....Utils.APIs import choice
+from Arrow.Utils.APIs import choice
 
 
 def do_boot():

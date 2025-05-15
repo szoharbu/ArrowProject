@@ -1,8 +1,8 @@
 import random
 
-from ...Utils.configuration_management import Configuration
-from ...Tool.memory_management.memory import Memory
-from ...Tool.register_management.register import Register
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Tool.memory_management.memory import Memory
+from Arrow.Tool.register_management.register import Register
 
 
 def print_instruction(selected_instruction):

@@ -1,12 +1,12 @@
 import random
 from typing import Optional, Any, List, Dict
-from ...Tool.generation_management.utils import get_operand_type
-from ...Tool.generation_management.generated_instruction import GeneratedInstruction
-from ...Tool.generation_management.generate_x86 import generate_x86
-from ...Tool.generation_management.generate_riscv import generate_riscv
-from ...Tool.generation_management.generate_arm import generate_arm
-from ...Utils.configuration_management import Configuration
-from ...Externals.db_manager.models import get_instruction_db
+from Arrow.Tool.generation_management.utils import get_operand_type
+from Arrow.Tool.generation_management.generated_instruction import GeneratedInstruction
+from Arrow.Tool.generation_management.generate_x86 import generate_x86
+from Arrow.Tool.generation_management.generate_riscv import generate_riscv
+from Arrow.Tool.generation_management.generate_arm import generate_arm
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Externals.db_manager.models import get_instruction_db
 from peewee import Expression, fn
 
 # @staticmethod

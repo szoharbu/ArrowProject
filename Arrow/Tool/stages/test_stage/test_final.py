@@ -1,7 +1,7 @@
 
-from ....Utils.logger_management import get_logger
-from ....Tool.state_management import get_state_manager
-from ....Tool.asm_libraries import end_test, asm_logger
+from Arrow.Utils.logger_management import get_logger
+from Arrow.Tool.state_management import get_state_manager
+from Arrow.Tool.asm_libraries import end_test, asm_logger
 
 def do_final():
     logger = get_logger()

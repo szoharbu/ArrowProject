@@ -1,12 +1,12 @@
 from typing import Optional
-from ....Utils.logger_management import get_logger
-from ....Utils.configuration_management import Configuration
-from ....Tool.state_management import get_state_manager
-from ....Tool.state_management.switch_state import switch_code, switch_state
-from ....Tool.scenario_management import ScenarioWrapper, get_scenario_manager
-from ....Tool.asm_libraries.asm_logger import AsmLogger
-from ....Utils.APIs import choice
-from ....Tool.asm_libraries.branch_to_segment import branch_to_segment
+from Arrow.Utils.logger_management import get_logger
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Tool.state_management import get_state_manager
+from Arrow.Tool.state_management.switch_state import switch_code, switch_state
+from Arrow.Tool.scenario_management import ScenarioWrapper, get_scenario_manager
+from Arrow.Tool.asm_libraries.asm_logger import AsmLogger
+from Arrow.Utils.APIs import choice
+from Arrow.Tool.asm_libraries.branch_to_segment import branch_to_segment
 
 
 def execute_scenario(scenario_instance):

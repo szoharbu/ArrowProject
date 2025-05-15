@@ -1,10 +1,10 @@
 from typing import Optional
 
-from ....Tool.asm_libraries.loop.loop_base import LoopBase
-from ....Tool.asm_libraries.loop.loop_x86 import Loop_x86
-from ....Tool.asm_libraries.loop.loop_riscv import Loop_riscv
-from ....Tool.asm_libraries.loop.loop_arm import Loop_arm
-from ....Utils.configuration_management import Configuration
+from Arrow.Tool.asm_libraries.loop.loop_base import LoopBase
+from Arrow.Tool.asm_libraries.loop.loop_x86 import Loop_x86
+from Arrow.Tool.asm_libraries.loop.loop_riscv import Loop_riscv
+from Arrow.Tool.asm_libraries.loop.loop_arm import Loop_arm
+from Arrow.Utils.configuration_management import Configuration
 
 def Loop(
         counter: int,

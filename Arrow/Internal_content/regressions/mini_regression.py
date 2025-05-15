@@ -1,6 +1,6 @@
 
 import os
-from ...Externals import run_tool
+from Arrow.Externals import run_tool
 
 def main():
     """

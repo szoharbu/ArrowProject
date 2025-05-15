@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from ....Tool.memory_management.memory_segments import CodeSegment
-from ....Tool.state_management import get_state_manager
-from ....Tool.asm_libraries.label import Label
+from Arrow.Tool.memory_management.memory_segments import CodeSegment
+from Arrow.Tool.state_management import get_state_manager
+from Arrow.Tool.asm_libraries.label import Label
 class BranchToSegmentBase(ABC):
     def __init__(
             self,

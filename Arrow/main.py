@@ -2,7 +2,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from .Externals.cloud.upload_run_statistics import upload_statistics
+from Arrow.Externals.cloud.upload_run_statistics import upload_statistics
 
 def main(args=None):
 
@@ -10,9 +10,9 @@ def main(args=None):
 
     ensure_correct_setting()
 
-    from .Utils.arg_parser.arg_parser import parse_arguments
-    from .Utils.logger_management import get_logger
-    from .Utils.configuration_management import get_config_manager
+    from Arrow.Utils.arg_parser.arg_parser import parse_arguments
+    from Arrow.Utils.logger_management import get_logger
+    from Arrow.Utils.configuration_management import get_config_manager
 
     set_basedir_path()
 
@@ -22,7 +22,7 @@ def main(args=None):
 
     try:
 
-        from .Tool.stages import input_stage, evaluation_stage, init_stage, test_stage, final_stage
+        from Arrow.Tool.stages import input_stage, evaluation_stage, init_stage, test_stage, final_stage
 
         input_stage.read_inputs()          # Read inputs, read template, read configuration, ARM/riscv, ...
         evaluation_stage.evaluate_section() # review all configs and knobs, set them according to some logic and seal them ...
@@ -61,7 +61,7 @@ def main(args=None):
 
 
 def dump_time(start_time, message_header = None) -> str:
-    from .Utils.logger_management import get_logger
+    from Arrow.Utils.logger_management import get_logger
     logger = get_logger()
 
     current_time = time.time()  # Capture current time
@@ -77,8 +77,8 @@ def set_basedir_path():
     - `submodule_content_path`: The resolved path to the submodule content directory.
     The paths are stored in the configuration manager for easy access throughout the application.
     """
-    from .Utils.logger_management import get_logger
-    from .Utils.configuration_management import get_config_manager
+    from Arrow.Utils.logger_management import get_logger
+    from Arrow.Utils.configuration_management import get_config_manager
 
     logger = get_logger()
     config_manager = get_config_manager()

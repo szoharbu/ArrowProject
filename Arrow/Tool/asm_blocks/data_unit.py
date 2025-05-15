@@ -1,8 +1,8 @@
 import inspect
 import os
 from typing import Optional
-from ...Utils.configuration_management import get_config_manager
-from ...Utils.logger_management import get_logger
+from Arrow.Utils.configuration_management import get_config_manager
+from Arrow.Utils.logger_management import get_logger
 
 def normalize_path(path):
     """Helper function to normalize paths to absolute, lowercase, and consistent separator format."""

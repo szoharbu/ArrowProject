@@ -1,13 +1,13 @@
 import random
 from typing import Optional, Any, List
-from ...Externals.db_manager.models import Instruction
-from ...Tool.asm_libraries.label import Label
-from ...Tool.generation_management.generate import GeneratedInstruction
-from ...Tool.generation_management.utils import map_inputs_to_operands
-from ...Utils.APIs.choice import choice
-# from ...Tool.frontend.sources_API import Sources
-from ...Tool.memory_management.memory import Memory
-from ...Tool.state_management import get_current_state
+from Arrow.Externals.db_manager.models import Instruction
+from Arrow.Tool.asm_libraries.label import Label
+from Arrow.Tool.generation_management.generate import GeneratedInstruction
+from Arrow.Tool.generation_management.utils import map_inputs_to_operands
+from Arrow.Utils.APIs.choice import choice
+# from Arrow.Tool.frontend.sources_API import Sources
+from Arrow.Tool.memory_management.memory import Memory
+from Arrow.Tool.state_management import get_current_state
 
 import ast
 

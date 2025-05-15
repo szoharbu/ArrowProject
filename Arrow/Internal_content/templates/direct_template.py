@@ -1,10 +1,10 @@
 import random
 
-from ...Arrow_API import AR
-from ...Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
-from ...Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
+from Arrow.Arrow_API import AR
+from Arrow.Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
+from Arrow.Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
-from ...Utils.configuration_management import Configuration
+from Arrow.Utils.configuration_management import Configuration
 
 
 Configuration.Knobs.Config.core_count.set_value(1)
@@ -115,7 +115,7 @@ def direct_scenario():
 def direct_array_scenario():
     AR.comment("inside direct_array_scenario")
 
-    from ...Tool.asm_libraries.memory_array.memory_array import MemoryArray
+    from Arrow.Tool.asm_libraries.memory_array.memory_array import MemoryArray
 
     mem_array = MemoryArray("my_array", [10, 20, 30, 40, 50])
     loop_count = 20

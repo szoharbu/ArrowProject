@@ -1,11 +1,11 @@
 import random
 from typing import Optional
-from ...Utils.configuration_management import Configuration, get_config_manager
-from ...Utils.logger_management import get_logger
-from ...Utils.APIs import choice
-from ...Tool.memory_management.memory_block import MemoryBlock
-from ...Tool.register_management.register import Register
-from ...Tool.state_management import get_state_manager
+from Arrow.Utils.configuration_management import Configuration, get_config_manager
+from Arrow.Utils.logger_management import get_logger
+from Arrow.Utils.APIs import choice
+from Arrow.Tool.memory_management.memory_block import MemoryBlock
+from Arrow.Tool.register_management.register import Register
+from Arrow.Tool.state_management import get_state_manager
 
 
 VALID_SIZES = [1, 2, 4, 8]  # Valid memory operand sizes

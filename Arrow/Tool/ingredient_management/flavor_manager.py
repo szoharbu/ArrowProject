@@ -1,6 +1,6 @@
 import random
 from typing import List, Optional, Union
-from .ingredient_manager import get_random_ingredients
+from Arrow.Tool.ingredient_management.ingredient_manager import get_random_ingredients
 """
 
 Flavor Management System Overview:

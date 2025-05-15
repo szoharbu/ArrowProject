@@ -1,6 +1,6 @@
 
 
-from ...Utils.configuration_management import Configuration, get_config_manager
+from Arrow.Utils.configuration_management import Configuration, get_config_manager
 config_manager = get_config_manager()
 
 # Check if not already set from command-line

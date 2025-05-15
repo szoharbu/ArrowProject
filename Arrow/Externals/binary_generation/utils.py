@@ -1,7 +1,7 @@
 import shutil
 import subprocess
 import os
-from ...Utils.logger_management import get_logger
+from Arrow.Utils.logger_management import get_logger
 
 
 
@@ -42,7 +42,7 @@ def check_tool_exists(tool):
     Args:
         tool: a tool command to check (e.g., ['aarch64-none-elf-g++', 'aarch64-none-elf-as']).
     """
-    from ...Utils.configuration_management import Configuration
+    from Arrow.Utils.configuration_management import Configuration
     logger = get_logger()
     if shutil.which(tool) is None:
         error_str = (f"Missing required tool {tool} in PATH\n"

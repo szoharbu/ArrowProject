@@ -1,7 +1,7 @@
 import random
-from ....Utils.configuration_management import Configuration
-from ....Arrow_API import AR
-from ....Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
+from Arrow.Utils.configuration_management import Configuration
+from Arrow.Arrow_API import AR
+from Arrow.Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
 
 '''
 load - store actions of a same memory.  

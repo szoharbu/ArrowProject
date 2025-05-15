@@ -1,6 +1,6 @@
-from ...Utils.singleton_management import SingletonManager
-from ...Tool.register_management.register_manager import RegisterManager, Register
-from ...Tool.memory_management.memory_manager import MemoryManager, MemorySegment, MemoryRange
+from Arrow.Utils.singleton_management import SingletonManager
+from Arrow.Tool.register_management.register_manager import RegisterManager, Register
+from Arrow.Tool.memory_management.memory_manager import MemoryManager, MemorySegment, MemoryRange
 
 
 class State:

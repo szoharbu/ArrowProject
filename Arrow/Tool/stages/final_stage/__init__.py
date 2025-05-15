@@ -1,12 +1,12 @@
 
-from ....Utils.logger_management import get_logger
-from ....Utils.configuration_management import get_config_manager
-from ....Tool.stages.final_stage.json_dump import generation_json_dump, memory_usage_json_dump
-from ....Externals.db_manager.models import get_instruction_db
-from ....Utils.singleton_management import SingletonManager
+from Arrow.Utils.logger_management import get_logger
+from Arrow.Utils.configuration_management import get_config_manager
+from Arrow.Tool.stages.final_stage.json_dump import generation_json_dump, memory_usage_json_dump
+from Arrow.Externals.db_manager.models import get_instruction_db
+from Arrow.Utils.singleton_management import SingletonManager
 
-from ....Externals.binary_generation.asm_generation import generate_assembly
-from ....Externals.binary_generation.binary_generation import generate_binary
+from Arrow.Externals.binary_generation.asm_generation import generate_assembly
+from Arrow.Externals.binary_generation.binary_generation import generate_binary
 
 def final_section():
     logger = get_logger()

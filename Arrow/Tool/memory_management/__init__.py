@@ -1,4 +1,4 @@
-from ...Tool.memory_management.memory_segments import MemoryRange, MemorySegment
+from Arrow.Tool.memory_management.memory_segments import MemoryRange, MemorySegment
 
 """
 Memory Management Module
