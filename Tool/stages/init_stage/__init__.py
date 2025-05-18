@@ -108,6 +108,9 @@ def init_page_tables():
                 size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])
                 page_table_manager.allocate_page(size=size, page_type=type, sequential_page_count=sequential_page_count)
 
+        #Always allocate a code page table that has a VA=PA mapping, needed for BSP boot block
+        page_table_manager.allocate_page(size=Configuration.Page_sizes.SIZE_4K, page_type=Configuration.Page_types.TYPE_CODE, sequential_page_count=1, VA_eq_PA=True)
+
         page_table_manager.print_page_tables()
 
 def init_memory():
@@ -119,7 +122,7 @@ def init_memory():
     state_manager.set_active_state("core_0")
     curr_state = state_manager.get_active_state()
     bsp_boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"BSP__boot_segment", byte_size=0x200,
-                                                                       memory_type=Configuration.Memory_types.BSP_BOOT_CODE, alignment_bits=4)
+                                                                       memory_type=Configuration.Memory_types.BSP_BOOT_CODE, alignment_bits=4, VA_eq_PA=True)
     logger.debug(f"init_memory: allocating BSP boot_block {bsp_boot_block}")
 
     states = state_manager.states_dict
@@ -129,7 +132,7 @@ def init_memory():
 
         boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__boot_segment",
                                                                        byte_size=0x200,
-                                                                       memory_type=Configuration.Memory_types.BOOT_CODE, alignment_bits=4)
+                                                                       memory_type=Configuration.Memory_types.BOOT_CODE, alignment_bits=4, VA_eq_PA=True)
         logger.debug(f"init_memory: allocating boot_block {boot_block}")
 
         code_block_count = Configuration.Knobs.Memory.code_block_count.get_value()

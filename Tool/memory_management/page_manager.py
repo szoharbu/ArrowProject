@@ -190,12 +190,70 @@ class PageTableManager:
             Configuration.Page_types.TYPE_SYSTEM: []
         }
 
-    def allocate_page(self, size:Configuration.Page_sizes=None, alignment_bits:int=None, page_type:Configuration.Page_types=None, permissions:int=None, cacheable:str=None, shareable:str=None, security:str=None, custom_attributes:dict=None, sequential_page_count:int=1):
-        memory_log("======================== PageTableManager - allocate_page")
+    def _find_va_eq_pa_unmapped_region(self, memory_space_manager, current_state, state_name, size_bytes, alignment_bits, page_type):
+        """
+        Find a region that is available at the same address in both VA and PA unmapped spaces
+        
+        Returns: (va_start, pa_start, size) - where va_start == pa_start
+        """
+        memory_log(f"Searching for unmapped region where VA=PA is possible, size: {size_bytes}, alignment: {alignment_bits}")
+        
+        # Get the unmapped VA and PA intervals
+        va_intervals = memory_space_manager.state_unmapped_va_intervals[state_name].free_intervals
+        pa_intervals = memory_space_manager.unmapped_pa_intervals.free_intervals
+        
+        memory_log(f"Found {len(va_intervals)} unmapped VA regions and {len(pa_intervals)} unmapped PA regions")
+        
+        # Find overlapping regions where VA can equal PA
+        matching_regions = []
+        for va_interval in va_intervals:
+            va_start, va_size = va_interval
+            for pa_interval in pa_intervals:
+                pa_start, pa_size = pa_interval
+                
+                # Calculate the intersection of the VA and PA intervals
+                # For VA=PA, we need the same address to be available in both spaces
+                overlap_start = max(va_start, pa_start)
+                overlap_end = min(va_start + va_size - 1, pa_start + pa_size - 1)
+                
+                if overlap_start <= overlap_end:
+                    # There is an overlap
+                    overlap_size = overlap_end - overlap_start + 1
+                    if overlap_size >= size_bytes:
+                        # This overlapping region is big enough
+                        memory_log(f"Found matching unmapped region at 0x{overlap_start:x}, size: 0x{overlap_size:x}")
+                        matching_regions.append((overlap_start, overlap_size))
+        
+        if not matching_regions:
+            memory_log(f"Could not find any unmapped region where VA=PA is possible for size {size_bytes}", "error")
+            raise ValueError(f"Could not find any unmapped region where VA=PA is possible for size {size_bytes}")
+        
+        # Apply alignment if needed
+        aligned_regions = []
+        if alignment_bits is not None:
+            alignment = 1 << alignment_bits
+            for region_start, region_size in matching_regions:
+                # Calculate the aligned start address
+                aligned_start = (region_start + alignment - 1) & ~(alignment - 1)
+                if aligned_start + size_bytes <= region_start + region_size:
+                    # The aligned region fits
+                    aligned_regions.append((aligned_start, aligned_start, size_bytes))
+        else:
+            # No alignment needed, just use the start of each region
+            aligned_regions = [(start, start, size_bytes) for start, size in matching_regions]
+                
+        if not aligned_regions:
+            memory_log(f"Could not find any aligned unmapped region where VA=PA is possible for size {size_bytes}", "error")
+            raise ValueError(f"Could not find any aligned unmapped region where VA=PA is possible for size {size_bytes}")
+        
+        # Choose the first matching region
+        va_start, pa_start, region_size = aligned_regions[0]
+        memory_log(f"Selected VA=PA unmapped region at address 0x{va_start:x} (VA=PA), size: {region_size}")
+        
+        return va_start, pa_start, region_size
 
-        #For a 4 KB page size, you need 12-bit alignment (i.e., addresses must be aligned to 2^12 bytes).
-        #For a 2 MB page size, you need 21-bit alignment (i.e., addresses must be aligned to 2^21 bytes).
-        #For a 1 GB page size, you need 30-bit alignment (i.e., addresses must be aligned to 2^30 bytes).
+    def allocate_page(self, size:Configuration.Page_sizes=None, alignment_bits:int=None, page_type:Configuration.Page_types=None, permissions:int=None, cacheable:str=None, shareable:str=None, security:str=None, custom_attributes:dict=None, sequential_page_count:int=1, VA_eq_PA:bool=False):
+        memory_log("======================== PageTableManager - allocate_page")
 
         if size is None:
             size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])#, Configuration.Page_sizes.SIZE_1G])
@@ -203,6 +261,9 @@ class PageTableManager:
             if size not in [Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M]:#, Configuration.Page_sizes.SIZE_1G]:
                 raise ValueError(f"Size must be 4KB or 2MB. {size} is not valid. 1GB is still not supported.")
 
+        #For a 4 KB page size, you need 12-bit alignment (i.e., addresses must be aligned to 2^12 bytes).
+        #For a 2 MB page size, you need 21-bit alignment (i.e., addresses must be aligned to 2^21 bytes).
+        #For a 1 GB page size, you need 30-bit alignment (i.e., addresses must be aligned to 2^30 bytes).
         if alignment_bits is None:
             if size == Configuration.Page_sizes.SIZE_4K:
                 alignment_bits = 12
@@ -256,20 +317,46 @@ class PageTableManager:
         
         # Step 1: Find and allocate regions from unmapped space
         try:
-            # Use the allocate_VA_interval and allocate_PA_interval methods which handle state initialization
-            va_allocation = memory_space_manager.allocate_VA_interval(full_size_bytes, alignment_bits=alignment_bits, state=current_state, page_type=page_type)
-            pa_allocation = memory_space_manager.allocate_PA_interval(full_size_bytes, alignment_bits=alignment_bits)
-            
-            va_start, va_size = va_allocation
-            pa_start, pa_size = pa_allocation
-            
+            if VA_eq_PA:
+                memory_log(f"Allocating unmapped memory with VA=PA constraint, size: {full_size_bytes}, alignment: {alignment_bits}")
+                
+                # Find a region that is available at the same address in both VA and PA unmapped spaces
+                va_start, pa_start, size = self._find_va_eq_pa_unmapped_region(
+                    memory_space_manager, 
+                    current_state, 
+                    state_name, 
+                    full_size_bytes, 
+                    alignment_bits, 
+                    page_type
+                )
+                
+                # Allocate the region from unmapped space
+                # First, update the unmapped intervals
+                memory_space_manager.state_unmapped_va_intervals[state_name].remove_region(va_start, size)
+                memory_space_manager.unmapped_pa_intervals.remove_region(pa_start, size)
+                
+                # Map the VA to PA with equal addresses
+                memory_space_manager.map_va_to_pa(state_name, va_start, pa_start, size, page_type)
+                
+                va_size = size
+                memory_log(f"Successfully allocated and mapped VA=PA memory at 0x{va_start:x}, size: {size}")
+                
+            else:
+                # Original implementation for non-VA_eq_PA case
+                # Use the allocate_VA_interval and allocate_PA_interval methods which handle state initialization
+                va_allocation = memory_space_manager.allocate_VA_interval(full_size_bytes, alignment_bits=alignment_bits, state=current_state, page_type=page_type)
+                pa_allocation = memory_space_manager.allocate_PA_interval(full_size_bytes, alignment_bits=alignment_bits)
+                
+                va_start, va_size = va_allocation
+                pa_start, pa_size = pa_allocation
+                
+                # Step 2: Add the allocated regions to mapped pools
+                # First, add to mapped intervals pool, specifying the page type
+                memory_space_manager.map_va_to_pa(state_name, va_start, pa_start, va_size, page_type)
+                
         except (ValueError, MemoryError) as e:
             memory_log(f"Failed to allocate page memory: {e}", level="error")
             raise ValueError(f"Could not allocate memory regions of size {full_size_bytes} with alignment {alignment_bits}")
-        
-        # Step 2: Add the allocated regions to mapped pools
-        # First, add to mapped intervals pool, specifying the page type
-        memory_space_manager.map_va_to_pa(state_name, va_start, pa_start, va_size, page_type)
         
         # Create the page objects for each page in the sequence
         result = []

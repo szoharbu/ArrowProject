@@ -259,29 +259,125 @@ class MemorySpaceManager:
         # Record the mapping
         return (va_addr, pa_addr, size)
     
-    def allocate_memory(self, state_name, size, page_type, alignment_bits=None, page_size=4096):
+    def _find_va_eq_pa_addresses(self, state_name, size, page_type, alignment_bits=None, page_size=4096):
         """
-        Allocates memory from mapped but non-allocated regions
-        - Can allocate cross-page regions if pages are sequential
-        - Returns allocation information
+        Find VA and PA addresses that satisfy the VA=PA constraint
         
-        :param state_name: State name or State object
-        :param size: Size in bytes to allocate
-        :param page_type: Page type to allocate
-        :param alignment_bits: Alignment in bits (default: None)
-        :param page_size: Page size in bytes (default: 4096)
-        :return: MemoryAllocation object
+        :return: (va_start, pa_start, overlapping_pages)
         """
-        # Handle both state objects and state names
-        if hasattr(state_name, 'state_name'):
-            state_name = state_name.state_name
+        memory_log("Searching for matching VA and PA regions where VA=PA...")
+        is_code = self._is_code_page_type(page_type)
+        
+        # Get the available regions for both VA and PA
+        if is_code:
+            va_intervals = self.state_non_allocated_va_code_intervals[state_name].free_intervals
+            pa_intervals = self.non_allocated_pa_code_intervals.free_intervals
+        else:
+            va_intervals = self.state_non_allocated_va_data_intervals[state_name].free_intervals
+            pa_intervals = self.non_allocated_pa_data_intervals.free_intervals
+        
+        # Find overlapping regions where VA can equal PA
+        matching_regions = []
+        for va_interval in va_intervals:
+            va_start, va_size = va_interval
+            for pa_interval in pa_intervals:
+                pa_start, pa_size = pa_interval
+                
+                # Calculate the intersection of the VA and PA intervals
+                # For VA=PA, we need addresses that are available in both spaces
+                overlap_start = max(va_start, pa_start)
+                overlap_end = min(va_start + va_size - 1, pa_start + pa_size - 1)
+                
+                if overlap_start <= overlap_end:
+                    # There is an overlap
+                    overlap_size = overlap_end - overlap_start + 1
+                    if overlap_size >= size:
+                        # This overlapping region is big enough
+                        memory_log(f"Found matching region at 0x{overlap_start:x}, size: 0x{overlap_size:x}")
+                        matching_regions.append((overlap_start, overlap_size))
+        
+        if not matching_regions:
+            memory_log(f"Could not find any region where VA=PA is possible for size {size}", "error")
+            raise ValueError(f"Could not find any region where VA=PA is possible for size {size}")
+        
+        # Apply alignment if needed
+        aligned_regions = []
+        if alignment_bits is not None:
+            alignment = 1 << alignment_bits
+            for region_start, region_size in matching_regions:
+                # Calculate the aligned start address
+                aligned_start = (region_start + alignment - 1) & ~(alignment - 1)
+                if aligned_start + size <= region_start + region_size:
+                    # The aligned region fits
+                    aligned_regions.append((aligned_start, region_size - (aligned_start - region_start)))
+        else:
+            aligned_regions = matching_regions
             
-        # Ensure the state is initialized
-        self._initialize_state(state_name)
+        if not aligned_regions:
+            memory_log(f"Could not find any aligned region where VA=PA is possible for size {size}", "error")
+            raise ValueError(f"Could not find any aligned region where VA=PA is possible for size {size}")
+            
+        # Choose the first aligned region (or implement a different selection strategy if needed)
+        va_start, _ = aligned_regions[0]
+        pa_start = va_start  # Since VA=PA
         
-        memory_log(f"Allocating memory of size {size} for state {state_name} with page_type {page_type}, alignment_bits={alignment_bits}")
+        memory_log(f"Selected VA=PA region at address 0x{va_start:x}")
         
-        # Determine if we're allocating code or data
+        # Now we need to check if this region is already mapped in the page tables
+        # If it's not mapped, we'll need to create the mapping
+        current_state = get_current_state()
+        page_table_manager = current_state.page_table_manager
+        
+        # Check if the region is already mapped correctly
+        va_end = va_start + size - 1
+        page_entries = page_table_manager.get_page_table_entries()
+        
+        overlapping_pages = []
+        for page in page_entries:
+            if (page.va <= va_end and page.end_va >= va_start):
+                overlapping_pages.append(page)
+                
+                # Check if the page has VA=PA mapping
+                if page.va != page.pa:
+                    memory_log(f"Existing page mapping doesn't satisfy VA=PA: VA=0x{page.va:x}, PA=0x{page.pa:x}", "error")
+                    raise ValueError(f"Existing page mapping doesn't satisfy VA=PA: VA=0x{page.va:x}, PA=0x{page.pa:x}")
+        
+        # If no existing pages cover this region, create the mapping
+        if not overlapping_pages:
+            # We need to create the mapping from scratch
+            memory_log(f"Creating new VA=PA mapping at 0x{va_start:x}")
+            # Create pages as needed to cover the entire region
+            current_va = va_start
+            current_pa = pa_start
+            remaining_size = size
+            
+            while remaining_size > 0:
+                # Calculate the size for this page
+                current_page_size = min(page_size, remaining_size)
+                
+                # Map the VA to the PA with VA=PA
+                page_table_manager.map_va_to_pa(current_va, current_pa, current_page_size, page_type)
+                
+                # Move to the next page
+                current_va += current_page_size
+                current_pa += current_page_size
+                remaining_size -= current_page_size
+                
+            # Fetch the newly created pages
+            page_entries = page_table_manager.get_page_table_entries()
+            overlapping_pages = []
+            for page in page_entries:
+                if (page.va <= va_end and page.end_va >= va_start):
+                    overlapping_pages.append(page)
+                    
+        return va_start, pa_start, overlapping_pages
+
+    def _find_regular_addresses(self, state_name, size, page_type, alignment_bits=None, page_size=4096):
+        """
+        Find VA and PA addresses for regular allocation (not VA=PA)
+        
+        :return: (va_start, pa_start, overlapping_pages)
+        """
         is_code = self._is_code_page_type(page_type)
         
         # Debug: Check what's in the non-allocated pools
@@ -306,6 +402,7 @@ class MemorySpaceManager:
             # Find available non-allocated VA region from the DATA pool only, with alignment
             va_avail = self.state_non_allocated_va_data_intervals[state_name].find_region(size, alignment_bits)
             if not va_avail:
+                memory_log(f"No available non-allocated DATA VA region of size {size} with alignment {alignment_bits} for state {state_name}", "error")
                 raise ValueError(f"No available non-allocated DATA VA region of size {size} with alignment {alignment_bits} for state {state_name}")
         
         va_start, _ = va_avail
@@ -315,7 +412,7 @@ class MemorySpaceManager:
         if alignment_bits is not None:
             alignment = 1 << alignment_bits
             if va_start % alignment != 0:
-                memory_log(f"VA address 0x{va_start:x} is not aligned to {alignment_bits} bits!")
+                memory_log(f"VA address 0x{va_start:x} is not aligned to {alignment_bits} bits!", "error")
                 raise ValueError(f"Failed to allocate properly aligned memory. VA:0x{va_start:x} is not aligned to {alignment_bits} bits!")
         
         # Find the physical address that corresponds to the VA we just found
@@ -429,6 +526,44 @@ class MemorySpaceManager:
             
         memory_log(f"Using PA region starting at 0x{pa_start:x}")
         
+        return va_start, pa_start, overlapping_pages
+
+    def allocate_memory(self, state_name, size, page_type, alignment_bits=None, VA_eq_PA=False, page_size=4096):
+        """
+        Allocates memory from mapped but non-allocated regions
+        - Can allocate cross-page regions if pages are sequential
+        - Returns allocation information
+        
+        :param state_name: State name or State object
+        :param size: Size in bytes to allocate
+        :param page_type: Page type to allocate
+        :param alignment_bits: Alignment in bits (default: None)
+        :param VA_eq_PA: If True, the virtual address must equal the physical address (default: False)
+        :param page_size: Page size in bytes (default: 4096)
+        :return: MemoryAllocation object
+        """
+        # Handle both state objects and state names
+        if hasattr(state_name, 'state_name'):
+            state_name = state_name.state_name
+            
+        # Ensure the state is initialized
+        self._initialize_state(state_name)
+        
+        memory_log(f"Allocating memory of size {size} for state {state_name} with page_type {page_type}, "
+                   f"alignment_bits={alignment_bits}, VA_eq_PA={VA_eq_PA}")
+        
+        # Determine if we're allocating code or data
+        is_code = self._is_code_page_type(page_type)
+        
+        # Find suitable VA and PA addresses based on allocation type
+        if VA_eq_PA:
+            va_start, pa_start, overlapping_pages = self._find_va_eq_pa_addresses(
+                state_name, size, page_type, alignment_bits, page_size)
+        else:
+            va_start, pa_start, overlapping_pages = self._find_regular_addresses(
+                state_name, size, page_type, alignment_bits, page_size)
+            
+        # From here on, the logic is the same for both allocation types
         # Mark as allocated (add to allocated, remove from non-allocated)
         self.state_allocated_va_intervals[state_name].add_region(va_start, size)
         self.state_non_allocated_va_intervals[state_name].remove_region(va_start, size)
@@ -456,20 +591,22 @@ class MemorySpaceManager:
             pa_page = pa_start + offset
             page_mappings.append((va_page, pa_page, page_size_to_add))
         
-        # Store the covered pages if we found them
-        covered_pages = overlapping_pages if overlapping_pages else []
+        # Create MemoryAllocation object with all the details
+        allocation = MemoryAllocation(
+            va_start=va_start,
+            pa_start=pa_start,
+            size=size,
+            page_mappings=page_mappings,
+            page_type=page_type,
+            covered_pages=overlapping_pages
+        )
         
-        # Print detailed information about covered pages
-        if covered_pages:
-            memory_log(f"Memory segment spans {len(covered_pages)} pages:")
-            for i, page in enumerate(covered_pages):
-                memory_log(f"  Page {i}: {page}")
-        
-        # Create allocation record with page type information and page references
-        allocation = MemoryAllocation(va_start, pa_start, size, page_mappings, page_type, covered_pages)
-        self.allocations.append(allocation)
-        
-        memory_log(f"Allocated memory at VA:0x{va_start:x}, PA:0x{pa_start:x}, size:{size}, type:{page_type}, alignment:{alignment_bits}")
+        # Debug information
+        if VA_eq_PA:
+            memory_log(f"Created VA=PA allocation: VA=PA=0x{va_start:x}, size={size}")
+        else:
+            memory_log(f"Created allocation: VA=0x{va_start:x}, PA=0x{pa_start:x}, size={size}")
+            
         return allocation
     
     def free_memory(self, allocation):
