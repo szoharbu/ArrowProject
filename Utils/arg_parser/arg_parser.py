@@ -133,7 +133,7 @@ def parse_arguments(input_args=None):
         logger.info(f"--------------- execution_platform: {args.execution_platform}")
         config_manager.set_value('Execution_platform', args.execution_platform)
     else:
-        execution_platform = 'linked_elf'
+        execution_platform = 'baremetal'
         logger.info(f"--------------- execution_platform: {execution_platform} (default)")
         config_manager.set_value('Execution_platform', execution_platform)
 

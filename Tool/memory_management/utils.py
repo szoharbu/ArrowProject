@@ -344,7 +344,7 @@ def print_memory_state(memory_space_manager=None, memory_manager=None, print_bot
             state_allocations = [a for a in memory_space_manager.allocations 
                               if memory_space_manager.state_allocated_va_intervals[state_name].is_region_available(a.va_start, a.size)]
             
-            memory_log(f"-------- Allocations: {len(state_allocations)}", print_both=print_both)
+            memory_log(f"-------- Memory segments : {len(state_allocations)}", print_both=print_both)
             for i, alloc in enumerate(state_allocations):
                 page_str = f", spans {len(alloc.covered_pages)} pages" if hasattr(alloc, 'covered_pages') and alloc.covered_pages else ""
                 memory_log(f"---------------- Alloc {i}: VA:0x{alloc.va_start:x}-0x{alloc.va_start+alloc.size-1:x}, "
@@ -389,3 +389,4 @@ def print_memory_state(memory_space_manager=None, memory_manager=None, print_bot
                         memory_log(f"      ... and {len(segment.data_units_list) - 5} more data units", print_both=print_both)
     
     memory_log("==== END MEMORY STATE SUMMARY ====", print_both=print_both)
+    memory_log("\n\n\n")

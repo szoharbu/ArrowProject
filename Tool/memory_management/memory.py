@@ -6,7 +6,7 @@ from Utils.APIs import choice
 from Tool.memory_management.memory_block import MemoryBlock
 from Tool.register_management.register import Register
 from Tool.state_management import get_state_manager
-
+from Tool.memory_management.utils import memory_log
 
 VALID_SIZES = [1, 2, 4, 8]  # Valid memory operand sizes
 
@@ -151,7 +151,8 @@ class Memory:
 
         logger = get_logger()
 
-        self.memory_str = f"Memory: name={self.name}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}"
+        self.memory_str = f"Memory access: name={self.name}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}"
+        memory_log(self.memory_str)
         logger.debug(self.memory_str)
         #print(self.memory_str)
 

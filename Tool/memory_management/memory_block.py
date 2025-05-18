@@ -4,7 +4,7 @@ from Tool.asm_blocks import DataUnit
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
 from Tool.state_management import get_state_manager
-from Tool.memory_management.utils import convert_int_value_to_bytes
+from Tool.memory_management.utils import convert_int_value_to_bytes, memory_log
 
 '''
 #class MemoryBlock:
@@ -141,7 +141,7 @@ class MemoryBlock:
                                  f"alignment={self.alignment}, "
                                  f"init_value:{formatted_bytes}]")
 
-
+        memory_log(self.memory_block_str)
         logger.debug(self.memory_block_str)
         # print(self.memory_block_str)
 
