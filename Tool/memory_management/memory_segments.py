@@ -13,19 +13,30 @@ class MemorySegment(ABC):
     _memory_segment_initial_seed_id = random.randint(1234, 5678)  # start at a random label
 
     def __init__(self, name: str, address: int, byte_size: int, memory_type:Configuration.Memory_types):
-
+        """
+        Initialize a segment from a memory block.
+        :param name: segment name.
+        :param address: segment address.
+        :param byte_size: segment size in bytes.
+        :param memory_type: segment type.
+        """
         MemorySegment._memory_segment_initial_seed_id += 1
         self.name = f"{name}_{MemorySegment._memory_segment_initial_seed_id}"
         self.address = address
         self.byte_size = byte_size
         self.memory_type = memory_type
+        # Will be set when allocated from memory manager
+        self.allocation = None
+        # List of actual Page objects this segment spans
+        self.covered_pages = []
 
     def __str__(self):
         #return self.name
         return f"{self.__class__.__name__}(name={self.name}, address={hex(self.address)}, byte_size={hex(self.byte_size)}, type={self.memory_type})"
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(name={self.name}, address={hex(self.address)}, byte_size={hex(self.byte_size)}, type={self.memory_type})"
+        page_info = f", spans {len(self.covered_pages)} pages" if self.covered_pages else ""
+        return f"{self.__class__.__name__}(name={self.name}, address={hex(self.address)}, byte_size={hex(self.byte_size)}, type={self.memory_type}{page_info})"
 
 
 # CodeSegment inherits from MemorySegment and adds a start_label attribute

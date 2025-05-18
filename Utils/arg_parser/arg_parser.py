@@ -65,6 +65,9 @@ def parse_arguments(input_args=None):
     parser.add_argument('--instruction_debug_prints', choices=['True', 'False'],
                         help="Run Arrow with additional debug prints checking logic, ('True', 'False').")
 
+    parser.add_argument('--memory_debug_prints', choices=['None', 'memory_log', 'info_log'],
+                        help="Run Arrow with additional debug prints checking logic, ('None', 'memory_log', 'info_log').")
+
 
     # Optional argument: --define or -D (multiple key-value pairs)
     parser.add_argument('-D', '--define', action='append',
@@ -162,6 +165,13 @@ def parse_arguments(input_args=None):
         logger.info(f"--------------- instruction_debug_prints: {instruction_debug_prints} (defaults)")
     config_manager.set_value('Instruction_debug_prints', instruction_debug_prints)
 
+    if args.memory_debug_prints:
+        memory_debug_prints = None if (args.memory_debug_prints == "None") else args.memory_debug_prints
+        logger.info(f"--------------- memory_debug_prints: {args.memory_debug_prints}")
+    else:
+        memory_debug_prints = 'memory_log'
+        logger.info(f"--------------- memory_debug_prints: {memory_debug_prints} (defaults)")
+    config_manager.set_value('Memory_debug_prints', memory_debug_prints)
 
     if args.create_binary:
         create_binary = True if (args.create_binary == "True") else False

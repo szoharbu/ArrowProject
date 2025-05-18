@@ -1,6 +1,7 @@
 from Utils.singleton_management import SingletonManager
 from Tool.register_management.register_manager import RegisterManager, Register
 from Tool.memory_management.memory_manager import MemoryManager, MemorySegment, MemoryRange
+from Tool.memory_management.page_manager import PageTableManager
 
 
 class State:
@@ -10,12 +11,13 @@ class State:
     """
 
     def __init__(self, state_name: str, state_id: int, privilege_level: int, processor_mode: str, register_manager: RegisterManager,
-                 memory_manager: MemoryManager, current_code: MemorySegment, base_register: Register, base_register_value: int, memory_range: MemoryRange):
+                 page_table_manager: PageTableManager, memory_manager: MemoryManager, current_code: MemorySegment, base_register: Register, base_register_value: int, memory_range: MemoryRange):
         self.state_name: str = state_name
         self.state_id: int = state_id
         self.privilege_level: int = privilege_level
         self.processor_mode: str = processor_mode
         self.register_manager: RegisterManager = register_manager
+        self.page_table_manager: PageTableManager = page_table_manager
         self.memory_manager: MemoryManager = memory_manager
         self.current_code_block:MemorySegment = current_code
         self.base_register: Register = base_register
@@ -28,6 +30,7 @@ class State:
                 f"privilege_level={self.privilege_level}, "
                 f"processor_mode={self.processor_mode}, "
                 f"register_manager={self.register_manager}, "
+                f"page_table_manager={self.page_table_manager}, "
                 f"memory_manager={self.memory_manager}, "
                 f"current_code={self.current_code_block}, "
                 f"base_register={self.base_register}, "
