@@ -1,14 +1,16 @@
 import os
+import random
 import importlib.util
 import sys
 from Utils.configuration_management import get_config_manager, Configuration
 from Utils.logger_management import get_logger
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_state_manager, get_current_state
 from Tool.state_management.state_manager import State
 from Tool.register_management import register_manager
-from Tool.memory_management import memory_manager, MemoryRange
+from Tool.memory_management import memory_manager, MemoryRange, page_manager
 from Tool.memory_management.interval_lib import IntervalLib
-
+from Utils.APIs.choice import choice
+from Tool.memory_management.utils import print_memory_state
 
 def init_state():
     logger = get_logger()
@@ -49,6 +51,7 @@ def init_state():
             processor_mode=Configuration.Knobs.Config.processor_mode,
             privilege_level=Configuration.Knobs.Config.privilege_level,
             register_manager=register_manager.RegisterManager(),
+            page_table_manager=None, # require active state. 
             memory_range=core_memory_range,
             memory_manager=memory_manager.MemoryManager(memory_range=core_memory_range),
             current_code=None,
@@ -56,6 +59,8 @@ def init_state():
             base_register_value=base_register_value,
         )
         state_manager.add_state(state_id, curr_state)
+        curr_state.page_table_manager = page_manager.PageTableManager()
+
 
     cores = state_manager.list_states()
     for core in cores:
@@ -81,6 +86,30 @@ def init_registers():
         curr_state.base_register = curr_state.register_manager.get_and_reserve()
 
 
+def init_page_tables():
+    logger = get_logger()
+    logger.info("============ init_page_table")
+
+    state_manager = get_state_manager()
+    states = state_manager.states_dict
+    for state_id in states.keys():
+        
+        #TODO:: improve page table heuristic!!!!
+        #TODO:: improve page table heuristic!!!!
+        #TODO:: improve page table heuristic!!!!
+        state_manager.set_active_state(state_id)
+        current_state = get_current_state()
+        page_table_manager = current_state.page_table_manager
+
+        for type in [Configuration.Page_types.TYPE_CODE, Configuration.Page_types.TYPE_DATA]:
+            count = 5
+            for _ in range(count):
+                sequential_page_count = choice(values={1:90, 2:9, 3:1})
+                size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])
+                page_table_manager.allocate_page(size=size, page_type=type, sequential_page_count=sequential_page_count)
+
+        page_table_manager.print_page_tables()
+
 def init_memory():
     logger = get_logger()
     logger.info("============ init_memory")
@@ -89,8 +118,8 @@ def init_memory():
     # Allocate BSP boot block. a single block that act as trampoline for all cores
     state_manager.set_active_state("core_0")
     curr_state = state_manager.get_active_state()
-    bsp_boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"BSP__boot_segment", byte_size=0x1000,
-                                                                       memory_type=Configuration.Memory_types.BSP_BOOT_CODE)
+    bsp_boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"BSP__boot_segment", byte_size=0x200,
+                                                                       memory_type=Configuration.Memory_types.BSP_BOOT_CODE, alignment_bits=4)
     logger.debug(f"init_memory: allocating BSP boot_block {bsp_boot_block}")
 
     states = state_manager.states_dict
@@ -99,15 +128,15 @@ def init_memory():
         curr_state = state_manager.get_active_state()
 
         boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__boot_segment",
-                                                                       byte_size=0x1000,
-                                                                       memory_type=Configuration.Memory_types.BOOT_CODE)
+                                                                       byte_size=0x200,
+                                                                       memory_type=Configuration.Memory_types.BOOT_CODE, alignment_bits=4)
         logger.debug(f"init_memory: allocating boot_block {boot_block}")
 
         code_block_count = Configuration.Knobs.Memory.code_block_count.get_value()
         for i in range(code_block_count):
             code_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__code_segment_{i}",
                                                                            byte_size=0x1000,
-                                                                           memory_type=Configuration.Memory_types.CODE)
+                                                                           memory_type=Configuration.Memory_types.CODE, alignment_bits=4)
             logger.debug(f"init_memory: allocating code_block {code_block}")
 
         data_block_count = Configuration.Knobs.Memory.data_block_count.get_value()
@@ -118,6 +147,7 @@ def init_memory():
                                                                            byte_size=0x1000,
                                                                            memory_type=Configuration.Memory_types.DATA_SHARED)
             logger.debug(f"init_memory: allocating data_shared_block {data_block}")
+
         for i in range(data_preserve_count):
             data_block = curr_state.memory_manager.allocate_memory_segment(
                 name=f"{state_id}__data_preserve_segment_{i}", byte_size=0x1000,
@@ -169,13 +199,14 @@ def init_section():
 
     init_state()
     init_registers()
+    init_page_tables()
     init_memory()
 
     init_scenarios()
     # Add additional needed initialization here
     # Instruction loader
     # ...
-
+    print_memory_state(print_both=True)
 
 def ensure_submodule_initialized():
     """

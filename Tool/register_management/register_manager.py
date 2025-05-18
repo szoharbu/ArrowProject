@@ -15,7 +15,7 @@ class RegisterManager:
         self._registers_pool = []
 
         logger = get_logger()
-        logger.info("======================== RegisterManager")
+        logger.info("==================== RegisterManager")
 
 
         if Configuration.Architecture.x86:

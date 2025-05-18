@@ -4,10 +4,12 @@ from Utils.configuration_management.knobs import Knobs
 
 
 class Configuration:
-    from Utils.configuration_management.enums import Architecture, Memory_types, ByteSize, Tag, Priority, PRIORITY_WEIGHTS, Frequency
+    from Utils.configuration_management.enums import Architecture, Memory_types, Page_types, Page_sizes, ByteSize, Tag, Priority, PRIORITY_WEIGHTS, Frequency
 
     Architecture = Architecture
     Memory_types = Memory_types
+    Page_types = Page_types
+    Page_sizes = Page_sizes
     ByteSize = ByteSize
     Tag = Tag
     Priority = Priority

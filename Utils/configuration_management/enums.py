@@ -14,6 +14,18 @@ class Memory_types(Enum):
     DATA_SHARED = "data_shared"
     DATA_PRESERVE = "data_reserved"
 
+
+class Page_types(Enum):
+    TYPE_CODE = "code"
+    TYPE_DATA = "data"
+    TYPE_DEVICE = "device"
+    TYPE_SYSTEM = "system"
+
+class Page_sizes(Enum):
+    SIZE_4K = 4*1024
+    SIZE_2M = 2 * 1024 * 1024
+    SIZE_1G = 1024 * 1024 * 1024
+
 # Simplified Enum for standard size constants
 class ByteSize(Enum):
     SIZE_1K = 1024                # Kilobyte (1K = 1024 bytes)
