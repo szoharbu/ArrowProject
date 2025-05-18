@@ -4,6 +4,14 @@ from Utils.configuration_management import Configuration
 from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
 from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
+
+# TODO:: PGT
+    # refactor memory manager to support paging, and add a new memory manager that will be used for paging.
+    # integrate the PGT with the new memory manager
+    # solve PGT ISS issue with section
+    # add a logic that auto-generate section-start
+    # replace ARM_ASSEMBLY with GENERIC - should be more simlar to GNU AS
+
 # Done:: debug code branching issue with WFIT (thread0 is waking after sleep state to threa1 code)
 # Done:: Add ability to use "with core" that will allow same scenario to address multiple cores
 # Done:: Need to add ability for Memblock to me aligned, using .align(4) or .align(8), and set some default
@@ -26,12 +34,18 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 Configuration.Knobs.Config.core_count.set_value(2)
 Configuration.Knobs.Template.scenario_count.set_value(1)
 #Configuration.Knobs.Template.scenario_query.set_value({"simple_cache_scenario":100, "WFIT_CROSS_SPE_scenario": 0, Configuration.Tag.REST: 1})
-Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
+#Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
+Configuration.Knobs.Template.scenario_query.set_value({"ldstcc_release_rar_check": 100, Configuration.Tag.REST: 1})
+
+
 
 
 @AR.scenario_decorator(random=True, )
 def random_instructions():
     AR.comment("inside random_instructions")
+
+
+    
 
     AR.generate(instruction_count=5)
     AR.generate(instruction_count=5, query=(AR.Instruction.steering_class.contains("mx")))
@@ -89,6 +103,134 @@ def random_instructions():
     # # AR.asm(f"nop")
 
 
+
+def switch_EL(current_el_level:int, target_el_level:int):
+
+    '''
+    Higher → Lower: Always use ERET (exception return).
+    Lower → Higher: Trigger an exception (e.g., interrupt, SVC, HVC).
+    Direct Jumps (e.g., EL3 → EL0): Technically allowed via ERET, but not recommended (skip initialization steps in intermediate ELs).
+    '''
+
+    while current_el_level != target_el_level:
+        reg = RegisterManager.get_and_reserve(reg_type="gpr")
+        reg2 = RegisterManager.get_and_reserve(reg_type="gpr")
+
+        target_el_label = f"el{target_el_level}_target_address"
+        AR.comment(f"Transition from EL{current_el_level} to EL{target_el_level}")
+
+        AR.comment(f"Set the target address in ELR_EL3")
+        AR.asm(f"adr {reg}, {target_el_label}")
+        AR.asm(f"msr ELR_EL3, {reg}", comment="set ELR_EL3 target address")
+
+        AR.comment(f"Configure the processor state for EL{target_el_level}")
+        AR.asm(f"mrs {reg}, SPSR_el3", comment="get SPSR_el3")
+        AR.asm(f"bic {reg}, {reg}, #0xf", comment="clear mode bits")
+        if target_el_level == 2: SPSR_value = 0x9   # EL2h (AArch64), DAIF=0000 (interrupts enabled)
+        elif target_el_level == 1: SPSR_value = 0x5 # EL1h (AArch64), DAIF=0000 (interrupts enabled)
+        else: SPSR_value = 0x0                      # EL0h (AArch64), DAIF=0000 (interrupts enabled)
+        AR.asm(f"mov {reg2}, #{SPSR_value}") 
+        AR.asm(f"orr {reg}, {reg}, {reg2}", comment="set EL2 mode")
+        AR.asm(f"msr SPSR_el3, {reg}", comment="set SPSR_el3")
+
+        AR.comment(f"Set the stack pointer in EL{target_el_level}")
+        AR.asm(f"adr {reg}, _stack_start")
+        AR.asm(f"msr SP_EL{target_el_level}, {reg}", comment="set SP_EL{target_el_level} stack pointer")
+
+        AR.comment(f"Switch to a non-secure state")
+        AR.asm(f"mrs x0, scr_el3", comment="Read SCR_EL3")
+        AR.asm(f"orr x0, x0, #(1 << 0)", comment="Set NS bit (bit 0)")
+        AR.asm(f"msr scr_el3, x0", comment="Update SCR_EL3")
+        
+
+        AR.asm("eret")
+        AR.asm(f"{target_el_label}:")
+
+
+
+        return
+        if current_el_level == 3:
+            AR.comment("Transition from EL3 to EL2")
+
+            AR.comment(f"Configure the processor state for EL2")
+            AR.asm(f"mrs {reg}, SPSR_el3", comment="get SPSR_el3")
+            AR.asm(f"bic {reg}, {reg}, #0xf", comment="clear mode bits")
+            AR.asm(f"mov {reg2}, #0x9") # EL2h (AArch64), DAIF=0000 (interrupts enabled)
+            AR.asm(f"orr {reg}, {reg}, {reg2}", comment="set EL2 mode")
+            AR.asm(f"msr SPSR_el3, {reg}", comment="set SPSR_el3")
+
+            AR.comment(f"Set the target address in EL2")
+            AR.asm(f"adr {reg}, el2_return_address")
+            AR.asm(f"msr ELR_EL3, {reg}", comment="set ELR_EL3 return address")
+
+            AR.comment(f"Set the stack pointer in EL2")
+            AR.asm(f"adr {reg}, _stack_start")
+            AR.asm(f"msr SP_EL2, {reg}", comment="set SP_EL2 stack pointer")
+
+            AR.comment(f"Switch to a non-secure state")
+            AR.asm(f"mrs x0, scr_el3", comment="Read SCR_EL3")
+            AR.asm(f"orr x0, x0, #(1 << 0)", comment="Set NS bit (bit 0)")
+            AR.asm(f"msr scr_el3, x0", comment="Update SCR_EL3")
+            
+
+            AR.asm(f"eret")
+            AR.asm("el2_return_address:")
+            AR.asm("nop")
+            current_el_level = 2
+        elif current_el_level == 2:
+            if target_el_level == 1:
+                AR.comment("Transition from EL2 to EL1")
+                AR.asm(f"ADR {reg}, el1_return_address")
+                AR.asm(f"MSR ELR_EL2, {reg}")
+                AR.asm(f"MSR SPSel, #1")
+                AR.asm(f"ERET")
+                AR.asm("el1_return_address:")
+                current_el_level = 1
+            else: 
+                AR.comment("Transition from EL2 to EL3")
+                current_el_level = 3
+        elif current_el_level == 1:
+            if target_el_level == 0:
+                AR.comment("Transition from EL1 to EL0")
+                AR.asm(f"ADR {reg}, el0_return_address")
+                AR.asm(f"MSR ELR_EL1, {reg}")
+                AR.asm(f"MSR SPSel, #0")
+                AR.asm(f"ERET")
+                AR.asm("el0_return_address:")
+                current_el_level = 0
+            else: 
+                AR.comment("Transition from EL1 to EL2")
+                current_el_level = 2
+        else:
+            AR.comment("Transition from EL0 to EL1")
+            current_el_level = 1
+
+
+
+# // At EL3
+# // Transition from EL3 to EL2
+# MSR ELR_EL3, el2_return_address  // Set return address for EL2
+# MSR SPSel, #1                    // Select SP_EL2
+# ERET                             // Return to EL2
+
+# // At EL2
+# el2_return_address:
+# MSR ELR_EL2, el1_return_address  // Set return address for EL1
+# MSR SPSel, #1                    // Select SP_EL1
+# ERET                             // Return to EL1
+
+# // At EL1
+# el1_return_address:
+# MSR ELR_EL1, el0_return_address  // Set return address for EL0
+# MSR SPSel, #0                    // Select SP_EL0
+# ERET                             // Return to EL0
+
+# // At EL0
+# el0_return_address:
+# MOV X0, X0                       // No-op instruction to indicate we are at EL0
+
+
+
 @AR.scenario_decorator(random=True)
 def mx_cross_v2g_scenario():
     AR.comment("inside direct_memory_scenario")
@@ -103,6 +245,21 @@ def mx_cross_v2g_scenario():
                 AR.generate(instruction_count=10, query=(AR.Instruction.steering_class.contain("mx_pred")))
             else:
                 AR.generate(query=(AR.Instruction.steering_class.contain("vx_v2x")))
+
+
+def koko():
+    print("koko")
+
+
+    mem_block = MemoryManager.MemoryBlock(name="block1", byte_size=20)
+    mem1 = MemoryManager.Memory(name='mem1_partial1', memory_block=mem_block, memory_block_offset=2, byte_size=4)
+    mem2 = MemoryManager.Memory(name='mem1_partial2', memory_block=mem_block, memory_block_offset=14, byte_size=4)
+
+    AR.asm(f"mov {mem1}, 0x1234")
+    AR.generate(src=mem2, comment="load mem2")
+
+
+
 
 
 @AR.scenario_decorator(random=True, priority=Configuration.Priority.MEDIUM,

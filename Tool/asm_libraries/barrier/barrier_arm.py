@@ -32,10 +32,10 @@ def barrier_arm(barrier_name: str):
     #TODO:: replace the below with an atomic operation
 
     AsmLogger.asm(f"adr {reg1}, {barrier_nem.unique_label}")
-    AsmLogger.asm(f"ldr {reg3.as_size(32)}, [{reg1}]")
-    AsmLogger.asm(f"bic {reg3.as_size(32)}, {reg3.as_size(32)}, {reg2.as_size(32)}", comment=f"Clear the bit")
-    AsmLogger.asm(f"str {reg3.as_size(32)}, [{reg1}]")
-    #AsmLogger.asm(f"ldclr {reg3.as_size(32)}, {reg2.as_size(32)}, [{reg1}]", comment=f"Atomic Load and Clear operation")
+    #AsmLogger.asm(f"ldr {reg3.as_size(32)}, [{reg1}]")
+    #AsmLogger.asm(f"bic {reg3.as_size(32)}, {reg3.as_size(32)}, {reg2.as_size(32)}", comment=f"Clear the bit")
+    #AsmLogger.asm(f"str {reg3.as_size(32)}, [{reg1}]")
+    AsmLogger.asm(f"stclr {reg2.as_size(32)}, [{reg1}]", comment=f"Atomic Store and Clear operation")
 
 
     spin_label = Label("spin_label")

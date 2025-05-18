@@ -53,23 +53,27 @@ class Operand_class:
             "is_memory":      False,
             "memory_role":    "None",
         }
+        # 1) set defaults in one block
         for k, v in defaults.items():
             setattr(self, k, v)
 
-        # 2) apply var_encode_data, with renaming of "text" → "var_encode_text"
-        if var_encode_data:
-            rename_map = {"text": "var_encode_text"}
-            self._assign_fields(var_encode_data, rename_map)
-        else:
-            self.is_valid = False
-            logger.warning("Operand `%s` missing var_encode_data", operand_name)
-
-        # 3) apply ast_data
+        # 2) apply ast_data
         if ast_data:
             self._assign_fields(ast_data)
         else:
             self.is_valid = False
             logger.warning("Operand `%s` missing ast_data", operand_name)
+
+        # 3) apply var_encode_data, with renaming of "text" → "var_encode_text"
+        if var_encode_data:
+            rename_map = {"text": "var_encode_text"}
+            self._assign_fields(var_encode_data, rename_map)
+        elif  re.fullmatch(r"\{#\d+\}", self.ast_text):
+            # this is a special case, where an operand is hardcoded immediate and it doesnt have Var_encode_data
+            logger.warning("Operand `%s` missing var_encode_data", operand_name)
+        else:
+            self.is_valid = False
+            logger.warning("Operand `%s` missing var_encode_data", operand_name)
 
         logger.debug("Initialized %r", self)
 
@@ -97,6 +101,8 @@ class Operand_class:
                 f"idx={self.index} "
                 f"syntax={self.syntax!r} "
                 f"type={self.type!r} "
+                f"is_memory={self.is_memory!r} "
+                f"is_optional={self.is_optional!r} "
                 f"valid={self.is_valid}>")
 
     def set(self, key, value):
@@ -298,14 +304,12 @@ def parse_asmtemplate(asm_template):
         memory_role = "None"
 
         # Check if the operand is fully wrapped in {}
-        match = re.fullmatch(r"\{(.*)\}", orig_syntax)
+        # (?:]|]!)?: Optionally allow either ] or ]! after the closing curly brace
+        match = re.fullmatch(r"\{(.*)\}(?:]|]!)?", orig_syntax)
+        
         if match:
             is_optional = True  # Mark as optional
 
-        # # Check if the operand is fully wrapped in {}
-        # match = re.fullmatch(r"\[(.*)\]", orig_syntax)
-        # if match:
-        #     is_memory = True  # Mark as Memory
 
         if orig_syntax.startswith("["):
             clean_syntax = orig_syntax[1:]   # remove [ from the start
