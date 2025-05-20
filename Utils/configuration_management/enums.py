@@ -13,7 +13,7 @@ class Memory_types(Enum):
     CODE = "code"
     DATA_SHARED = "data_shared"
     DATA_PRESERVE = "data_reserved"
-
+    STACK = "stack"
 
 class Page_types(Enum):
     TYPE_CODE = "code"

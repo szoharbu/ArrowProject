@@ -51,8 +51,23 @@ def generate_binary():
     # Step 3: Assemble the final assembly file into an object file
     pipeline.assemble(assembly_file, object_file)
 
+    # TODO:: replace this hard-coded with a proper logic! 
+    PGT_enabled=True # TODO:: replace this hard-coded with a proper logic! 
+    if Configuration.Architecture.arm and PGT_enabled:
+
+        page_table_asm_file = os.path.join(output_dir, "pgt", "pg_generic_gnu.s")
+        page_table_object = os.path.join(output_dir, f"{base_name}_pg.o")
+        pipeline.assemble(page_table_asm_file, page_table_object)
+        
+        constants_file = os.path.join(output_dir, "pgt", "pgt_constants.s")
+        constants_object = os.path.join(output_dir, f"{base_name}_pg_constants.o")
+        pipeline.assemble(constants_file, constants_object)
+
     # Step 4: Link the object file into an executable ELF file
-    pipeline.link(object_file, executable_file)
+    if Configuration.Architecture.arm and PGT_enabled:
+        pipeline.link_automated(object_file, page_table_object, constants_object, executable_file)
+    else:
+        pipeline.link(object_file, executable_file)
 
     # Step 5: Run the executable on ISS
     pipeline.golden_reference_simolator(executable_file, iss_prerun_log_file)

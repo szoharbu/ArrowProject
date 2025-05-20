@@ -10,25 +10,25 @@ def generation_json_dump():
 
     state_manager = get_state_manager()
     current_state = state_manager.get_active_state()
-    available_blocks = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
+    available_segments = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
 
     # Prepare data for JSON
-    data = []  # List to store all blocks and their asm_units_list
+    data = []  # List to store all segments and their asm_units_list
 
-    for block in available_blocks:
-        block_data = {
-            "block_name": block.name,
-            "block_address": hex(block.address),
+    for segment in available_segments:
+        segment_data = {
+            "segment_name": segment.name,
+            "segment_address": hex(segment.address),
             "asm_units": []
         }
-        for asm_unit in block.asm_units_list:
+        for asm_unit in segment.asm_units_list:
             asm_unit_data = {
                 f"{asm_unit.type}": f"{asm_unit}",  # Replace with actual attributes
                 # add other asm_unit attributes as needed
             }
-            block_data["asm_units"].append(asm_unit_data)
+            segment_data["asm_units"].append(asm_unit_data)
 
-        data.append(block_data)
+        data.append(segment_data)
 
     config_manager = get_config_manager()
     output_dir = config_manager.get_value('output_dir_path')
@@ -43,41 +43,45 @@ def memory_usage_json_dump():
     state_manager = get_state_manager()
     current_state = state_manager.get_active_state()
 
-    all_blocks = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE,
+    all_segments = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE,
                                                                       Configuration.Memory_types.CODE,
                                                                       Configuration.Memory_types.DATA_SHARED,
                                                                       Configuration.Memory_types.DATA_PRESERVE])
-    all_data_blocks = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED,
+    all_data_segments = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED,
                                                                            Configuration.Memory_types.DATA_PRESERVE])
 
     # Prepare JSON structure with two sections: summary and detailed data
     output_data = {
-        "block_summary": [], # Top-level list for block summaries
-        "blocks_data_units": []  # List to store all blocks and their data_units_list
+        "segment_summary": [], # Top-level list for segment summaries
+        "segments_data_units": []  # List to store all segments and their data_units_list
     }
 
-    # First section: summary of available blocks
-    for block in all_blocks:
+    # First section: summary of available segments
+    for segment in all_segments:
         summary = {
-            "block_name": block.name,
-            "block_info": f"address={hex(block.address)}, byte_size={block.byte_size}, type={block.memory_type}"
+            "segment_name": segment.name,
+            "segment_info": f"address={hex(segment.address)}, pa_address={hex(segment.pa_address)}, byte_size={segment.byte_size}, type={segment.memory_type}"
         }
-        output_data["block_summary"].append(summary)
+        output_data["segment_summary"].append(summary)
 
-    for block in all_data_blocks:
-        block_data = {
-            "block_name": block.name,
-            "block_address": hex(block.address),
+    for segment in all_data_segments:
+        segment_data = {
+            "segment_name": segment.name,
+            "segment_address": hex(segment.address),
+            "segment_pa_address": hex(segment.pa_address),
             "data_units": [],
         }
-        for data_unit in block.data_units_list:
+        for data_unit in segment.data_units_list:
             data_unit_info = {
-                f"data_unit": data_unit.data_unit_str,
+                "data_unit": data_unit.data_unit_str,
+                "data_unit_address": hex(data_unit.address),
+                "data_unit_pa_address": hex(data_unit.pa_address),
+                "data_unit_segment_offset": hex(data_unit.segment_offset),
                 # add other asm_unit attributes as needed
             }
-            block_data["data_units"].append(data_unit_info)
+            segment_data["data_units"].append(data_unit_info)
 
-        output_data["blocks_data_units"].append(block_data)
+        output_data["segments_data_units"].append(segment_data)
         #data.append(block_data)
 
     config_manager = get_config_manager()

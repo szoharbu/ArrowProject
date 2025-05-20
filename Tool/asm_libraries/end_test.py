@@ -62,7 +62,6 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
         else:
             AsmLogger.comment(f"Core0 reached end of test, write '** TEST PASSED OK **' to Trickbox")
 
-
             tmp_reg1 = register_manager.get_and_reserve(reg_type="gpr")
             tmp_reg2 = register_manager.get_and_reserve(reg_type="gpr")
             tmp_reg3 = register_manager.get_and_reserve(reg_type="gpr")
@@ -70,32 +69,43 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
             register_manager.reserve(sp_reg)
 
             # load the stack pointer
+            stack_data_start_address = current_state.memory_manager.get_stack_data_start_address()
             AsmLogger.comment("Load the stack pointer")
-            AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
+            #AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
+            AsmLogger.asm(f"ldr {tmp_reg1}, ={hex(stack_data_start_address)}")
             AsmLogger.asm(f"mov {sp_reg}, {tmp_reg1}")
 
+            from Tool.memory_management.memory_block import MemoryBlock
+            # Convert the string to a list of byte values
+            # the test_pass string has to be exactly that "** TEST PASSED OK **\n" including the '\n' null terminator!!! 
+            byte_list = list(b"** TEST PASSED OK **\n")  # Include null terminator
+
+            # Create MemoryBlock with byte representation
+            test_pass_str_block = MemoryBlock(
+                name="test_pass_str_block", 
+                byte_size=len(byte_list), 
+                init_value_byte_representation=byte_list,
+                alignment=4,
+            )
+            
             # Print a string to the trickbox tube
             AsmLogger.comment("Print a string to the trickbox tube")
-            AsmLogger.asm(f"ldr {tmp_reg1}, =test_pass_str", comment="Load the address of the test pass string")
-            AsmLogger.asm(f"stp {tmp_reg2}, {tmp_reg3}, [{sp_reg}, #-16]!",
-                        comment="Push x19, x20 to stack to get some temps")
+            AsmLogger.asm(f"ldr {tmp_reg1}, ={test_pass_str_block.address}", comment="Load the address of the test pass string")
+            AsmLogger.asm(f"stp {tmp_reg2}, {tmp_reg3}, [{sp_reg}, #-16]!", comment=f"Push {tmp_reg2}, {tmp_reg3} to stack to get some temps")
             AsmLogger.asm(f"ldr {tmp_reg2}, =0x0", comment="Load the address of the trickbox tube")
             AsmLogger.asm(f"print_str_loop:", comment="Start of the loop")
-            AsmLogger.asm(f"ldrb {tmp_reg3.as_size(32)}, [{tmp_reg1}], #1",
-                        comment="Load the next character from the string")
-            AsmLogger.asm(f"cbz {tmp_reg3.as_size(32)}, print_str_end",
-                        comment="If the character is the null terminator, end the loop")
-            AsmLogger.asm(f"strb {tmp_reg3.as_size(32)}, [{tmp_reg2}]", comment="Store the character to the trickbox tube")
+            AsmLogger.asm(f"ldrb {tmp_reg3.as_size(32)}, [{tmp_reg1}], #1", comment="Load the next character from the string")
+            AsmLogger.asm(f"cbz {tmp_reg3.as_size(32)}, print_str_end", comment="If the character is the null terminator, end the loop")
+            AsmLogger.asm(f"strb {tmp_reg3.as_size(32)}, [{tmp_reg2}]", comment="Store the character to the Tbox tube")
             AsmLogger.asm(f"b print_str_loop", comment="Jump back to the start of the loop")
             AsmLogger.asm(f"print_str_end:", comment="End of the loop")
-            AsmLogger.asm(f"ldp {tmp_reg2}, {tmp_reg3}, [sp], #16", comment="Pop x19, x20 from stack")
+            AsmLogger.asm(f"ldp {tmp_reg2}, {tmp_reg3}, [sp], #16", comment=f"Pop {tmp_reg2}, {tmp_reg3} from stack")
 
             # Close the trickbox tube (end the test)
             AsmLogger.comment("Close the trickbox tube (end the test)")
             AsmLogger.asm(f"ldr {tmp_reg1}, =0x0", comment="Load the address of the trickbox tube")
             AsmLogger.asm(f"mov {tmp_reg2}, #0x4", comment="Load the EOT character")
-            AsmLogger.asm(f"strb {tmp_reg2.as_size(32)}, [{tmp_reg1}]",
-                        comment="Store the EOT character to the trickbox tube")
+            AsmLogger.asm(f"strb {tmp_reg2.as_size(32)}, [{tmp_reg1}]", comment="Store the EOT character to the trickbox tube")
             AsmLogger.asm(f"dsb sy", comment="Flush the data cache")
 
             AsmLogger.asm(f"{label}:")
