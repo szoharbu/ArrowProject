@@ -2,8 +2,23 @@ import os
 import re
 import sys
 import shutil
+from Tool.state_management import get_state_manager
 from Utils.configuration_management import get_config_manager
 from Utils.logger_management import get_logger
+
+
+# def enable_mmu():
+#     logger = get_logger()
+#     logger.info("============ enable_mmu")
+    
+#     state_manager = get_state_manager()
+#     cores_states = state_manager.list_states()
+#     for core_state in cores_states:
+#         state_manager.set_active_state(core_state)
+#         curr_state = state_manager.get_active_state()
+#         logger.info(f"================ enable_mmu - running GPT for {core_state.name}")
+#         run_PGT_prototype()
+
 
 def run_PGT_prototype():
     """
@@ -42,50 +57,61 @@ def run_PGT_prototype():
         #from customer_mem_map import pgtInitPlatformMemoryMap # *
 
 
-        setProfile(V9A)
         logger.info("---- Creating Platform Memory Manager - Physical_Stage1_Mapping ::  EL3, ROOT, Stage1") 
         print ("*****************************************************************************************")
         print ("*****  Page Table Generation Started  *****")
+
+
+        setProfile(V9A)
         
-        
-        PMM = createPlatformMemoryManager("pmm", UNTAGGED) # will handle the physical memory
-        # VMM = createMemoryManager("vmm", UNTAGGED) # will handle the virtual memory
-
-        # # add a memory region of size 0x1000, va = 0xa000, pa = 0xb000
-        # addMemory(VMM, 0x0 , 0x0000180000000 )
-
-        # code_va_addr = 0xa000
-        # code_va = acquireMemory(VMM, 0x1000, lower_bound=code_va_addr, upper_bound=code_va_addr + 0x1000, NS=NON_SECURE)
-
-        # code_pa_add = 0x1000
-        # code_pa = acquireMemory(PMM, 0x1000, lower_bound=code_pa_addr, upper_bound=code_pa_addr + 0x1000, NS=NON_SECURE)
-
-
-        print(f"PMM: {PMM}")
-        addMemory(PMM, 0x0 , 0x0000180000000 )
+        PMM = createPlatformMemoryManager(f"pmm", UNTAGGED) # will handle the physical memory
+        addMemory(PMM, 0x0 , 0x0000280000000 )
         blockMemory(PMM, 0x0 , 0x80000000 ) # block the lower 2GB of memory - leave a section for the TRICKBOX
         blockNamedMemory(PMM, "TRICKBOX", 0x0, 0x14000000) # block the TRICKBOX region
 
         if(PMM < 0) :
-                print ("PGT ERROR : initTarget failed")
-                sys.exit(0)
+            print ("PGT ERROR : initTarget failed")
+            sys.exit(0)
 
-        setVerbosity(WARN)
+        setVerbosity(WARN)   
 
-        pgtSetTargetInfo(IS_RME_IMPLEMENTED, TRUE) # enable RME to allow ROOT and REALM memory regions support
+        state_manager = get_state_manager()
+        cores_states = state_manager.list_states()
+        for core_state in cores_states:
+            state_manager.set_active_state(core_state)
+            curr_state = state_manager.get_active_state()
+            logger.info(f"================ enable_mmu - running GPT for {core_state}")
 
-        # create EL3 translation system
-        EL3 = createStg1TS("EL3", VMSAv8_64, PL3R)
-        setTranslationSystemProp(EL3, TG0=TG_4KB)#, T0SZ=16)
-        setMemoryManager(EL3, PMM)
+            # VMM = createMemoryManager(f"vmm_{core_state}", UNTAGGED) # will handle the virtual memory
+            # addMemory(VMM, 0x0 , 0x0000280000000 )
+            # blockMemory(VMM, 0x0 , 0x80000000 ) # block the lower 2GB of memory - leave a section for the TRICKBOX
+            # blockNamedMemory(VMM, "TRICKBOX", 0x0, 0x14000000) # block the TRICKBOX region
 
 
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz need to seperate logic per state, and add the PMM and VMM into the state")
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz need to seperate logic per state, and add the PMM and VMM into the state")
-        # Call create_automated_memory_mapping and capture the returned pages
+            # # add a memory region of size 0x1000, va = 0xa000, pa = 0xb000
+            # addMemory(VMM, 0x0 , 0x0000180000000 )
 
-        pages = create_automated_memory_mapping(EL3)
-        print(f"Successfully processed {len(pages) if pages else 0} pages")
+            # code_va_addr = 0xa000
+            # code_va = acquireMemory(VMM, 0x1000, lower_bound=code_va_addr, upper_bound=code_va_addr + 0x1000, NS=NON_SECURE)
+
+            # code_pa_add = 0x1000
+            # code_pa = acquireMemory(PMM, 0x1000, lower_bound=code_pa_addr, upper_bound=code_pa_addr + 0x1000, NS=NON_SECURE)
+
+
+            pgtSetTargetInfo(IS_RME_IMPLEMENTED, TRUE) # enable RME to allow ROOT and REALM memory regions support
+
+            # create EL3 translation system
+            EL3 = createStg1TS("EL3", VMSAv8_64, PL3R)
+            setTranslationSystemProp(EL3, TG0=TG_4KB)#, T0SZ=16)
+            setMemoryManager(EL3, PMM)
+
+
+            print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz need to seperate logic per state, and add the PMM and VMM into the state")
+            print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz need to seperate logic per state, and add the PMM and VMM into the state")
+            # Call create_automated_memory_mapping and capture the returned pages
+
+            pages = create_automated_memory_mapping(EL3)
+            print(f"Successfully processed {len(pages) if pages else 0} pages")
 
 
         setPgtOutputFileFormat(GENERIC) # GENERIC or ARM_ASSEMBLY
@@ -122,9 +148,9 @@ def run_PGT_prototype():
         print(f"Error importing PGT modules: {e}")
         print(f"Make sure PGT_HOME is correctly set to: {pgt_home}")
         raise RuntimeError(f"Error importing PGT modules: {e}")
-    except AttributeError:
-        print("Error: setProfile function not found in _pgt module.")
-
+    except AttributeError as e:
+        print(f"Error: Attribute error: {e}")
+        raise RuntimeError(f"Error importing PGT modules: {e}")
     return 
 
 

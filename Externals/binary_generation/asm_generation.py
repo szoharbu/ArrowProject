@@ -6,7 +6,6 @@ from Tool.state_management import get_state_manager
 from Utils.singleton_management import SingletonManager
 from Tool.memory_management.utils import convert_bytes_to_words
 from Tool.asm_libraries.barrier.barrier_manager import get_barrier_manager
-from Externals.binary_generation.pgt_page_table_generation import run_PGT_prototype, convert_arm_to_gnu
 
 
 x86_Assembler_syntax = "NASM"  ## other option is "GAS" (GNU Assembler) syntax but not for NASM
@@ -310,8 +309,6 @@ def generate_data_from_DataUnits(data_blocks):
 def generate_assembly():
     logger = get_logger()
     state_manager = get_state_manager()
-
-    run_PGT_prototype()
 
     # need to fix this behavior, make sure there is only one boot, only one _start label.
     # make sure the segments are in order and not just core0 and then core1 ,...

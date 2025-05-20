@@ -7,6 +7,7 @@ from Utils.singleton_management import SingletonManager
 
 from Externals.binary_generation.asm_generation import generate_assembly
 from Externals.binary_generation.binary_generation import generate_binary
+from Externals.binary_generation.pgt_page_table_generation import run_PGT_prototype
 
 def final_section():
     logger = get_logger()
@@ -15,6 +16,11 @@ def final_section():
 
     generation_json_dump()
     memory_usage_json_dump()
+
+
+    enable_mmu = True # config_manager.get_value('Enable_MMU')
+    if enable_mmu:
+        run_PGT_prototype()
 
     generate_assembly()
 
