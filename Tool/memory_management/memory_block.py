@@ -116,13 +116,20 @@ class MemoryBlock:
                                                                         alignment=self.alignment)
 
         self.memory_segment_name = self.data_unit.memory_segment_id
+        self.memory_segment = curr_state.memory_manager.get_segment(self.memory_segment_name)
+
+
         if execution_platform == 'baremetal':
             self.address = self.data_unit.address
+            self.offset_from_segment_start = self.address - self.memory_segment.address
+            self.pa_address = self.memory_segment.pa_address + self.offset_from_segment_start
             self.base_reg = curr_state.base_register
             self.base_reg_value = curr_state.base_register_value
             self.offset = self.address - curr_state.base_register_value
         else:
             self.address = None
+            self.offset_from_segment_start = None
+            self.pa_address = None
             self.base_reg = None
             self.base_reg_value = None
             self.offset = None
@@ -133,7 +140,9 @@ class MemoryBlock:
             formatted_bytes = "None"
 
         self.memory_block_str = (f"[MemoryBlock: name={self.name}, "
-                                 f"mem_segment={self.memory_segment_name}, "
+                                 f"memory_segment_name={self.memory_segment_name}, "
+                                 f"address={self.address}, "
+                                 f"pa_address={self.pa_address}, "
                                  f"unique_label={self.unique_label}, "
                                  f"shared={self.shared}, "
                                  f"bytesize={self.byte_size}, "
@@ -146,8 +155,7 @@ class MemoryBlock:
         # print(self.memory_block_str)
 
         # add self to the memory_segment's memory_block_list
-        memory_segment = curr_state.memory_manager.get_segment(self.memory_segment_name)
-        memory_segment.memory_block_list.append(self)
+        self.memory_segment.memory_block_list.append(self)
 
     def __str__(self):
         return self.memory_block_str

@@ -4,7 +4,6 @@ from typing import Optional
 from Utils.configuration_management import get_config_manager
 from Utils.logger_management import get_logger
 
-
 def normalize_path(path):
     """Helper function to normalize paths to absolute, lowercase, and consistent separator format."""
     return os.path.normpath(os.path.abspath(path)).lower()
@@ -67,19 +66,25 @@ class DataUnit:
             self,
             byte_size: int,
             memory_segment_id: str,
+            memory_segment,
             memory_block_id: str,
             name: str = None,
             address: Optional[int] = None,
             alignment: Optional[int] = None,
             init_value_byte_representation: list[int] = None,
+            pa_address: Optional[int] = None,
+            segment_offset: Optional[int] = None,
     ):
         """
         Initializes an DataUnit from shared or preserved blocks. later be published into the date_usage file
         """
         self.name = name
         self.address = address
+        self.pa_address = pa_address
+        self.segment_offset = segment_offset
         self.byte_size = byte_size
         self.memory_block_id = memory_block_id
+        self.memory_segment = memory_segment
         self.memory_segment_id = memory_segment_id
         self.alignment = alignment
         self.init_value_byte_representation = init_value_byte_representation
@@ -92,9 +97,9 @@ class DataUnit:
         else:
             formatted_bytes = "None"
 
-        self.data_unit_str = f"[name:{self.name}, memory_block:{self.memory_block_id}, memory_segment:{self.memory_segment_id}, "
+        self.data_unit_str = f"[name:{self.name}, memory_block:{self.memory_block_id}, memory_segment_name:{self.memory_segment_id}, "
         if address is not None:
-            self.data_unit_str += f"address:{hex(self.address)}, "
+            self.data_unit_str += f"address:{hex(self.address)}, pa_address:{hex(self.pa_address)}, segment_offset:{hex(self.segment_offset)}, "
         self.data_unit_str += f"byte_size:{self.byte_size}, alignment:{self.alignment}, init_value:{formatted_bytes}, file: {self.file_name_shortened_path}, line: {self.line_number}]"
         # print(self.data_unit_str)
         # logger = get_logger()

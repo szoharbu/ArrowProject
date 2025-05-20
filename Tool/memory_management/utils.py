@@ -297,6 +297,8 @@ def print_memory_state(memory_space_manager=None, memory_manager=None, print_bot
     memory_log(f"Total states: {len(state_manager.states_dict)}", print_both=print_both)
     
     for state_name, state in state_manager.states_dict.items():
+        state_manager.set_active_state(state_name)
+        state = state_manager.get_active_state()
         memory_log(f"---- State: {state_name}", print_both=print_both)
         
         # Get page table entries if available
@@ -344,10 +346,10 @@ def print_memory_state(memory_space_manager=None, memory_manager=None, print_bot
             state_allocations = [a for a in memory_space_manager.allocations 
                               if memory_space_manager.state_allocated_va_intervals[state_name].is_region_available(a.va_start, a.size)]
             
-            memory_log(f"-------- Memory segments : {len(state_allocations)}", print_both=print_both)
+            memory_log(f"-------- Memory Segments : {len(state_allocations)}", print_both=print_both)
             for i, alloc in enumerate(state_allocations):
                 page_str = f", spans {len(alloc.covered_pages)} pages" if hasattr(alloc, 'covered_pages') and alloc.covered_pages else ""
-                memory_log(f"---------------- Alloc {i}: VA:0x{alloc.va_start:x}-0x{alloc.va_start+alloc.size-1:x}, "
+                memory_log(f"---------------- Segment {i}: VA:0x{alloc.va_start:x}-0x{alloc.va_start+alloc.size-1:x}, "
                          f"PA:0x{alloc.pa_start:x}, size:0x{alloc.size:x}, type:{alloc.page_type}{page_str}", print_both=print_both)
     
     # 2. List all memory segments if a memory manager was provided

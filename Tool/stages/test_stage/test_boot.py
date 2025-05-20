@@ -18,9 +18,10 @@ def do_boot():
 
     # TODO:: refactor this logic!!!!
 
-    # Allocate BSP boot block. a single block that act as trampoline for all cores
     state_manager.set_active_state("core_0")
     curr_state = state_manager.get_active_state()
+
+    # Allocate BSP boot block. a single block that act as trampoline for all cores    
     bsp_boot_blocks = curr_state.memory_manager.get_segments(pool_type=Configuration.Memory_types.BSP_BOOT_CODE)
     if len(bsp_boot_blocks) != 1:
         raise ValueError(
@@ -44,8 +45,16 @@ def do_boot():
     # Load the stack pointer
     sp_reg = register_manager.get(reg_name="sp")
     register_manager.reserve(sp_reg)
-    AsmLogger.comment("Load the stack pointer")
-    AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
+    stack_data_start_address = curr_state.memory_manager.get_stack_data_start_address()
+
+    AsmLogger.comment(f"Load the stack pointer (address of {stack_data_start_address})")
+    #AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
+    AsmLogger.asm(f"ldr {tmp_reg1}, ={hex(stack_data_start_address)}")
+    #AsmLogger.asm(f"ldr {tmp_reg1}, {hex(stack_data_start_address)}")
+    # AsmLogger.asm(f"adrp {tmp_reg1}, {hex(stack_data_start_address)}", comment="read value of LABEL_TTBR0_EL3 from memory") 
+    # AsmLogger.asm(f"add {tmp_reg1}, {tmp_reg1}, :lo12:{hex(stack_data_start_address)}", comment="add low 12 bits of LABEL_TTBR0_EL3") 
+    # AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TTBR0_EL3")    
+
     AsmLogger.asm(f"mov {sp_reg}, {tmp_reg1}")
     register_manager.free(sp_reg)
 
@@ -117,6 +126,7 @@ def do_boot():
         skip_boot = Configuration.Knobs.Config.skip_boot
         if not skip_boot:
             AsmLogger.asm("nop", comment=f"Empty boot code of {curr_state.state_name} at the moment, skipping")
+            enable_pgt_page_table()
             #generate(instruction_count=10)
 
         # selecting random block to jump to for test body
@@ -134,3 +144,72 @@ def do_boot():
     all_code_blocks.extend(bsp_boot_blocks)  # BSP boot code first
     all_code_blocks.extend(boot_blocks)  # Then boot code
     all_code_blocks.extend(available_blocks)  # Finally regular code blocks
+
+
+def enable_pgt_page_table():
+    AsmLogger.comment("First disable the MMU")
+    AsmLogger.asm(f"mrs x0, sctlr_el3")
+    AsmLogger.asm(f"bic x0, x0, #1", comment="Clear bit 0 (MMU enable)")
+    AsmLogger.asm(f"msr sctlr_el3, x0")
+    AsmLogger.asm(f"isb")
+    AsmLogger.asm(f"dsb sy")
+    
+
+    AsmLogger.comment("Load translation table base register with the address of our L0 table")
+    #AsmLogger.asm(f"ldr x0, =0x0000000090200000", comment="Use actual value from LABEL_TTBR0_EL3")
+    #AsmLogger.asm(f"ldr x0, =LABEL_TTBR0_EL3", comment="Use actual value from LABEL_TTBR0_EL3")
+    AsmLogger.asm(f"adrp x0, LABEL_TTBR0_EL3", comment="read value of LABEL_TTBR0_EL3 from memory") 
+    AsmLogger.asm(f"add x0, x0, :lo12:LABEL_TTBR0_EL3", comment="add low 12 bits of LABEL_TTBR0_EL3") 
+    AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TTBR0_EL3")    
+    AsmLogger.asm(f"msr ttbr0_el3, x0")
+    AsmLogger.asm(f"isb")
+    AsmLogger.asm(f"dsb sy")
+
+    AsmLogger.comment("Set up TCR_EL3 (Translation Control Register)")
+    #AsmLogger.asm(f"ldr x0, =0x0000000080853510", comment="Use actual value from LABEL_TCR_EL3") 
+    #AsmLogger.asm(f"ldr x0, =LABEL_TCR_EL3", comment="Use actual value from LABEL_TCR_EL3") 
+    AsmLogger.asm(f"adrp x0, LABEL_TCR_EL3", comment="read value of LABEL_TCR_EL3 from memory") 
+    AsmLogger.asm(f"add x0, x0, :lo12:LABEL_TCR_EL3", comment="add low 12 bits of LABEL_TCR_EL3") 
+    AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TCR_EL3")    
+    AsmLogger.asm(f"msr tcr_el3, x0")
+    AsmLogger.asm(f"isb")
+    AsmLogger.asm(f"dsb sy")
+
+    AsmLogger.comment("Set up MAIR_EL1 (Memory Attribute Indirection Register)")
+    #AsmLogger.asm(f"ldr x0, =0x0000000000FF44FF", comment="Use actual value from LABEL_MAIR_EL3")
+    #AsmLogger.asm(f"ldr x0, =LABEL_MAIR_EL3", comment="Use actual value from LABEL_MAIR_EL3")
+    AsmLogger.asm(f"adrp x0, LABEL_MAIR_EL3", comment="read value of LABEL_MAIR_EL3 from memory") 
+    AsmLogger.asm(f"add x0, x0, :lo12:LABEL_MAIR_EL3", comment="add low 12 bits of LABEL_MAIR_EL3") 
+    AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_MAIR_EL3")    
+    AsmLogger.asm(f"msr mair_el3, x0")
+    AsmLogger.asm(f"isb")
+    AsmLogger.asm(f"dsb sy")
+
+    # TODO:: remove after testing
+    # TODO:: remove after testing
+    AsmLogger.asm(f"mrs x0, scr_el3")
+    AsmLogger.asm(f"bic x0, x0, #(1 << 9)", comment="Clear bit 9 (SCR_EL3.SIF)")
+    AsmLogger.asm(f"dsb sy")
+    AsmLogger.asm(f"msr scr_el3, x0")
+    AsmLogger.asm(f"isb")
+    AsmLogger.asm(f"dsb sy")
+    AsmLogger.asm(f"mrs x0, scr_el3")
+    # TODO:: remove after testing
+    # TODO:: remove after testing
+
+
+    AsmLogger.comment("Enable MMU")
+    AsmLogger.asm(f"mrs x0, sctlr_el3")
+    AsmLogger.asm(f"orr x0, x0, #1", comment="Set bit 0 (MMU enable)")
+    AsmLogger.asm(f"bic x0, x0, #(1 << 20)", comment="Clear bit 20 (WXN)")
+    AsmLogger.asm(f"msr sctlr_el3, x0")
+    AsmLogger.asm(f"isb")
+    AsmLogger.asm(f"dsb sy")
+
+
+    # AsmLogger.asm(f"// Jump to virtual address")
+    # AsmLogger.asm(f"ldr x0, =0xc0000000")
+    # AsmLogger.asm(f"br x0")
+    
+    AsmLogger.comment("Now the MMU is enabled with your page tables")
+    AsmLogger.comment("Code can now access virtual addresses defined in your page tables")

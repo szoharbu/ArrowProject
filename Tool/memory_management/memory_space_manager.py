@@ -606,7 +606,8 @@ class MemorySpaceManager:
             memory_log(f"Created VA=PA allocation: VA=PA=0x{va_start:x}, size={size}")
         else:
             memory_log(f"Created allocation: VA=0x{va_start:x}, PA=0x{pa_start:x}, size={size}")
-            
+        
+        self.allocations.append(allocation)
         return allocation
     
     def free_memory(self, allocation):

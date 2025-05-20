@@ -6,7 +6,7 @@ from Tool.state_management import get_state_manager
 from Utils.singleton_management import SingletonManager
 from Tool.memory_management.utils import convert_bytes_to_words
 from Tool.asm_libraries.barrier.barrier_manager import get_barrier_manager
-from Externals.binary_generation.pgt_page_table_generation import run_PGT_prototype
+from Externals.binary_generation.pgt_page_table_generation import run_PGT_prototype, convert_arm_to_gnu
 
 
 x86_Assembler_syntax = "NASM"  ## other option is "GAS" (GNU Assembler) syntax but not for NASM
@@ -18,19 +18,20 @@ def get_output(location, block_name=None):
             "x86_NASM": f"section .text\n",
             "x86_GAS": f".section .text.{block_name}\n",
             "riscv": f".section .text.{block_name}\n",
-            "arm": f".text\n",
+            "arm": f".section .text.{block_name}\n",
+            #"arm": f".text\n",
         },
         "data_block_header": {
             "x86_NASM": f"section .data\nglobal {block_name}\n{block_name}:\n",
             "x86_GAS": f".section .data.{block_name}\n.global {block_name}\n{block_name}:\n",
             "riscv": f".section .data.{block_name}\n.global {block_name}\n.align 2\n{block_name}:\n",
-            "arm": f".section .data\n.global {block_name}\n{block_name}:\n",
+            "arm": f".section .data.{block_name}\n.global {block_name}\n{block_name}:\n",
         },
         "bss_block_header": {
             "x86_NASM": f"section .bss\nglobal {block_name}_bss\n{block_name}_bss:\n",
             "x86_GAS": f".section .bss.{block_name}\n.global {block_name}_bss\n{block_name}_bss:\n",
             "riscv": f".section .bss.{block_name}\n.global {block_name}_bss\n.align 2\n{block_name}_bss:\n",
-            "arm": f".section .bss\n.global {block_name}_bss\n{block_name}_bss:\n",
+            "arm": f".section .bss.{block_name}\n.global {block_name}_bss\n{block_name}_bss:\n",
         },
     }
 
@@ -117,20 +118,29 @@ def generate_data_from_DataUnits(data_blocks):
 
         block_name = block.name
         block_address = hex(block.address)
+        block_pa_address = hex(block.pa_address)
+        #block_offset_from_segment_start = hex(block.offset_from_segment_start)
         block_size = block.byte_size
         data_code_counter = 0
         tmp_data_code = ""
 
         # First, process initialized data (go to .data section)
         tmp_data_code += get_output(location="data_block_header", block_name=block_name)
+        
 
         data_unit_list = memory_manager.get_segment_dataUnit_list(block.name)
+
+        # sort the data_unit_list by thier segment_offset, to avoid having a .org backward
+        data_unit_list = sorted(data_unit_list, key=lambda x: x.segment_offset)
+
         first_data_unit = True
         for data_unit in data_unit_list:
             name = data_unit.name if data_unit.name is not None else 'no-name'
             # unique_label = data_dict.get('unique_label', 'None')
             unique_label = data_unit.memory_block_id  # data data_dict.get('memory_block', 'None')
             address = data_unit.address  # data_dict.get('address', 'None')
+            pa_address = data_unit.pa_address
+            segment_offset = data_unit.segment_offset
             byte_size = data_unit.byte_size  # data_dict.get('byte_size', 'None')
             init_value = data_unit.init_value_byte_representation  # data_dict.get('init_value', 'None')
             alignment = data_unit.alignment
@@ -167,31 +177,37 @@ def generate_data_from_DataUnits(data_blocks):
                 break_lines_between_same_data_unit = "\n" if len(words_tuple) > 1 else ""
                 break_lines_between_different_data_units = "" if first_data_unit else "\n"
                 first_data_unit = False
-                tmp_data_code += f"{break_lines_between_different_data_units}{unique_label}:"
+                
+                tmp_data_code += f".org {hex(segment_offset)}\n"
                 if alignment is not None:
-                    tmp_data_code += f"\n.align {alignment}"
+                    tmp_data_code += f".align {alignment}\n"
+                #tmp_data_code += f"{break_lines_between_different_data_units}{unique_label}:\n"
+                tmp_data_code += f"{unique_label}:\n"
 
                 if Configuration.Architecture.x86:
                     # x86 Assembly: Use `.long` for 4-byte values
                     for value, value_type in words_tuple:
                         if value_type == "word":
-                            tmp_data_code += f"{break_lines_between_same_data_unit}    .long 0x{value:08x}  {get_comment_mark()} 4 bytes"
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .long 0x{value:08x}  {get_comment_mark()} 4 bytes\n"
                         elif value_type == "byte":
-                            tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 bytes"
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 bytes\n"
                 elif Configuration.Architecture.arm:
                     # ARM Assembly: Use `.word` for 4-byte values
                     for value, value_type in words_tuple:
                         if value_type == "word":
-                            tmp_data_code += f"{break_lines_between_same_data_unit}    .word 0x{value:08x}  {get_comment_mark()} 4 bytes"
+                            tmp_data_code += f"    .word 0x{value:08x}  {get_comment_mark()} 4 bytes\n"
+                            #tmp_data_code += f"{break_lines_between_same_data_unit}    .word 0x{value:08x}  {get_comment_mark()} 4 bytes\n"
                         elif value_type == "byte":
-                            tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte"
+                            tmp_data_code += f"    .byte 0x{value:02x}  {get_comment_mark()} 1 byte\n"
+                            #tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte\n"
+                    tmp_data_code += "\n"
                 elif Configuration.Architecture.riscv:
                     # RISC-V Assembly: Use `.dword` for 8-byte values and `.byte` for smaller chunks
                     for value, value_type in words_tuple:
                         if value_type == "word":
-                            tmp_data_code += f"{break_lines_between_same_data_unit}    .dword 0x{value:08x}  {get_comment_mark()} 4 bytes"  # 4 bytes (adjust if architecture supports larger)
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .dword 0x{value:08x}  {get_comment_mark()} 4 bytes\n"  # 4 bytes (adjust if architecture supports larger)
                         elif value_type == "byte":
-                            tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte"
+                            tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte\n"
                 else:
                     raise ValueError('Unsupported Architecture')
 
@@ -265,17 +281,26 @@ def generate_data_from_DataUnits(data_blocks):
         tmp_data_code = ""
 
     if Configuration.Architecture.arm:
-        # TODO:: WA WA WA WA WA WA!!!!! need to replace with proper memory allocation!!
-        # adding stack section to the data section
-        data_code += f".section .stack\n"
-        data_code += f".align 12         // 2^12 = 4096 byte alignment\n"
-        data_code += f"_stack_start:\n"
-        data_code += f".space 0x1000     // Reserve 4KB of stack\n"
-        data_code += f"_stack_top:\n"
+        pass
+        # # TODO:: WA WA WA WA WA WA!!!!! need to replace with proper memory allocation!!
+        # # adding stack section to the data section
+        # data_code += f".section .data.trickbox\n"
+        # data_code += f".align 12         // 2^12 = 4096 byte alignment\n"
+        # data_code += f"_trickbox_start:\n"
+        # data_code += f".space 0x200000     // Reserve 2MB of memory for trickbox\n"
+        # data_code += f"_trickbox_end:\n"
+
+        # # TODO:: WA WA WA WA WA WA!!!!! need to replace with proper memory allocation!!
+        # # adding stack section to the data section
+        # data_code += f".section .stack\n"
+        # data_code += f".align 12         // 2^12 = 4096 byte alignment\n"
+        # data_code += f"_stack_start:\n"
+        # data_code += f".space 0x1000     // Reserve 4KB of stack\n"
+        # data_code += f"_stack_top:\n"
 
         # adding end of test string to the data section
-        data_code += f".data\n.balign 0x4000\n"
-        data_code += f"test_pass_str: .string \"** TEST PASSED OK **\n"
+        # data_code += f".data\n.balign 0x4000\n"
+        # data_code += f"test_pass_str: .string \"** TEST PASSED OK **\n"
         # keep the above as is, and dont change to something like the below! regardless to the extra "
         # data_code += f"test_pass_str: .string \"** TEST PASSED OK **\"\n"
 
@@ -285,7 +310,6 @@ def generate_data_from_DataUnits(data_blocks):
 def generate_assembly():
     logger = get_logger()
     state_manager = get_state_manager()
-
 
     run_PGT_prototype()
 
@@ -309,7 +333,7 @@ def generate_assembly():
 
         # Need to pass the data blocks along with their state, as its needed for the data generation
         current_state_data_blocks = curr_state.memory_manager.get_segments(
-            pool_type=[Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE])
+            pool_type=[Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE, Configuration.Memory_types.STACK])
         current_state_data_blocks_with_state = [(datablock, core_state) for datablock in current_state_data_blocks]
         all_data_blocks.extend(current_state_data_blocks_with_state)
 

@@ -52,7 +52,7 @@ class MemoryManager:
         page_table_manager = current_state.page_table_manager
         
         # Determine the page type based on memory type
-        if memory_type in [Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE]:
+        if memory_type in [Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE, Configuration.Memory_types.STACK]:
             page_type = Configuration.Page_types.TYPE_DATA
         elif memory_type in [Configuration.Memory_types.CODE, Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.BSP_BOOT_CODE]:
             page_type = Configuration.Page_types.TYPE_CODE
@@ -60,10 +60,17 @@ class MemoryManager:
             raise ValueError(f"Invalid memory type {memory_type}, type should only be DATA_SHARED, DATA_PRESERVE or CODE.")
         #TODO:: when to use TYPE_DEVICE, TYPE_SYSTEM?   
         
+        if page_type == Configuration.Page_types.TYPE_CODE:
+            # As ARM is risc, and all instructions must be 8-byte aligned, we need to ensure the alignment is at least 3
+            if alignment_bits is None or alignment_bits < 3:
+                alignment_bits = 3
         # Debug: Check available non-allocated pools before allocation
         if page_type == Configuration.Page_types.TYPE_CODE:
             pool = self.memory_space_manager.state_non_allocated_va_code_intervals[state_name]
+            for i, interval in enumerate(pool.free_intervals):
+                int_start, int_size = interval
             pool_name = "CODE"
+            
         else:
             pool = self.memory_space_manager.state_non_allocated_va_data_intervals[state_name]
             pool_name = "DATA"
@@ -83,11 +90,12 @@ class MemoryManager:
             allocation = self.memory_space_manager.allocate_memory(current_state, byte_size, page_type, alignment_bits, VA_eq_PA)
             segment_start = allocation.va_start
             segment_size = allocation.size
-            
+            segment_pa_start = allocation.pa_start
+
             # Log detailed information about the allocation, including covered pages
             if hasattr(allocation, 'covered_pages') and allocation.covered_pages:
                 num_pages = len(allocation.covered_pages)
-                memory_log(f"Allocated memory segment at VA:0x{segment_start:x}, size:0x{segment_size:x}, type:{page_type}, " 
+                memory_log(f"Allocated memory segment at VA:0x{segment_start:x}, PA:0x{segment_pa_start:x}, size:0x{segment_size:x}, type:{page_type}, " 
                            f"spanning {num_pages} {'page' if num_pages == 1 else 'pages'}")
                 
                 # If VA_eq_PA, verify that the allocation satisfies this constraint
@@ -98,7 +106,7 @@ class MemoryManager:
                             memory_log(f"Page does not satisfy VA=PA constraint (VA:0x{page.va:x} ≠ PA:0x{page.pa:x})", level="error")
                             raise ValueError(f"Page does not satisfy VA=PA constraint (VA:0x{page.va:x} ≠ PA:0x{page.pa:x})")
             else:
-                memory_log(f"Allocated memory segment at VA:0x{segment_start:x}, size:0x{segment_size:x}, type:{page_type}")
+                memory_log(f"Allocated memory segment at VA:0x{segment_start:x}, PA:0x{segment_pa_start:x}, size:0x{segment_size:x}, type:{page_type}")
         except ValueError as e:
             memory_log(f"Failed to allocate memory: {e}", level="error")
             raise ValueError(f"Could not allocate memory segment '{name}' of size {byte_size} with type {page_type}. "
@@ -108,9 +116,9 @@ class MemoryManager:
         if (memory_type == Configuration.Memory_types.CODE) \
             or (memory_type == Configuration.Memory_types.BOOT_CODE) \
             or (memory_type == Configuration.Memory_types.BSP_BOOT_CODE):
-            memory_segment = CodeSegment(name=name, address=segment_start, byte_size=segment_size, memory_type=memory_type)
+            memory_segment = CodeSegment(name=name, address=segment_start, pa_address=segment_pa_start, byte_size=segment_size, memory_type=memory_type)
         else:
-            memory_segment = DataSegment(name=name, address=segment_start, byte_size=segment_size, memory_type=memory_type)
+            memory_segment = DataSegment(name=name, address=segment_start, pa_address=segment_pa_start, byte_size=segment_size, memory_type=memory_type)
 
         # Store the allocation with the segment for future reference (e.g., for freeing)
         memory_segment.allocation = allocation
@@ -186,10 +194,22 @@ class MemoryManager:
             list[DataUnit]: A list of the memory segment DataUnits
         """
         segment = self.get_segment(segments_name)
-        if segment.memory_type is not Configuration.Memory_types.DATA_SHARED and segment.memory_type is not Configuration.Memory_types.DATA_PRESERVE:
-            raise ValueError(f"Invalid segment type {segment.memory_type}. Segment need to be of type DATA_SHARED or DATA_PRESERVE.")
+        if segment.memory_type is not Configuration.Memory_types.DATA_SHARED and segment.memory_type is not Configuration.Memory_types.DATA_PRESERVE and segment.memory_type is not Configuration.Memory_types.STACK:
+            raise ValueError(f"Invalid segment type {segment.memory_type}. Segment need to be of type DATA_SHARED or DATA_PRESERVE or STACK.")
         return segment.data_units_list
 
+    def get_stack_data_start_address(self) -> int:
+        """
+        Retrieve the start address of the stack data segment.
+        """
+        stack_block = self.get_segments(pool_type=Configuration.Memory_types.STACK)
+        if len(stack_block) != 1:
+            raise ValueError(
+                "stack_block must contain exactly one element, but it contains: {}".format(len(stack_block)))
+        stack_block = stack_block[0]
+        stack_data_start_address = stack_block.address
+        return stack_data_start_address
+    
     def print_memory_summary(self, verbose=False):
         """
         Print a summary of all memory structures across all states.
@@ -247,7 +267,6 @@ class MemoryManager:
             memory: A memory operand from a random data block.
         """
         memory_log(f"==================== allocate_data_memory: {name}, memory_block_id: {memory_block_id}, type: {pool_type}, size: {byte_size}")
-        logger = get_logger()
         config_manager = get_config_manager()
         execution_platform = config_manager.get_value('Execution_platform')
 
@@ -279,7 +298,9 @@ class MemoryManager:
                 end_block = selected_segment.address + selected_segment.byte_size
                 offset_inside_block = random.randint(start_block, end_block - byte_size)
                 address = offset_inside_block
-                memory_log(f"DATA_SHARED allocation in segment '{selected_segment.name}' at address 0x{address:x}")
+                segment_offset = address - selected_segment.address
+                pa_address = selected_segment.pa_address + segment_offset
+                memory_log(f"DATA_SHARED allocation in segment '{selected_segment.name}' at VA:{hex(address)}, PA:{hex(pa_address)}, size:{byte_size}, type:{page_type}")
             else: # pool_type is Configuration.Memory_types.DATA_PRESERVE:
                 '''
                 When DATA_PRESERVE is asked, the heuristic is as following:
@@ -316,17 +337,23 @@ class MemoryManager:
                         # Ensure address is aligned
                         alignment_value = 1 << alignment
                         address = (address + alignment_value - 1) & ~(alignment_value - 1)
-                        
-                    memory_log(f"Allocated data memory at 0x{address:x}, size:{byte_size}, type:{page_type}")
+
+                    segment_offset = address - selected_segment.address
+                    pa_address = selected_segment.pa_address + segment_offset
+                    memory_log(f"DATA_PRESERVE allocation in segment '{selected_segment.name}' at VA:{hex(address)}, PA:{hex(pa_address)}, size:{byte_size}, type:{page_type}")
                 except Exception as e:
                     memory_log(f"Failed to allocate data memory: {e}", level="error")
                     raise ValueError(f"Could not allocate data memory in segment {selected_segment.name}")
         else:  # 'linked_elf'
             address = None
+            pa_address = None
+            segment_offset = None
             memory_log(f"Using 'linked_elf' execution platform, address will be determined at link time")
 
-        data_unit = DataUnit(name=name, memory_block_id=memory_block_id, address=address, byte_size=byte_size,
-                             memory_segment_id=selected_segment.name, init_value_byte_representation=init_value_byte_representation, 
+        data_unit = DataUnit(name=name, memory_block_id=memory_block_id, 
+                             address=address, pa_address=pa_address, segment_offset=segment_offset, byte_size=byte_size,
+                             memory_segment=selected_segment, memory_segment_id=selected_segment.name, 
+                             init_value_byte_representation=init_value_byte_representation, 
                              alignment=alignment)
         selected_segment.data_units_list.append(data_unit)
         memory_log(f"Created DataUnit '{name}' in memory block '{memory_block_id}', segment '{selected_segment.name}'")
@@ -354,9 +381,10 @@ class MemoryManager:
         for segment in data_shared_segments:
             memory_log(f"Checking segment '{segment.name}' at address 0x{segment.address:x}, size: 0x{segment.byte_size:x}")
             for mem_block in segment.memory_block_list:
+                print(f"mem_block: {mem_block}")
                 if mem_block.byte_size >= byte_size:
-                    memory_log(f"  Found valid memory block ID '{mem_block.memory_block_id}' in segment '{segment.name}', "
-                               f"size: {mem_block.byte_size} bytes, address: 0x{mem_block.address:x if mem_block.address is not None else 0}")
+                    memory_log(f"  Found valid memory block '{mem_block.name}' in segment '{segment.name}', "
+                               f"size: {mem_block.byte_size} bytes, address: {hex(mem_block.address if mem_block.address is not None else 0)}")
                     valid_memory_blocks.append((segment, mem_block))
 
         if not valid_memory_blocks:
@@ -365,8 +393,8 @@ class MemoryManager:
 
         # Select a random memory block
         selected_segment, selected_memory_block = random.choice(valid_memory_blocks)
-        memory_log(f"Selected memory block '{selected_memory_block.memory_block_id}' from segment '{selected_segment.name}', "
-                   f"address: 0x{selected_memory_block.address:x if selected_memory_block.address is not None else 0}, "
+        memory_log(f"Selected memory block '{selected_memory_block.name}' from segment '{selected_segment.name}', "
+                   f"address: {hex(selected_memory_block.address if selected_memory_block.address is not None else 0)}, "
                    f"size: {selected_memory_block.byte_size} bytes")
 
         return selected_memory_block

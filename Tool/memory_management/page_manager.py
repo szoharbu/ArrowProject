@@ -221,7 +221,7 @@ class PageTableManager:
                     overlap_size = overlap_end - overlap_start + 1
                     if overlap_size >= size_bytes:
                         # This overlapping region is big enough
-                        memory_log(f"Found matching unmapped region at 0x{overlap_start:x}, size: 0x{overlap_size:x}")
+                        #memory_log(f"Found matching unmapped region at 0x{overlap_start:x}, size: 0x{overlap_size:x}")
                         matching_regions.append((overlap_start, overlap_size))
         
         if not matching_regions:
@@ -254,6 +254,7 @@ class PageTableManager:
 
     def allocate_page(self, size:Configuration.Page_sizes=None, alignment_bits:int=None, page_type:Configuration.Page_types=None, permissions:int=None, cacheable:str=None, shareable:str=None, security:str=None, custom_attributes:dict=None, sequential_page_count:int=1, VA_eq_PA:bool=False):
         memory_log("======================== PageTableManager - allocate_page")
+        memory_log(f"==== size: {size}, alignment_bits: {alignment_bits}, page_type: {page_type}, permissions: {permissions}, cacheable: {cacheable}, shareable: {shareable}, security: {security}, custom_attributes: {custom_attributes}, sequential_page_count: {sequential_page_count}, VA_eq_PA: {VA_eq_PA}")
 
         if size is None:
             size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])#, Configuration.Page_sizes.SIZE_1G])
