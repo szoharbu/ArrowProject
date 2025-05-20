@@ -4,8 +4,8 @@ import sys
 import shlex
 from Utils.configuration_management import get_config_manager, Configuration
 from Tool.state_management import get_state_manager, get_current_state
-from Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, \
-    BuildPipeline
+from Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
+from Tool.memory_management.utils import memory_log
 
 
 class ArmBuildPipeline(BuildPipeline):
@@ -66,7 +66,7 @@ class ArmBuildPipeline(BuildPipeline):
         current_section = None
         current_address = None
         
-        print(f"Parsing PGT scatter file: {scatter_file}")
+        memory_log(f"Parsing PGT scatter file: {scatter_file}")
         
         try:
             with open(scatter_file, 'r') as f:
@@ -90,9 +90,9 @@ class ArmBuildPipeline(BuildPipeline):
                         if current_section and current_address:
                             # Use the exact section name from the scatter file
                             pgt_sections.append((section_name, current_address))
-                            print(f"Found PGT section: {section_name} at address {current_address}")
+                            memory_log(f"Found PGT section: {section_name} at address {current_address}")
         except Exception as e:
-            print(f"Error parsing scatter file: {e}")
+            memory_log(f"Error parsing scatter file: {e}")
             
         return pgt_sections
     
@@ -101,7 +101,7 @@ class ArmBuildPipeline(BuildPipeline):
         Link the object file into an executable ELF file using `ld`.
         Uses the memory segments from the state manager and PGT sections from scatter file.
         """
-        print("Starting automated linking process")
+        memory_log("\nStarting automated linking process")
         tool = f"{self.toolchain_prefix}-ld"
         check_tool_exists(tool)
 
@@ -132,7 +132,7 @@ class ArmBuildPipeline(BuildPipeline):
         with open(dump_file, "w") as f:
             run_command(dump_cmd, f"Generating objdump", output_file=dump_file)
             
-        print("Automated linking completed successfully")
+        memory_log("Automated linking completed successfully")
 
 
     def link(self, object_file, executable_file):
@@ -380,7 +380,7 @@ SECTIONS
                 if segment.memory_type in [Configuration.Memory_types.CODE, 
                                             Configuration.Memory_types.BSP_BOOT_CODE, 
                                             Configuration.Memory_types.BOOT_CODE]:
-                    print(f"Adding code segment: {segment.name} at {hex(segment.address)}")
+                    memory_log(f"Adding code segment: {segment.name} at {hex(segment.address)}")
                     segment_name = segment.name
                     section_name = f".text.{segment_name}"
                     
@@ -397,7 +397,7 @@ SECTIONS
                     f.write("  } > main_mem\n\n")
                 elif segment.memory_type in [Configuration.Memory_types.DATA_SHARED, 
                                             Configuration.Memory_types.DATA_PRESERVE]:
-                    print(f"Adding data segment: {segment.name} at {hex(segment.address)}")
+                    memory_log(f"Adding data segment: {segment.name} at {hex(segment.address)}")
                     segment_name = segment.name
                     section_name = f".data.{segment_name}"
                     
@@ -439,7 +439,7 @@ SECTIONS
             
             # Add PGT sections
             for section_name, address in pgt_sections:
-                print(f"Adding PGT section: {section_name} at {address}")
+                memory_log(f"Adding PGT section: {section_name} at {address}")
                 section_name_clean = section_name.lower().replace("(", "_").replace(")", "_").replace(" ", "_")
                 f.write(f"  .data.{section_name_clean} {address} :\n")
                 f.write("  {\n")
