@@ -4,6 +4,7 @@ from Tool.state_management import get_state_manager
 from Tool.state_management.switch_state import switch_code
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.branch_to_segment import branch_to_segment
+from Tool.asm_libraries.label import Label
 #from Tool.generation_management.generate import generate
 
 from Utils.APIs import choice
@@ -90,7 +91,12 @@ def do_boot():
         state_manager.set_active_state(curr_state.state_name)
 
         AsmLogger.asm(f"cmp {tmp_reg2}, #{tmp_state.state_id}")
-        AsmLogger.asm(f"beq {boot_code_start_label}")
+        #AsmLogger.asm(f"beq {boot_code_start_label}")
+        skip_label = Label(postfix=f"skip_label_{tmp_state.state_id}")
+        AsmLogger.asm(f"bne {skip_label}",comment=f"Skip if NOT equal (inverse of beq)")
+        AsmLogger.asm(f"ldr {tmp_reg1}, ={boot_code_start_label}",comment=f"Load far address into temp register")
+        AsmLogger.asm(f"br {tmp_reg1}",comment=f"Branch to register (unlimited range)")
+        AsmLogger.asm(f"{skip_label}:",comment=f"Local label for the fall-through code")
 
     register_manager.free(tmp_reg1)
     register_manager.free(tmp_reg2)
@@ -157,9 +163,9 @@ def enable_pgt_page_table():
 
     AsmLogger.comment("Load translation table base register with the address of our L0 table")
     #AsmLogger.asm(f"ldr x0, =0x0000000090200000", comment="Use actual value from LABEL_TTBR0_EL3")
-    #AsmLogger.asm(f"ldr x0, =LABEL_TTBR0_EL3", comment="Use actual value from LABEL_TTBR0_EL3")
-    AsmLogger.asm(f"adrp x0, LABEL_TTBR0_EL3", comment="read value of LABEL_TTBR0_EL3 from memory") 
-    AsmLogger.asm(f"add x0, x0, :lo12:LABEL_TTBR0_EL3", comment="add low 12 bits of LABEL_TTBR0_EL3") 
+    AsmLogger.asm(f"ldr x0, =LABEL_TTBR0_EL3", comment="read value of LABEL_TTBR0_EL3 from memor")
+    #AsmLogger.asm(f"adrp x0, LABEL_TTBR0_EL3", comment="read value of LABEL_TTBR0_EL3 from memory") 
+    #AsmLogger.asm(f"add x0, x0, :lo12:LABEL_TTBR0_EL3", comment="add low 12 bits of LABEL_TTBR0_EL3") 
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TTBR0_EL3")    
     AsmLogger.asm(f"msr ttbr0_el3, x0")
     AsmLogger.asm(f"isb")
@@ -167,9 +173,9 @@ def enable_pgt_page_table():
 
     AsmLogger.comment("Set up TCR_EL3 (Translation Control Register)")
     #AsmLogger.asm(f"ldr x0, =0x0000000080853510", comment="Use actual value from LABEL_TCR_EL3") 
-    #AsmLogger.asm(f"ldr x0, =LABEL_TCR_EL3", comment="Use actual value from LABEL_TCR_EL3") 
-    AsmLogger.asm(f"adrp x0, LABEL_TCR_EL3", comment="read value of LABEL_TCR_EL3 from memory") 
-    AsmLogger.asm(f"add x0, x0, :lo12:LABEL_TCR_EL3", comment="add low 12 bits of LABEL_TCR_EL3") 
+    AsmLogger.asm(f"ldr x0, =LABEL_TCR_EL3", comment="read value of LABEL_TCR_EL3 from memory") 
+    #AsmLogger.asm(f"adrp x0, LABEL_TCR_EL3", comment="read value of LABEL_TCR_EL3 from memory") 
+    #AsmLogger.asm(f"add x0, x0, :lo12:LABEL_TCR_EL3", comment="add low 12 bits of LABEL_TCR_EL3") 
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TCR_EL3")    
     AsmLogger.asm(f"msr tcr_el3, x0")
     AsmLogger.asm(f"isb")
@@ -177,9 +183,9 @@ def enable_pgt_page_table():
 
     AsmLogger.comment("Set up MAIR_EL1 (Memory Attribute Indirection Register)")
     #AsmLogger.asm(f"ldr x0, =0x0000000000FF44FF", comment="Use actual value from LABEL_MAIR_EL3")
-    #AsmLogger.asm(f"ldr x0, =LABEL_MAIR_EL3", comment="Use actual value from LABEL_MAIR_EL3")
-    AsmLogger.asm(f"adrp x0, LABEL_MAIR_EL3", comment="read value of LABEL_MAIR_EL3 from memory") 
-    AsmLogger.asm(f"add x0, x0, :lo12:LABEL_MAIR_EL3", comment="add low 12 bits of LABEL_MAIR_EL3") 
+    AsmLogger.asm(f"ldr x0, =LABEL_MAIR_EL3", comment="read value of LABEL_MAIR_EL3 from memory")
+    #AsmLogger.asm(f"adrp x0, LABEL_MAIR_EL3", comment="read value of LABEL_MAIR_EL3 from memory") 
+    #AsmLogger.asm(f"add x0, x0, :lo12:LABEL_MAIR_EL3", comment="add low 12 bits of LABEL_MAIR_EL3") 
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_MAIR_EL3")    
     AsmLogger.asm(f"msr mair_el3, x0")
     AsmLogger.asm(f"isb")

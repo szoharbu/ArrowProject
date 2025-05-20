@@ -1,4 +1,5 @@
 from typing import List, Dict, Tuple, Optional
+import random
 
 from Utils.configuration_management import Configuration, get_config_manager
 from Tool.state_management import get_state_manager, get_current_state
@@ -42,50 +43,56 @@ class MemorySpaceManager:
         memory_log("======================== MemorySpaceManager - init", "info")
 
         # TODO:: Need to extract the PA space from the configuration
-        pa_memory_range = MemoryRange(core="PA", address=Configuration.ByteSize.SIZE_2G.in_bytes(), 
-                                      byte_size=Configuration.ByteSize.SIZE_4G.in_bytes())
+        self.pa_memory_range = MemoryRange(core="PA", 
+                                      address=Configuration.ByteSize.SIZE_2G.in_bytes() + Configuration.ByteSize.SIZE_2M.in_bytes(), # leaving 2MB for the MMU page table and constants
+                                      byte_size=2 * Configuration.ByteSize.SIZE_4G.in_bytes())
         
+        self.va_memory_range = MemoryRange(core="VA", 
+                                      address=Configuration.ByteSize.SIZE_2G.in_bytes() + Configuration.ByteSize.SIZE_2M.in_bytes(), # leaving 2MB for the MMU page table and constants
+                                      byte_size=2 * Configuration.ByteSize.SIZE_4G.in_bytes())
+
+
         # Initialize interval trackers for PA
         self.unmapped_pa_intervals = interval_lib.IntervalLib(
-            start_address=pa_memory_range.address, 
-            total_size=pa_memory_range.byte_size
+            start_address=self.pa_memory_range.address, 
+            total_size=self.pa_memory_range.byte_size
         )
         self.mapped_pa_intervals = interval_lib.IntervalLib(
-            start_address=pa_memory_range.address, 
-            total_size=pa_memory_range.byte_size,
+            start_address=self.pa_memory_range.address, 
+            total_size=self.pa_memory_range.byte_size,
             is_empty=True
         )
         self.allocated_pa_intervals = interval_lib.IntervalLib(
-            start_address=pa_memory_range.address, 
-            total_size=pa_memory_range.byte_size,
+            start_address=self.pa_memory_range.address, 
+            total_size=self.pa_memory_range.byte_size,
             is_empty=True
         )
         self.non_allocated_pa_intervals = interval_lib.IntervalLib(
-            start_address=pa_memory_range.address, 
-            total_size=pa_memory_range.byte_size,
-            is_empty=True
+            start_address=self.pa_memory_range.address, 
+            total_size=self.pa_memory_range.byte_size,
+            is_empty=True   # it should start empty, and get filled when pages are mapped.
         )
         
         # Track code and data pages separately
         self.mapped_pa_code_intervals = interval_lib.IntervalLib(
-            start_address=pa_memory_range.address, 
-            total_size=pa_memory_range.byte_size,
+            start_address=self.pa_memory_range.address, 
+            total_size=self.pa_memory_range.byte_size,
             is_empty=True
         )
         self.mapped_pa_data_intervals = interval_lib.IntervalLib(
-            start_address=pa_memory_range.address, 
-            total_size=pa_memory_range.byte_size,
+            start_address=self.pa_memory_range.address, 
+            total_size=self.pa_memory_range.byte_size,
             is_empty=True
         )
         self.non_allocated_pa_code_intervals = interval_lib.IntervalLib(
-            start_address=pa_memory_range.address, 
-            total_size=pa_memory_range.byte_size,
-            is_empty=True
+            start_address=self.pa_memory_range.address, 
+            total_size=self.pa_memory_range.byte_size,
+            is_empty=True  # it should start empty, and get filled when pages are mapped.
         )
         self.non_allocated_pa_data_intervals = interval_lib.IntervalLib(
-            start_address=pa_memory_range.address, 
-            total_size=pa_memory_range.byte_size,
-            is_empty=True
+            start_address=self.pa_memory_range.address, 
+            total_size=self.pa_memory_range.byte_size,
+            is_empty=True  # it should start empty, and get filled when pages are mapped.
         )
         
         # Initialize per-state VA space (Virtual Address)
@@ -124,52 +131,49 @@ class MemorySpaceManager:
             #memory_log(f"State {state_name} already initialized")
             return
         
-        # Create new intervals for this state
-        va_memory_range = MemoryRange(core="VA", address=Configuration.ByteSize.SIZE_2G.in_bytes(), 
-                                      byte_size=Configuration.ByteSize.SIZE_4G.in_bytes())
         
         # Unmapped starts as full range
         self.state_unmapped_va_intervals[state_name] = interval_lib.IntervalLib(
-            start_address=va_memory_range.address, 
-            total_size=va_memory_range.byte_size
+            start_address=self.va_memory_range.address, 
+            total_size=self.va_memory_range.byte_size
         )
         
         # Mapped and allocation tracking start empty
         self.state_mapped_va_intervals[state_name] = interval_lib.IntervalLib(
-            start_address=va_memory_range.address, 
-            total_size=va_memory_range.byte_size,
+            start_address=self.va_memory_range.address, 
+            total_size=self.va_memory_range.byte_size,
             is_empty=True
         )
         self.state_allocated_va_intervals[state_name] = interval_lib.IntervalLib(
-            start_address=va_memory_range.address, 
-            total_size=va_memory_range.byte_size,
+            start_address=self.va_memory_range.address, 
+            total_size=self.va_memory_range.byte_size,
             is_empty=True
         )
         self.state_non_allocated_va_intervals[state_name] = interval_lib.IntervalLib(
-            start_address=va_memory_range.address, 
-            total_size=va_memory_range.byte_size,
+            start_address=self.va_memory_range.address, 
+            total_size=self.va_memory_range.byte_size,
             is_empty=True
         )
         
         # Initialize type-specific interval trackers
         self.state_mapped_va_code_intervals[state_name] = interval_lib.IntervalLib(
-            start_address=va_memory_range.address, 
-            total_size=va_memory_range.byte_size,
+            start_address=self.va_memory_range.address, 
+            total_size=self.va_memory_range.byte_size,
             is_empty=True
         )
         self.state_mapped_va_data_intervals[state_name] = interval_lib.IntervalLib(
-            start_address=va_memory_range.address, 
-            total_size=va_memory_range.byte_size,
+            start_address=self.va_memory_range.address, 
+            total_size=self.va_memory_range.byte_size,
             is_empty=True
         )
         self.state_non_allocated_va_code_intervals[state_name] = interval_lib.IntervalLib(
-            start_address=va_memory_range.address, 
-            total_size=va_memory_range.byte_size,
+            start_address=self.va_memory_range.address, 
+            total_size=self.va_memory_range.byte_size,
             is_empty=True
         )
         self.state_non_allocated_va_data_intervals[state_name] = interval_lib.IntervalLib(
-            start_address=va_memory_range.address, 
-            total_size=va_memory_range.byte_size,
+            start_address=self.va_memory_range.address, 
+            total_size=self.va_memory_range.byte_size,
             is_empty=True
         )
         
@@ -317,8 +321,34 @@ class MemorySpaceManager:
             memory_log(f"Could not find any aligned region where VA=PA is possible for size {size}", "error")
             raise ValueError(f"Could not find any aligned region where VA=PA is possible for size {size}")
             
-        # Choose the first aligned region (or implement a different selection strategy if needed)
-        va_start, _ = aligned_regions[0]
+        # Choose a random aligned region instead of always the first one
+        if len(aligned_regions) > 1:
+            chosen_idx = random.randrange(len(aligned_regions))
+            memory_log(f"Multiple regions available, randomly selected region {chosen_idx} of {len(aligned_regions)}")
+        else:
+            chosen_idx = 0
+            
+        va_start, region_size = aligned_regions[chosen_idx]
+        
+        # Additionally, randomize the position within the chosen region
+        if alignment_bits is not None:
+            alignment = 1 << alignment_bits
+            # Calculate how many alignment-sized blocks fit in the region
+            max_blocks = (region_size - size) // alignment
+            if max_blocks > 0:
+                # Choose random aligned position
+                random_blocks = random.randrange(max_blocks + 1)
+                random_offset = random_blocks * alignment
+                va_start += random_offset
+                memory_log(f"Randomizing within region, chose offset 0x{random_offset:x} from base")
+        else:
+            # For unaligned allocations
+            max_offset = region_size - size
+            if max_offset > 0:
+                random_offset = random.randrange(max_offset + 1)
+                va_start += random_offset
+                memory_log(f"Randomizing within region, chose offset 0x{random_offset:x} from base")
+        
         pa_start = va_start  # Since VA=PA
         
         memory_log(f"Selected VA=PA region at address 0x{va_start:x}")
@@ -356,7 +386,8 @@ class MemorySpaceManager:
                 current_page_size = min(page_size, remaining_size)
                 
                 # Map the VA to the PA with VA=PA
-                page_table_manager.map_va_to_pa(current_va, current_pa, current_page_size, page_type)
+                # THIS NEEDS TO CALL THE LOCAL map_va_to_pa METHOD, NOT page_table_manager's
+                self.map_va_to_pa(current_state.state_name, current_va, current_pa, current_page_size, page_type)
                 
                 # Move to the next page
                 current_va += current_page_size

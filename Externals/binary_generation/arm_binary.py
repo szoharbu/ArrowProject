@@ -365,7 +365,7 @@ SECTIONS
             # Write memory regions
             f.write("MEMORY\n{\n")
             f.write("  trickbox_mem : ORIGIN = 0x13000000, LENGTH = 0x200000\n")
-            f.write("  main_mem : ORIGIN = 0x80000000, LENGTH = 0x100000000\n")
+            f.write("  main_mem : ORIGIN = 0x80000000, LENGTH = 0x200000000\n")
             f.write("}\n\n")
             
             # Start sections
