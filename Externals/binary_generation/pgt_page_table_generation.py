@@ -5,7 +5,7 @@ import shutil
 from Tool.state_management import get_state_manager
 from Utils.configuration_management import get_config_manager
 from Utils.logger_management import get_logger
-
+from Tool.memory_management.utils import memory_log
 
 # def enable_mmu():
 #     logger = get_logger()
@@ -56,10 +56,11 @@ def run_PGT_prototype():
 
         #from customer_mem_map import pgtInitPlatformMemoryMap # *
 
+        print("*****************************************************************************************")
 
-        logger.info("---- Creating Platform Memory Manager - Physical_Stage1_Mapping ::  EL3, ROOT, Stage1") 
-        print ("*****************************************************************************************")
-        print ("*****  Page Table Generation Started  *****")
+        memory_log(f"\n\n") 
+        memory_log(f"---- Creating Platform Memory Manager - Physical_Stage1_Mapping ::  EL3, ROOT, Stage1",print_both=True) 
+        memory_log(f"*****  Page Table Generation Started  *****") 
 
 
         setProfile(V9A)
@@ -70,8 +71,7 @@ def run_PGT_prototype():
         blockNamedMemory(PMM, "TRICKBOX", 0x0, 0x14000000) # block the TRICKBOX region
 
         if(PMM < 0) :
-            print ("PGT ERROR : initTarget failed")
-            sys.exit(0)
+            raise RuntimeError("PGT ERROR : initTarget failed")
 
         setVerbosity(WARN)   
 
@@ -111,7 +111,8 @@ def run_PGT_prototype():
             # Call create_automated_memory_mapping and capture the returned pages
 
             pages = create_automated_memory_mapping(EL3)
-            print(f"Successfully processed {len(pages) if pages else 0} pages")
+
+            memory_log(f"Successfully processed {len(pages) if pages else 0} pages", print_both=True)
 
 
         setPgtOutputFileFormat(GENERIC) # GENERIC or ARM_ASSEMBLY
@@ -139,9 +140,7 @@ def run_PGT_prototype():
         # linker_script_path = generate_automated_linker_script(pages)
         # print(f"Generated automated linker script at: {linker_script_path}")
         
-        print ("*****  Page Table Generation Complete  *****")
-        print ("*****************************************************************************************")
-
+        memory_log(f"*****  Page Table Generation Complete  *****\n\n")
 
 
     except ImportError as e:
@@ -255,7 +254,7 @@ def create_automated_memory_mapping(EL3):
     """
     Create memory mappings using the automated approach by processing existing pages.
     """
-    print("Using automated memory mapping approach")
+    memory_log("Using automated memory mapping approach")
     
     from Tool.state_management import get_current_state
     from Utils.configuration_management import Configuration
@@ -280,17 +279,17 @@ def create_automated_memory_mapping(EL3):
 
 
     all_pages = page_table_manager.get_page_table_entries()
-    print(f"Found {len(all_pages)} pages in page table")
+    memory_log(f"Found {len(all_pages)} pages in page table")
     
     # Group pages by type for better handling
     code_pages = page_table_manager.get_page_table_entries_by_type(Configuration.Page_types.TYPE_CODE)
     data_pages = page_table_manager.get_page_table_entries_by_type(Configuration.Page_types.TYPE_DATA)
     
-    print(f"Processing {len(code_pages)} code pages and {len(data_pages)} data pages")
+    memory_log(f"Processing {len(code_pages)} code pages and {len(data_pages)} data pages")
      
     # Create PGT mappings for code pages
     for idx, page in enumerate(code_pages):
-        print(f"Processing code page {idx}: {page}")
+        memory_log(f"Processing code page {idx}: {page}")
         code_size = page.size
         code_va = createAddress(page.va) 
         code_pa = createAddress(page.pa) 
@@ -303,7 +302,7 @@ def create_automated_memory_mapping(EL3):
 
     # Create PGT mappings for data pages
     for idx, page in enumerate(data_pages):
-        print(f"Processing data page {idx}: {page}")
+        memory_log(f"Processing data page {idx}: {page}")
         data_size = page.size
         data_va = createAddress(page.va) 
         data_pa = createAddress(page.pa) 
@@ -315,10 +314,10 @@ def create_automated_memory_mapping(EL3):
         mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
 
 
-    print(f"Completed memory mapping process")
+    memory_log(f"Completed memory mapping process")
     # All of these pages are now available for the test to use via memory_manager
 
-
+    return all_pages
 
 
 
