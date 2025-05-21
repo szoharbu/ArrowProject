@@ -1,6 +1,6 @@
 from Utils.logger_management import get_logger
 from Utils.configuration_management import Configuration, get_config_manager
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_state_manager, get_current_state
 from Tool.state_management.switch_state import switch_code
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.branch_to_segment import branch_to_segment
@@ -153,6 +153,8 @@ def do_boot():
 
 
 def enable_pgt_page_table():
+
+    curr_state = get_current_state()
     AsmLogger.comment("First disable the MMU")
     AsmLogger.asm(f"mrs x0, sctlr_el3")
     AsmLogger.asm(f"bic x0, x0, #1", comment="Clear bit 0 (MMU enable)")
@@ -162,30 +164,21 @@ def enable_pgt_page_table():
     
 
     AsmLogger.comment("Load translation table base register with the address of our L0 table")
-    #AsmLogger.asm(f"ldr x0, =0x0000000090200000", comment="Use actual value from LABEL_TTBR0_EL3")
-    AsmLogger.asm(f"ldr x0, =LABEL_TTBR0_EL3", comment="read value of LABEL_TTBR0_EL3 from memor")
-    #AsmLogger.asm(f"adrp x0, LABEL_TTBR0_EL3", comment="read value of LABEL_TTBR0_EL3 from memory") 
-    #AsmLogger.asm(f"add x0, x0, :lo12:LABEL_TTBR0_EL3", comment="add low 12 bits of LABEL_TTBR0_EL3") 
+    AsmLogger.asm(f"ldr x0, =LABEL_TTBR0_EL3_{curr_state.state_name}", comment="read value of LABEL_TTBR0_EL3 from memory")
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TTBR0_EL3")    
     AsmLogger.asm(f"msr ttbr0_el3, x0")
     AsmLogger.asm(f"isb")
     AsmLogger.asm(f"dsb sy")
 
     AsmLogger.comment("Set up TCR_EL3 (Translation Control Register)")
-    #AsmLogger.asm(f"ldr x0, =0x0000000080853510", comment="Use actual value from LABEL_TCR_EL3") 
-    AsmLogger.asm(f"ldr x0, =LABEL_TCR_EL3", comment="read value of LABEL_TCR_EL3 from memory") 
-    #AsmLogger.asm(f"adrp x0, LABEL_TCR_EL3", comment="read value of LABEL_TCR_EL3 from memory") 
-    #AsmLogger.asm(f"add x0, x0, :lo12:LABEL_TCR_EL3", comment="add low 12 bits of LABEL_TCR_EL3") 
+    AsmLogger.asm(f"ldr x0, =LABEL_TCR_EL3_{curr_state.state_name}", comment="read value of LABEL_TCR_EL3 from memory") 
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TCR_EL3")    
     AsmLogger.asm(f"msr tcr_el3, x0")
     AsmLogger.asm(f"isb")
     AsmLogger.asm(f"dsb sy")
 
     AsmLogger.comment("Set up MAIR_EL1 (Memory Attribute Indirection Register)")
-    #AsmLogger.asm(f"ldr x0, =0x0000000000FF44FF", comment="Use actual value from LABEL_MAIR_EL3")
-    AsmLogger.asm(f"ldr x0, =LABEL_MAIR_EL3", comment="read value of LABEL_MAIR_EL3 from memory")
-    #AsmLogger.asm(f"adrp x0, LABEL_MAIR_EL3", comment="read value of LABEL_MAIR_EL3 from memory") 
-    #AsmLogger.asm(f"add x0, x0, :lo12:LABEL_MAIR_EL3", comment="add low 12 bits of LABEL_MAIR_EL3") 
+    AsmLogger.asm(f"ldr x0, =LABEL_MAIR_EL3_{curr_state.state_name}", comment="read value of LABEL_MAIR_EL3 from memory")
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_MAIR_EL3")    
     AsmLogger.asm(f"msr mair_el3, x0")
     AsmLogger.asm(f"isb")

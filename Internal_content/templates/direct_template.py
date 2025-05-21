@@ -34,22 +34,42 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 Configuration.Knobs.Config.core_count.set_value(2)
 Configuration.Knobs.Template.scenario_count.set_value(1)
 #Configuration.Knobs.Template.scenario_query.set_value({"simple_cache_scenario":100, "WFIT_CROSS_SPE_scenario": 0, Configuration.Tag.REST: 1})
-#Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
-Configuration.Knobs.Template.scenario_query.set_value({"ldstcc_release_rar_check": 100, Configuration.Tag.REST: 1})
-
-
+Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
+#Configuration.Knobs.Template.scenario_query.set_value({"ldstcc_release_rar_check": 100, Configuration.Tag.REST: 1})
 
 
 @AR.scenario_decorator(random=True, )
 def random_instructions():
     AR.comment("inside random_instructions")
 
-
+    AR.asm("nop")
     
+    with AR.Loop(counter=10):
+        for _ in range(10):
+            AR.asm("nop")
+        #AR.generate(instruction_count=10)
+    
+    return 
+
+        # for _ in range(10):
+
+        #     AR.asm("nop")
+        #     AR.generate()
+        #     reg = RegisterManager.get(reg_type="gpr")
+        #     AR.generate(src=reg)
+        #     AR.generate(dest=reg, comment=f"use reg as {reg} as dest")
+        #     RegisterManager.free(reg)
+
+    return
+
+    for _ in range(10):
+        mem = MemoryManager.Memory(init_value=random.randint(0, 0xffff))
+        AR.generate(query=(AR.Instruction.mnemonic=="ldr"), src=mem, comment="load mem")
+        AR.generate(query=(AR.Instruction.mnemonic.contains("str")), dest=mem, comment="store mem")
 
     AR.generate(instruction_count=5)
-    AR.generate(instruction_count=5, query=(AR.Instruction.steering_class.contains("mx")))
-    AR.generate(instruction_count=5, query=(AR.Instruction.mnemonic.contains("ADC")))
+    AR.generate(query=(AR.Instruction.steering_class.contains("mx")))
+    AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")))
 
     return 
 
