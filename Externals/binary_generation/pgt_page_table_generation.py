@@ -52,7 +52,6 @@ def run_PGT_prototype():
         from helperFunctions import V9A, V8A, setGptProperties, OUT_SH, CACHE_NON, CACHE_NON # *
         from helperFunctions import setTranslationSystemProp, FillStage1BlockAttributes, ROOT
         from helperFunctions import SIZE_4KB, SIZE_64KB, SIZE_2MB, SIZE_1GB, TG_4KB, TG_64KB, PGS_4KB, PA_48_BITS
-        from helperFunctions import map as pgt_map, acquireMemory
 
         #from customer_mem_map import pgtInitPlatformMemoryMap # *
 
@@ -62,6 +61,46 @@ def run_PGT_prototype():
         memory_log(f"---- Creating Platform Memory Manager - Physical_Stage1_Mapping ::  EL3, ROOT, Stage1",print_both=True) 
         memory_log(f"*****  Page Table Generation Started  *****") 
 
+
+        '''
+            - idealy the tool should be able to randomize a EL and a matching paging structure. 
+                -   EL3 stage1 - root  (done)
+                -   EL2 stage1 - realm
+                    -   start with EL3, load the EL2 MSRs, and then eret to el2 
+                    - need top create another 
+                            EL3 = createStg1TS(f"EL2", VMSAv8_64, PL2R/pl2S/pl2NS)  (realm/secure/non-secure))
+                            setTranslationSystemProp(EL2, TG0=TG_4KB)
+                            setMemoryManager(EL2, PMM)
+                -   EL2 stage1 - secure   
+                    -   start with EL3, load the EL2 MSRs, and then eret to el2 
+                -   EL1 stage1+stage2 
+                    - re
+                
+
+
+                        # STAGE1+STAGE2
+
+                        EL1NS_2=createStg2TS("EL1NS_2", VMSAv8_64)
+                        setTranslationSystemProp(EL1NS_2, TG0=TG_4KB, START_LEVEL=LEVEL_0)
+                        stage2_attr=createMmuAttributes()
+                        map(EL1NS_2, createAddress(0x1000000), SIZE_2MB, stage2_attr, 8)
+
+                        EL1NS_1=createVirtStg1TS("EL1NS_1", VMSAv8_64, EL1NS_2, 0)
+
+                        ipmm = createMemoryManager("ipmm", UNTAGGED)        
+                        addMemory(ipmm, 0x1000000, 0x2000000)                  
+                        setMemoryManager(EL1NS_1, ipmm)                      
+                        setTranslationSystemProp(EL1NS_1, TG0=TG_4KB)
+
+                        stage1_attr=createMmuAttributes()
+                        map(EL1NS_1, createAddress(0x0), SIZE_4KB, stage1_attr) 
+                        blk1 = getLeafBlock(EL1NS_1, createAddress(0x0))
+                        mapAlias(EL1NS_1, createAddress(0x4000), SIZE_4KB, stage1_attr, blk1) 
+
+
+
+                    
+        '''
 
         setProfile(V9A)
         
@@ -80,28 +119,13 @@ def run_PGT_prototype():
         for core_state in cores_states:
             state_manager.set_active_state(core_state)
             curr_state = state_manager.get_active_state()
-            logger.info(f"================ enable_mmu - running GPT for {core_state}")
-
-            # VMM = createMemoryManager(f"vmm_{core_state}", UNTAGGED) # will handle the virtual memory
-            # addMemory(VMM, 0x0 , 0x0000280000000 )
-            # blockMemory(VMM, 0x0 , 0x80000000 ) # block the lower 2GB of memory - leave a section for the TRICKBOX
-            # blockNamedMemory(VMM, "TRICKBOX", 0x0, 0x14000000) # block the TRICKBOX region
-
-
-            # # add a memory region of size 0x1000, va = 0xa000, pa = 0xb000
-            # addMemory(VMM, 0x0 , 0x0000180000000 )
-
-            # code_va_addr = 0xa000
-            # code_va = acquireMemory(VMM, 0x1000, lower_bound=code_va_addr, upper_bound=code_va_addr + 0x1000, NS=NON_SECURE)
-
-            # code_pa_add = 0x1000
-            # code_pa = acquireMemory(PMM, 0x1000, lower_bound=code_pa_addr, upper_bound=code_pa_addr + 0x1000, NS=NON_SECURE)
-
+            logger.info(f"================ enable_mmu - running GPT for {curr_state.state_name}")
 
             pgtSetTargetInfo(IS_RME_IMPLEMENTED, TRUE) # enable RME to allow ROOT and REALM memory regions support
 
             # create EL3 translation system
-            EL3 = createStg1TS("EL3", VMSAv8_64, PL3R)
+            #EL3 = createStg1TS(f"EL3_{core_state}", VMSAv8_64, PL3R)
+            EL3 = createStg1TS(f"EL3_{curr_state.state_name}", VMSAv8_64, PL3R)
             setTranslationSystemProp(EL3, TG0=TG_4KB)#, T0SZ=16)
             setMemoryManager(EL3, PMM)
 
@@ -110,14 +134,14 @@ def run_PGT_prototype():
             print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz need to seperate logic per state, and add the PMM and VMM into the state")
             # Call create_automated_memory_mapping and capture the returned pages
 
-            pages = create_automated_memory_mapping(EL3)
+            pages = create_automated_memory_mapping(PMM, EL3)
 
             memory_log(f"Successfully processed {len(pages) if pages else 0} pages", print_both=True)
 
 
         setPgtOutputFileFormat(GENERIC) # GENERIC or ARM_ASSEMBLY
-        generateOutputs()
 
+        generateOutputs()
 
         # PGT tool dump its files at the current working directory. moving it into output/pgt/ 
         config_manager = get_config_manager()
@@ -250,7 +274,7 @@ def convert_generic_to_gnu():
     return output_file
 
 
-def create_automated_memory_mapping(EL3):
+def create_automated_memory_mapping(PMM, EL3):
     """
     Create memory mappings using the automated approach by processing existing pages.
     """
@@ -261,6 +285,7 @@ def create_automated_memory_mapping(EL3):
 
     #import _pgt as pgt
     from _pgt import createAddress, PL3R, PL1_RW, createMmuAttributes, mapWithPA, XN_CLEAR, mapDevice, Dev, Dev_nGnRnE, ROOT
+    from _pgt import blockMemory
     from helperFunctions import setTranslationSystemProp, FillStage1BlockAttributes, ROOT, SIZE_2MB
 
     
@@ -293,11 +318,9 @@ def create_automated_memory_mapping(EL3):
         code_size = page.size
         code_va = createAddress(page.va) 
         code_pa = createAddress(page.pa) 
-        #code_pa_addr = 0x90000000 # createAddress(0xb0000000)   # Pick a suitable PA address
-        #code_pa = acquireMemory(PMM, code_size, PA_LOWER_BOUND=code_pa_addr, PA_UPPER_BOUND=code_pa_addr + code_size) # this will acquire the memory 
+        blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
         code_attr = createMmuAttributes()
         FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-        #pgt_map(EL3, code_va, code_size, code_attr)
         mapWithPA(EL3, code_va, code_pa, code_size, code_attr)
 
     # Create PGT mappings for data pages
@@ -306,11 +329,9 @@ def create_automated_memory_mapping(EL3):
         data_size = page.size
         data_va = createAddress(page.va) 
         data_pa = createAddress(page.pa) 
-        #code_pa_addr = 0x90000000 # createAddress(0xb0000000)   # Pick a suitable PA address
-        #code_pa = acquireMemory(PMM, code_size, PA_LOWER_BOUND=code_pa_addr, PA_UPPER_BOUND=code_pa_addr + code_size) # this will acquire the memory 
+        blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
         data_attr = createMmuAttributes()
         FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-        #pgt_map(EL3, code_va, code_size, code_attr)
         mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
 
 

@@ -101,6 +101,7 @@ class ArmBuildPipeline(BuildPipeline):
         Link the object file into an executable ELF file using `ld`.
         Uses the memory segments from the state manager and PGT sections from scatter file.
         """
+        
         memory_log("\nStarting automated linking process")
         tool = f"{self.toolchain_prefix}-ld"
         check_tool_exists(tool)
@@ -138,6 +139,7 @@ class ArmBuildPipeline(BuildPipeline):
     def link(self, object_file, executable_file):
         print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz link - hard-coded - stop using it")
         print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz link - hard-coded - stop using it")
+        raise Exception(" old link version - stop using it")
 
         """
         Link the object file into an executable ELF file using `ld`.
@@ -150,133 +152,9 @@ class ArmBuildPipeline(BuildPipeline):
             section_start)  # needed to split the section start command before running the command
         link_cmd = [tool] + section_start_split + ["-o", executable_file, object_file]
 
-
-
-        # TODO:: replace this hard-coded with a proper logic!  
-        # TODO:: replace this hard-coded with a proper logic!  
-        # TODO:: replace this hard-coded with a proper logic!  
-        # TODO:: replace this hard-coded with a proper logic!  
-
-        # command_str = "--section-start=.=0xb0200000 Output/test_pg.o \
-        # --section-start=.text=0x90000000 \
-        # --section-start=.data=0x90020000 \
-        # --section-start=.bss=0x90040000 \
-        # --section-start=.stack=0x90060000 \
-        # -o Output/test.elf Output/test.o"
-
-        linker_file = f"{executable_file}.linker.ld"
-        with open(linker_file, "w") as f:
-            f.write(
-"""
-MEMORY
-{
-  trickbox_mem : ORIGIN = 0x0, LENGTH = 0x200000
-  main_mem : ORIGIN = 0x80000000, LENGTH = 0x1000000000
-}
-
-SECTIONS
-{
-  .data.trickbox 0x0 :
-  {
-    *(.data.trickbox)
-  } > trickbox_mem
-
-  .text 0x90000000 :
-  {
-    *(.text)
-  } > main_mem
-
-  .data 0x90020000 :
-  {
-    *(.data)
-  } > main_mem
-
-  .bss 0x90040000 (NOLOAD) :
-  {
-    *(.bss)
-  } > main_mem
-
-  .stack 0x90060000 :
-  {
-    *(.stack)
-  } > main_mem
-
-  .data.el3_0_l0_0 0x90200000 :
-  {
-    *(.data.el3_0_l0_0)
-  } > main_mem
-
-  .data.el3_0_l0_0_l1_0 0x90210000 :
-  {
-    *(.data.el3_0_l0_0_l1_0)
-  } > main_mem
-
-  .data.el3_0_l0_0_l1_0_l2_0 0x90230000 :
-  {
-    *(.data.el3_0_l0_0_l1_0_l2_0)
-  } > main_mem
-
-  .data.el3_0_l0_0_l1_2_l2_0 0x90220000 :
-  {
-    *(.data.el3_0_l0_0_l1_2_l2_0)
-  } > main_mem
-
-
-
-  }
-"""
-            )
-
-
-
-
-
-
-
-
-        command_str = "--section-start=.header_code=0x90100000 \
-        --section-start=.el3_0_l0_0=0x90200000 \
-        --section-start=.el3_0_l0_0_l1_0=0x90210000 \
-        --section-start=.el3_0_l0_0_l1_2_l2_0=0x90220000 \
-        --section-start=.text=0x90000000 \
-        --section-start=.data=0x90020000 \
-        --section-start=.bss=0x90040000 \
-        --section-start=.stack=0x90060000 \
-        -z common-page-size=4096 \
-        -z max-page-size=4096 \
-        --no-gc-sections \
-        -e 0x90000000 \
-        -o Output/test.elf Output/test.o Output/test_pg.o"
-
-        command_str = "--section-start=.text.headercode=0x90100000 \
-        --section-start=.data.el3_0_l0_0=0x90200000 \
-        --section-start=.data.el3_0_l0_0_l1_0=0x90210000 \
-        --section-start=.data.el3_0_l0_0_l1_2_l2_0=0x90220000 \
-        --section-start=.text=0x90000000 \
-        --section-start=.data=0x90020000 \
-        --section-start=.bss=0x90040000 \
-        --section-start=.stack=0x90060000 \
-        -z common-page-size=4096 \
-        -z max-page-size=4096 \
-        --no-gc-sections \
-        -e 0x90000000 \
-        -o Output/test.elf Output/test.o Output/test_pg.o"
-
-
         command_str_split = shlex.split(command_str)  # needed to split the section start command before running the command
 
-        #link_cmd = [tool] + command_str_split
-
-        #aarch64-unknown-linux-gnu-ld -T linker.ld -o Output/test.elf Output/test.o Output/test_pg.o
-        #aarch64-unknown-linux-gnu-ld -T sections.ld -z common-page-size=4096 -z max-page-size=4096 --no-gc-sections -e 0x90000000 -o Output/test.elf Output/test.o Output/test_pg.o
         link_cmd = [tool, "-T", linker_file, "--no-gc-sections", "-e", "0x90000000", "-o", "Output/test.elf", "Output/test.o", "Output/test_pg.o"]
-
-        
-        # TODO:: replace this hard-coded with a proper logic!  
-        # TODO:: replace this hard-coded with a proper logic!  
-        # TODO:: replace this hard-coded with a proper logic!  
-        # TODO:: replace this hard-coded with a proper logic!
-
 
 
         # link_cmd = [tool, section_start, "-o", executable_file, object_file]
@@ -342,23 +220,14 @@ SECTIONS
             raise  # If no known issues found, re-raise the original exception
 
     def extract_linker_file(self):
-        # Get memory segments from state manager
-        current_state = get_current_state()
-        memory_manager = current_state.memory_manager
-        all_segments = memory_manager.get_segments(pool_type=[
-            Configuration.Memory_types.BSP_BOOT_CODE, 
-            Configuration.Memory_types.BOOT_CODE, 
-            Configuration.Memory_types.CODE,
-            Configuration.Memory_types.DATA_SHARED, 
-            Configuration.Memory_types.DATA_PRESERVE,
-            Configuration.Memory_types.STACK
-        ])
-        sorted_segments = sorted(all_segments, key=lambda x: x.address)
+
 
         # Get configuration and output paths
         output_dir = get_config_manager().get_value('output_dir_path')
         pgt_sections = self.parse_pgt_scatter_file(output_dir)
         linker_file = os.path.join(output_dir, "automated_linker.ld")
+
+        memory_log(f"\n extract_linker_file - creating linker file {linker_file}")
 
         # Create linker script
         with open(linker_file, 'w') as f:
@@ -375,45 +244,64 @@ SECTIONS
             f.write("    *(.data.trickbox)\n")
             f.write("  } > trickbox_mem\n\n")
             
-            # Add code segments
-            for segment in sorted_segments:
-                if segment.memory_type in [Configuration.Memory_types.CODE, 
-                                            Configuration.Memory_types.BSP_BOOT_CODE, 
-                                            Configuration.Memory_types.BOOT_CODE]:
-                    memory_log(f"Adding code segment: {segment.name} at {hex(segment.address)}")
-                    segment_name = segment.name
-                    section_name = f".text.{segment_name}"
-                    
-                    f.write(f"  {section_name} {hex(segment.address)} : AT({hex(segment.pa_address)})\n")
-                    f.write("  {\n")
-                    # Use specific patterns to match only relevant sections
-                    f.write(f"    *({section_name})\n")  # Match this exact section name
-                    
-                    # For BSP boot segment, also include any boot-related sections
-                    if segment.memory_type == Configuration.Memory_types.BSP_BOOT_CODE:
-                        f.write(f"    *(.text.boot*)\n")  # Also include any boot-related sections
-                        f.write(f"    *(.boot*)\n")
-                    
-                    f.write("  } > main_mem\n\n")
-                elif segment.memory_type in [Configuration.Memory_types.DATA_SHARED, 
-                                            Configuration.Memory_types.DATA_PRESERVE]:
-                    memory_log(f"Adding data segment: {segment.name} at {hex(segment.address)}")
-                    segment_name = segment.name
-                    section_name = f".data.{segment_name}"
-                    
-                    f.write(f"  {section_name} {hex(segment.address)} : AT({hex(segment.pa_address)})\n")
-                    f.write("  {\n")
-                    # Use specific patterns for this data segment
-                    f.write(f"    *({section_name})\n")  # Match this exact section name
-                    f.write("  } > main_mem\n\n")
-            
-            # Add standard sections
-            stack_data_start_address = current_state.memory_manager.get_stack_data_start_address()
- 
-            f.write(f"  .stack {hex(stack_data_start_address)} : AT({hex(stack_data_start_address)})\n")
-            f.write("  {\n")
-            f.write("    *(.stack)\n")
-            f.write("  } > main_mem\n\n")
+
+            # Get all memory segments per state
+            state_manager = get_state_manager()
+            cores_states = state_manager.list_states()
+            for core_state in cores_states:
+                state_manager.set_active_state(core_state)
+                curr_state = state_manager.get_active_state()
+
+                memory_manager = curr_state.memory_manager
+                state_segments = memory_manager.get_segments(pool_type=[
+                    Configuration.Memory_types.BSP_BOOT_CODE, 
+                    Configuration.Memory_types.BOOT_CODE, 
+                    Configuration.Memory_types.CODE,
+                    Configuration.Memory_types.DATA_SHARED, 
+                    Configuration.Memory_types.DATA_PRESERVE,
+                    Configuration.Memory_types.STACK
+                ])
+
+                sorted_segments = sorted(state_segments, key=lambda x: x.address)
+
+                # Add code segments
+                for segment in sorted_segments:
+                    if segment.memory_type in [Configuration.Memory_types.CODE, 
+                                                Configuration.Memory_types.BSP_BOOT_CODE, 
+                                                Configuration.Memory_types.BOOT_CODE]:
+                        memory_log(f"Adding code segment: {segment.name} at {hex(segment.address)}")
+                        segment_name = segment.name
+                        section_name = f".text.{segment_name}"
+                        
+                        f.write(f"  {section_name} {hex(segment.address)} : AT({hex(segment.pa_address)})\n")
+                        f.write("  {\n")
+                        # Use specific patterns to match only relevant sections
+                        f.write(f"    *({section_name})\n")  # Match this exact section name
+                        
+                        # For BSP boot segment, also include any boot-related sections
+                        if segment.memory_type == Configuration.Memory_types.BSP_BOOT_CODE:
+                            f.write(f"    *(.text.boot*)\n")  # Also include any boot-related sections
+                            f.write(f"    *(.boot*)\n")
+                        
+                        f.write("  } > main_mem\n\n")
+                    elif segment.memory_type in [Configuration.Memory_types.DATA_SHARED, 
+                                                Configuration.Memory_types.DATA_PRESERVE]:
+                        memory_log(f"Adding data segment: {segment.name} at {hex(segment.address)}")
+                        segment_name = segment.name
+                        section_name = f".data.{segment_name}"
+                        
+                        f.write(f"  {section_name} {hex(segment.address)} : AT({hex(segment.pa_address)})\n")
+                        f.write("  {\n")
+                        # Use specific patterns for this data segment
+                        f.write(f"    *({section_name})\n")  # Match this exact section name
+                        f.write("  } > main_mem\n\n")
+                
+                # Add standard sections
+                stack_data_start_address = curr_state.memory_manager.get_stack_data_start_address()
+                f.write(f"  .stack {hex(stack_data_start_address)} : AT({hex(stack_data_start_address)})\n")
+                f.write("  {\n")
+                f.write("    *(.stack)\n")
+                f.write("  } > main_mem\n\n")
             
             # Add PGT constants section
             f.write("  .data.pgt_constants 0x90080000 : AT(0x90080000)\n")
