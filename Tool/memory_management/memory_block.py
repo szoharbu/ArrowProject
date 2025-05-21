@@ -82,10 +82,20 @@ class MemoryBlock:
         has_init = init_value is not None or init_value_byte_representation is not None
         if shared and has_init:
             raise ValueError(f"Can't initialize value in a shared memory")
+        
+        #NOTE:: All Data must to be initialized. in case of shared block we will randomly initialize the entire section.  
 
         # Process initialization value if provided
         if not has_init:
-            self.init_value_byte_representation = None
+            if shared:
+                self.init_value_byte_representation = None
+            else:
+                # Create a bytearray of specified size
+                random_block = bytearray(byte_size)
+                # Fill with random values
+                for i in range(byte_size):
+                    random_block[i] = random.randint(0, 255)
+                self.init_value_byte_representation = random_block
         elif init_value is not None:
             # Validate that init_value fits within the specified block size
             if init_value.bit_length() // 8 + 1 > self.byte_size:
@@ -141,8 +151,8 @@ class MemoryBlock:
 
         self.memory_block_str = (f"[MemoryBlock: name={self.name}, "
                                  f"memory_segment_name={self.memory_segment_name}, "
-                                 f"address={self.address}, "
-                                 f"pa_address={self.pa_address}, "
+                                 f"address={hex(self.address)}, "
+                                 f"pa_address={hex(self.pa_address)}, "
                                  f"unique_label={self.unique_label}, "
                                  f"shared={self.shared}, "
                                  f"bytesize={self.byte_size}, "

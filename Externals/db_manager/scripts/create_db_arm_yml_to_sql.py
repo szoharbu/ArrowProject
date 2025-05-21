@@ -884,6 +884,16 @@ def populate_database(yaml_dict, force_reset=False):
 
             # Handle random_generate flag
             instruction.random_generate = inst_data.get("random_generate", "True") == "True"
+
+            # TODO:: need to add that information to the DB, not to the script. 
+            # for now I'm setting some unfriendly instructions as random_generate = False
+            branch_instructions = ["br", "bra", "braaz", "brab", "brabz", "blr", "blraa", "blraaz", "blrab", "blra",
+                                    "ret", "retaa", "retab", "eret", "eretaa", "eretab",
+                                    "cbnz", "cbz", "tbz", "tbnz"]
+            
+            if instruction.mnemonic in branch_instructions:
+                instruction.random_generate = False
+
             instruction.save()
 
             for operand in operands_data:

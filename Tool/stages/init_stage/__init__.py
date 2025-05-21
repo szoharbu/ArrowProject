@@ -105,7 +105,7 @@ def init_page_tables():
         page_table_manager = current_state.page_table_manager
 
         for type in [Configuration.Page_types.TYPE_CODE, Configuration.Page_types.TYPE_DATA]:
-            count = 5
+            count = 10
             for _ in range(count):
                 sequential_page_count = choice(values={1:90, 2:9, 3:1})
                 size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])

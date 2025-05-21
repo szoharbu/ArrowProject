@@ -19,6 +19,7 @@ class GeneratedInstruction:
         self.mnemonic = mnemonic
         self.operands = operands
         self.comment = comment
+        self._is_valid = True
 
         for i, operand in enumerate(operands):
             if isinstance(operand, Memory):
@@ -59,6 +60,7 @@ class GeneratedInstruction:
                         print(f"        ❌  Skipping invalid instruction: {self.asm_unit}")
                         single_line_error = error.replace("\n", " ")
                         print(f"                {single_line_error}")
+                    self._is_valid = False
             else:
                 # print(f"    Generated Instruction: {self.asm_unit}")
                 current_code_block = current_state.current_code_block
