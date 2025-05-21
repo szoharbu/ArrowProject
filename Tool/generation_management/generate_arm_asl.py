@@ -48,7 +48,6 @@ def generate_arm_asl(
     # set True or False if one of the operands has memory type
     memory_usage = any(operand.is_memory for operand in selected_instruction.operands)
     if memory_usage:
-        #print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzz memory usage")
         '''
         For every memory usage, we will plant a dynamic_init instruction to place that memory address in a temp register
         this is done to avoid using memories offset due to their formatting requirements and my lack of knowledge.
@@ -63,14 +62,10 @@ def generate_arm_asl(
 
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
         dynamic_init_memory_address_reg = RegisterManager.get_and_reserve()
-        comment = f"dynamic init: loading {dynamic_init_memory_address_reg} for next instruction"
+        comment = f"dynamic init: loading {dynamic_init_memory_address_reg} for next instruction ({hex(memory_operand.address)}:{hex(memory_operand.pa_address)})"
         if memory_operand.reused_memory:
-            comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} for next instruction"
+            comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} ({hex(memory_operand.address)}:{hex(memory_operand.pa_address)}) for next instruction"
 
-        #print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz memory_operand: {memory_operand}")
-        # dynamic_init_instruction = GeneratedInstruction(mnemonic='ldr', operands=[dynamic_init_memory_address_reg,
-        #                                                                           f"={memory_operand._memory_initial_seed_id}"],
-        #                                                 comment=comment)
         dynamic_init_instruction = GeneratedInstruction(mnemonic='ldr', operands=[dynamic_init_memory_address_reg,
                                                                                   f"={memory_operand.memory_block.name}"],
                                                         comment=comment)
@@ -232,7 +227,9 @@ def generate_arm_asl(
     gen_instruction = GeneratedInstruction(mnemonic=selected_instruction.mnemonic, operands=evaluated_operands,
                                            comment=instruction_comment)
 
-    # print(f"    Generated Instruction: {gen_instruction}")
+    if gen_instruction._is_valid == False:
+        #TODO:: need to remove that dynamic init before its been added to AsmUnit. this setting is later and doesn't do the job.
+        instruction_list = [] # clear any dynamic init that might have been planted.
 
     if memory_usage:
         RegisterManager.free(dynamic_init_memory_address_reg)

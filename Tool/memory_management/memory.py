@@ -149,9 +149,12 @@ class Memory:
 
             self.reused_memory = False
 
+        self.address = self.memory_block.address + self.memory_block_offset
+        self.pa_address = self.memory_block.pa_address + self.memory_block_offset
+
         logger = get_logger()
 
-        self.memory_str = f"Memory access: name={self.name}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}"
+        self.memory_str = f"Memory access: name={self.name}, address={hex(self.address)}, pa_address={hex(self.pa_address)}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}"
         memory_log(self.memory_str)
         logger.debug(self.memory_str)
         #print(self.memory_str)

@@ -41,14 +41,34 @@ def find_possible_locations(operands, role, type):
         if not op.is_operand:
             continue
 
-        if type == "mem" and op.is_memory:
+        # Skip invalid matching combinations upfront
+        if type == "mem" and not op.is_memory:
+            # Skip non-memory operands when looking for memory
+            pass
+        elif type != "mem" and op.is_memory:
+            # Skip memory operands when looking for non-memory types
+            pass
+        elif type == "mem" and op.is_memory:
             if (op.memory_role == "base"):
                 # this initial code will only handle the base, and will try to set offset to zero!
                 possible_locations.append(index)
         else:
-            if (op.type == type) or (type == "gpr" and op.type.startswith("gpr")) or (type == "simdfp" and op.type.startswith("simdfp")):
-                if (op.role == role) or (op.role == "src_dest" and (role == "src" or role == "dest")):
-                    possible_locations.append(index)
+            # Check for register type matches including prefixes
+            type_match = (op.type == type) or \
+                        (type == "gpr" and op.type.startswith("gpr")) or \
+                        (type == "simdfp" and op.type.startswith("simdfp")) or \
+                        (type == "pred" and op.type.startswith("pred"))
+                        
+            # Check for role matches including src_dest cases
+            role_match = (op.role == role) or \
+                        (op.role == "src_dest" and (role == "src" or role == "dest"))
+                        
+            if type_match and role_match:
+                possible_locations.append(index)
+
+            # if (op.type == type) or (type == "gpr" and op.type.startswith("gpr")) or (type == "simdfp" and op.type.startswith("simdfp")):
+            #     if (op.role == role) or (op.role == "src_dest" and (role == "src" or role == "dest")):
+            #         possible_locations.append(index)
         index += 1
     if not possible_locations:
         raise ValueError(f"Couldn't find possible location that match {role} {type} operand")

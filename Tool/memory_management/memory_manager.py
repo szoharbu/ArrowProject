@@ -381,7 +381,7 @@ class MemoryManager:
         for segment in data_shared_segments:
             memory_log(f"Checking segment '{segment.name}' at address 0x{segment.address:x}, size: 0x{segment.byte_size:x}")
             for mem_block in segment.memory_block_list:
-                print(f"mem_block: {mem_block}")
+                #print(f"mem_block: {mem_block}")
                 if mem_block.byte_size >= byte_size:
                     memory_log(f"  Found valid memory block '{mem_block.name}' in segment '{segment.name}', "
                                f"size: {mem_block.byte_size} bytes, address: {hex(mem_block.address if mem_block.address is not None else 0)}")
