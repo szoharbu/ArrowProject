@@ -7,8 +7,8 @@ from Utils.configuration_management import Configuration
 def ldstcc_release_rar_check():
     barrier_label = AR.Label(postfix="sync_barrier")
 
-    mem0 = MemoryManager.Memory(init_value=0x1234)
-    mem1 = MemoryManager.Memory(init_value=0x5678)
+    mem0 = MemoryManager.Memory(init_value=0x1234, cross_core=True, alignment=3)
+    mem1 = MemoryManager.Memory(init_value=0x5678, cross_core=True, alignment=3)
 
     with AR.SwitchState(state_name="core_0"):
         AR.Barrier(barrier_label)

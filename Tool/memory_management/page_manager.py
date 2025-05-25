@@ -3,168 +3,13 @@ from typing import List, Dict
 
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
-from Tool.state_management import get_current_state
+from Tool.state_management import get_current_state, get_state_manager
 
 from Tool.memory_management.memory_space_manager import get_memory_space_manager
 from Tool.memory_management.memory_segments import MemoryRange
+from Tool.memory_management.memory_page import Page
 from Tool.memory_management import interval_lib
 from Tool.memory_management.utils import memory_log
-
-class Page:
-    """Represents a single page mapping in the page table"""
-    
-    
-    # Permission flags
-    PERM_READ = 0x1
-    PERM_WRITE = 0x2
-    PERM_EXECUTE = 0x4
-    
-    # Cacheability options
-    CACHE_NONE = "non-cacheable"
-    CACHE_WT = "write-through"
-    CACHE_WB = "write-back"
-    
-    # Shareability domains
-    SHARE_NONE = "non-shareable"
-    SHARE_INNER = "inner-shareable"
-    SHARE_OUTER = "outer-shareable"
-    
-    def __init__(self, va, pa, size, page_type=Configuration.Page_types, permissions=PERM_READ, 
-                 cacheable=CACHE_WB, shareable=SHARE_NONE, security="non-secure", 
-                 custom_attributes=None):
-        """
-        Initialize a page mapping with detailed memory attributes.
-        
-        Args:
-            va (int): Virtual address of the page
-            pa (int): Physical address of the page
-            size (int): Size of the page in bytes
-            page_type (str): Type of memory (code, data, device, system)
-            permissions (int): Combination of PERM_READ, PERM_WRITE, PERM_EXECUTE
-            cacheable (str): Cacheability setting
-            shareable (str): Shareability domain
-            security (str): Security state (secure, non-secure, realm)
-            custom_attributes (dict): Any additional custom attributes
-        """
-        self.va = va
-        self.pa = pa
-        self.size = size
-        self.page_type = page_type
-        self.permissions = permissions
-        self.cacheable = cacheable
-        self.shareable = shareable
-        self.security = security
-        self.custom_attributes = custom_attributes or {}
-        
-    @property
-    def is_readable(self):
-        """Check if page is readable"""
-        return bool(self.permissions & self.PERM_READ)
-        
-    @property
-    def is_writable(self):
-        """Check if page is writable"""
-        return bool(self.permissions & self.PERM_WRITE)
-        
-    @property
-    def is_executable(self):
-        """Check if page is executable"""
-        return bool(self.permissions & self.PERM_EXECUTE)
-        
-    @property
-    def end_va(self):
-        """Virtual address of the last byte in this page"""
-        return self.va + self.size - 1
-        
-    @property
-    def end_pa(self):
-        """Physical address of the last byte in this page"""
-        return self.pa + self.size - 1
-    
-    def contains_va(self, address):
-        """Check if this page contains the given virtual address"""
-        return self.va <= address <= self.end_va
-    
-    def contains_pa(self, address):
-        """Check if this page contains the given physical address"""
-        return self.pa <= address <= self.end_pa
-    
-    def va_to_pa(self, va_address):
-        """Convert a virtual address to its corresponding physical address"""
-        if not self.contains_va(va_address):
-            raise ValueError(f"Virtual address 0x{va_address:x} not in this page")
-        offset = va_address - self.va
-        return self.pa + offset
-    
-    def pa_to_va(self, pa_address):
-        """Convert a physical address to its corresponding virtual address"""
-        if not self.contains_pa(pa_address):
-            raise ValueError(f"Physical address 0x{pa_address:x} not in this page")
-        offset = pa_address - self.pa
-        return self.va + offset
-    
-    def get_attributes_dict(self):
-        """Get all attributes as a dictionary"""
-        return {
-            "type": self.page_type,
-            "permissions": {
-                "read": self.is_readable,
-                "write": self.is_writable,
-                "execute": self.is_executable
-            },
-            "cacheable": self.cacheable,
-            "shareable": self.shareable,
-            "security": self.security,
-            **self.custom_attributes
-        }
-        
-    def get_mmu_attributes(self):
-        """
-        Convert page attributes to MMU-specific format.
-        This would be implemented based on the specific architecture (ARM, etc.)
-        """
-        # Example for ARM MMUs - actual implementation would be more complex
-        attr = 0
-        
-        # Set permission bits
-        if self.is_readable:
-            attr |= 0x1
-        if self.is_writable:
-            attr |= 0x2
-        if self.is_executable:
-            attr &= ~0x4  # In ARM, XN bit=0 means executable
-        else:
-            attr |= 0x4   # XN bit=1 means non-executable
-            
-        # Set memory type bits (this is simplified)
-        if self.cacheable == self.CACHE_WB:
-            attr |= 0x8
-        elif self.cacheable == self.CACHE_WT:
-            attr |= 0x10
-            
-        # Set shareability bits
-        if self.shareable == self.SHARE_INNER:
-            attr |= 0x20
-        elif self.shareable == self.SHARE_OUTER:
-            attr |= 0x40
-            
-        return attr
-    
-    def __repr__(self):
-        """String representation of the page"""
-        perms = []
-        if self.is_readable:
-            perms.append("R")
-        if self.is_writable:
-            perms.append("W")
-        if self.is_executable:
-            perms.append("X")
-            
-        return (f"Page(VA:0x{self.va:x}-0x{self.end_va:x}, "
-                f"PA:0x{self.pa:x}-0x{self.end_pa:x}, "
-                f"0x{self.size:x} bytes, {self.page_type}, "
-                f"{''.join(perms)}, {self.cacheable})")
-
 
 
 class PageTableManager:
@@ -253,6 +98,7 @@ class PageTableManager:
         return va_start, pa_start, region_size
 
     def allocate_page(self, size:Configuration.Page_sizes=None, alignment_bits:int=None, page_type:Configuration.Page_types=None, permissions:int=None, cacheable:str=None, shareable:str=None, security:str=None, custom_attributes:dict=None, sequential_page_count:int=1, VA_eq_PA:bool=False):
+        memory_log("\n")
         memory_log("======================== PageTableManager - allocate_page")
         memory_log(f"==== size: {size}, alignment_bits: {alignment_bits}, page_type: {page_type}, permissions: {permissions}, cacheable: {cacheable}, shareable: {shareable}, security: {security}, custom_attributes: {custom_attributes}, sequential_page_count: {sequential_page_count}, VA_eq_PA: {VA_eq_PA}")
 
@@ -388,6 +234,85 @@ class PageTableManager:
             return result
 
 
+    def allocate_cross_core_page(self):
+        memory_log("\n")
+        memory_log("======================== PageTableManager - allocate_cross_core_page")
+
+        # from the cross_core_page all is hard-coded for now. TODO:: consider making it configurable in the future.
+        size = Configuration.Page_sizes.SIZE_2M # setting big space, as this pages can also be used for non-cross segments 
+
+        if size == Configuration.Page_sizes.SIZE_4K:
+            alignment_bits = 12
+        elif size == Configuration.Page_sizes.SIZE_2M:
+            alignment_bits = 21
+        elif size == Configuration.ByteSize.SIZE_1G.in_bytes():
+            alignment_bits = 30
+
+        page_type = Configuration.Page_types.TYPE_DATA
+        permissions = Page.PERM_READ | Page.PERM_WRITE | Page.PERM_EXECUTE
+        cacheable = Page.CACHE_WB
+        shareable = Page.SHARE_NONE
+        security = "non-secure"
+        custom_attributes = {}
+
+        memory_log(f"==== size: {size}, alignment_bits: {alignment_bits}, page_type: {page_type}, permissions: {permissions}, cacheable: {cacheable}, shareable: {shareable}, security: {security}, custom_attributes: {custom_attributes}")
+
+        size_bytes = size.value
+
+        # Get current state and memory space manager
+        memory_space_manager = get_memory_space_manager()
+        state_manager = get_state_manager()
+
+        
+        try:
+              # Step 1: Find and allocate regions from unmapped space
+            pa_allocation = memory_space_manager.allocate_PA_interval(size_bytes, alignment_bits=alignment_bits)
+            pa_start, pa_size = pa_allocation
+
+            orig_state = state_manager.get_active_state()
+            for state in state_manager.states_dict:
+                state_manager.set_active_state(state)
+                curr_state = state_manager.get_active_state()
+                state_name = curr_state.state_name
+
+                va_allocation = memory_space_manager.allocate_VA_interval(size_bytes, alignment_bits=alignment_bits, state=curr_state, page_type=page_type)
+                va_start, va_size = va_allocation
+            
+                # Step 2: Add the allocated regions to mapped pools
+                # First, add to mapped intervals pool, specifying the page type
+                memory_space_manager.map_va_to_pa(state_name, va_start, pa_start, va_size, page_type)
+                
+                # Create the page objects for each page in the sequence
+                page = Page(
+                    va=va_start, 
+                    pa=pa_start, 
+                    size=size_bytes, 
+                    page_type=page_type, 
+                    permissions=permissions, 
+                    cacheable=cacheable, 
+                    shareable=shareable, 
+                    security=security, 
+                    custom_attributes=custom_attributes,
+                    is_cross_core=True
+                )
+
+                # Add to our tracking collections
+                current_page_table_manager = curr_state.page_table_manager
+                current_page_table_manager.page_table_entries.append(page)
+                current_page_table_manager.page_table_entries_by_type[page.page_type].append(page)
+                
+                # self.page_table_entries.append(page)
+                # self.page_table_entries_by_type[page.page_type].append(page)
+                
+                memory_log(f"Created Cross-Core page {curr_state.state_name}: {page}")
+
+            state_manager.set_active_state(orig_state.state_name)
+
+        except (ValueError, MemoryError) as e:
+            memory_log(f"Failed to allocate page memory: {e}", level="error")
+            raise ValueError(f"Could not allocate memory regions of size {size} with alignment {alignment_bits}")
+        
+           
     def get_page_table_entries(self):
         return self.page_table_entries
         

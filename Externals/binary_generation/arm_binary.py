@@ -116,6 +116,7 @@ class ArmBuildPipeline(BuildPipeline):
             tool, 
             "-T", linker_file, 
             "--no-gc-sections", 
+            "--allow-multiple-definition",  # Allow intentional PA overlaps for cross-core sections
             "-e", section_start,  # Entry point
             "-z", "common-page-size=4096",
             "-z", "max-page-size=4096",
@@ -248,6 +249,7 @@ class ArmBuildPipeline(BuildPipeline):
             # Get all memory segments per state
             state_manager = get_state_manager()
             cores_states = state_manager.get_all_states()
+            linked_data_segments_pa_addresses = []  # list of cross-core PA addresses that are already linked
             for core_state in cores_states:
                 state_manager.set_active_state(core_state)
                 curr_state = state_manager.get_active_state()
@@ -284,13 +286,25 @@ class ArmBuildPipeline(BuildPipeline):
                             f.write(f"    *(.boot*)\n")
                         
                         f.write("  } > main_mem\n\n")
+                    
                     elif segment.memory_type in [Configuration.Memory_types.DATA_SHARED, 
                                                 Configuration.Memory_types.DATA_PRESERVE]:
-                        memory_log(f"Adding data segment: {segment.name} at {hex(segment.address)}")
+                        memory_log(f"Adding data segment: {segment.name} at VA:{hex(segment.address)} PA:{hex(segment.pa_address)}")
                         segment_name = segment.name
                         section_name = f".data.{segment_name}"
                         
-                        f.write(f"  {section_name} {hex(segment.address)} : AT({hex(segment.pa_address)})\n")
+                        if segment.is_cross_core and segment.pa_address in linked_data_segments_pa_addresses:
+                            # This PA address has already been used, omit AT() clause and use NOLOAD
+                            linked_data_str = f"  {section_name} {hex(segment.address)} (NOLOAD) :\n"
+                            memory_log(f"Cross-core segment {segment.name} shares PA {hex(segment.pa_address)} - using NOLOAD")
+                        else:
+                            # First time seeing this PA address, include AT() clause
+                            linked_data_str = f"  {section_name} {hex(segment.address)} : AT({hex(segment.pa_address)})\n"
+                            if segment.is_cross_core:
+                                linked_data_segments_pa_addresses.append(segment.pa_address)
+                                memory_log(f"Cross-core segment {segment.name} first occurrence at PA {hex(segment.pa_address)} - including AT() clause")
+
+                        f.write(linked_data_str)
                         f.write("  {\n")
                         # Use specific patterns for this data segment
                         f.write(f"    *({section_name})\n")  # Match this exact section name
@@ -308,23 +322,7 @@ class ArmBuildPipeline(BuildPipeline):
             f.write("  {\n")
             f.write("    *(.data.pgt_constants)\n")  # Match specific section, not all .data
             f.write("  } > main_mem\n\n")
-            
-            # # Add a catch-all for any remaining sections
-            # f.write("  .text : {\n")
-            # f.write("    *(.text)\n")
-            # f.write("    *(.text.*)\n")
-            # f.write("  } > main_mem\n\n")
-            
-            # f.write("  .data : {\n") 
-            # f.write("    *(.data)\n")
-            # f.write("    *(.data.*)\n")
-            # f.write("  } > main_mem\n\n")
-            
-            # f.write("  .bss (NOLOAD) : {\n")
-            # f.write("    *(.bss)\n")
-            # f.write("    *(.bss.*)\n")
-            # f.write("  } > main_mem\n\n")
-            
+
             # Add PGT sections
             for section_name, address in pgt_sections:
                 memory_log(f"Adding PGT section: {section_name} at {address}")

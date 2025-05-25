@@ -1,5 +1,5 @@
 from Utils.configuration_management import Configuration
-from Tool.memory_management.memory import Memory
+from Tool.memory_management.memory_memory import Memory
 from Tool.state_management import get_current_state
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.label import Label
@@ -69,7 +69,7 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
             register_manager.reserve(sp_reg)
 
             # load the stack pointer
-            stack_data_start_address = current_state.memory_manager.get_stack_data_start_address()
+            stack_data_start_address = current_state.segment_manager.get_stack_data_start_address()
             AsmLogger.comment("Load the stack pointer")
             #AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
             AsmLogger.asm(f"ldr {tmp_reg1}, ={hex(stack_data_start_address)}")
@@ -90,7 +90,7 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
             
             # Print a string to the trickbox tube
             AsmLogger.comment("Print a string to the trickbox tube")
-            AsmLogger.asm(f"ldr {tmp_reg1}, ={test_pass_str_block.address}", comment="Load the address of the test pass string")
+            AsmLogger.asm(f"ldr {tmp_reg1}, ={test_pass_str_block.get_address()}", comment="Load the address of the test pass string")
             AsmLogger.asm(f"stp {tmp_reg2}, {tmp_reg3}, [{sp_reg}, #-16]!", comment=f"Push {tmp_reg2}, {tmp_reg3} to stack to get some temps")
             AsmLogger.asm(f"ldr {tmp_reg2}, =0x0", comment="Load the address of the trickbox tube")
             AsmLogger.asm(f"print_str_loop:", comment="Start of the loop")

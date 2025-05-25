@@ -10,7 +10,7 @@ def generation_json_dump():
 
     state_manager = get_state_manager()
     current_state = state_manager.get_active_state()
-    available_segments = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
+    available_segments = current_state.segment_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
 
     # Prepare data for JSON
     data = []  # List to store all segments and their asm_units_list
@@ -43,11 +43,11 @@ def memory_usage_json_dump():
     state_manager = get_state_manager()
     current_state = state_manager.get_active_state()
 
-    all_segments = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE,
+    all_segments = current_state.segment_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE,
                                                                       Configuration.Memory_types.CODE,
                                                                       Configuration.Memory_types.DATA_SHARED,
                                                                       Configuration.Memory_types.DATA_PRESERVE])
-    all_data_segments = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED,
+    all_data_segments = current_state.segment_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED,
                                                                            Configuration.Memory_types.DATA_PRESERVE])
 
     # Prepare JSON structure with two sections: summary and detailed data

@@ -1,7 +1,7 @@
 
 from Utils.configuration_management import Configuration
 from Tool.state_management import get_current_state
-from Tool.memory_management.memory import Memory
+from Tool.memory_management.memory_memory import Memory
 from Tool.asm_libraries.asm_logger import AsmLogger
 
 

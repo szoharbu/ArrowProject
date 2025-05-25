@@ -121,7 +121,7 @@ def generate_data_from_DataUnits(data_segments):
         segment_pa_address = hex(segment.pa_address)
         segment_size = segment.byte_size
         data_code_counter = 0
-        tmp_data_code = ""
+        tmp_data_code = "\n"
 
         # First, process initialized data (go to .data section)
         tmp_data_code += get_output(location="data_segment_header", segment_name=segment_name)
@@ -229,54 +229,54 @@ def generate_data_from_DataUnits(data_segments):
         data_code_counter = 0
         tmp_data_code = ""
 
-        # Now, process uninitialized data (go to .bss section)
-        tmp_data_code += get_output(location="bss_segment_header", segment_name=segment_name)
+        # # Now, process uninitialized data (go to .bss section)
+        # tmp_data_code += get_output(location="bss_segment_header", segment_name=segment_name)
 
-        data_unit_list = segment_manager.get_segment_dataUnit_list(segment.name)
-        for data_unit in data_unit_list:
-            name = data_unit.name if data_unit.name is not None else 'no-name'
-            # unique_label = data_dict.get('unique_label', 'None')
-            unique_label = data_unit.memory_block_id
-            address = data_unit.address
-            byte_size = data_unit.byte_size
-            init_value = data_unit.init_value_byte_representation
+        # data_unit_list = segment_manager.get_segment_dataUnit_list(segment.name)
+        # for data_unit in data_unit_list:
+        #     name = data_unit.name if data_unit.name is not None else 'no-name'
+        #     # unique_label = data_dict.get('unique_label', 'None')
+        #     unique_label = data_unit.memory_block_id
+        #     address = data_unit.address
+        #     byte_size = data_unit.byte_size
+        #     init_value = data_unit.init_value_byte_representation
 
-            if init_value is None:
+        #     if init_value is None:
 
-                tmp_data_code += f"{unique_label}:\n"
-                if data_unit.alignment is not None:
-                    tmp_data_code += f".align {data_unit.alignment}\n"
+        #         tmp_data_code += f"{unique_label}:\n"
+        #         if data_unit.alignment is not None:
+        #             tmp_data_code += f".align {data_unit.alignment}\n"
 
-                data_code_counter += 1
-                # Reserve space for uninitialized data in the .bss section
-                if Configuration.Architecture.x86:
-                    if byte_size == '8':
-                        data_code += f"    resq 1  ; {name} - Reserved {byte_size} bytes\n"  # 8 bytes = qword
-                    elif byte_size == '4':
-                        data_code += f"    resd 1  ; {name} - Reserved {byte_size} bytes\n"  # 4 bytes = dword
-                    elif byte_size == '2':
-                        data_code += f"    resw 1  ; {name} - Reserved {byte_size} bytes\n"  # 2 bytes = word
-                    else:
-                        data_code += f"    resb {byte_size}  ; {name} - Reserved {byte_size} bytes\n"  # 1 byte = byte
-                elif Configuration.Architecture.arm:
-                    tmp_data_code += f".skip {byte_size}  // {name} - Reserved {byte_size} bytes\n"  # 1,2,4,8 bytes
-                elif Configuration.Architecture.riscv:
-                    tmp_data_code += f".skip {byte_size}  # {name} - Reserved {byte_size} bytes\n"
-                else:
-                    raise ValueError('Unsupported Architecture')
+        #         data_code_counter += 1
+        #         # Reserve space for uninitialized data in the .bss section
+        #         if Configuration.Architecture.x86:
+        #             if byte_size == '8':
+        #                 data_code += f"    resq 1  ; {name} - Reserved {byte_size} bytes\n"  # 8 bytes = qword
+        #             elif byte_size == '4':
+        #                 data_code += f"    resd 1  ; {name} - Reserved {byte_size} bytes\n"  # 4 bytes = dword
+        #             elif byte_size == '2':
+        #                 data_code += f"    resw 1  ; {name} - Reserved {byte_size} bytes\n"  # 2 bytes = word
+        #             else:
+        #                 data_code += f"    resb {byte_size}  ; {name} - Reserved {byte_size} bytes\n"  # 1 byte = byte
+        #         elif Configuration.Architecture.arm:
+        #             tmp_data_code += f".skip {byte_size}  // {name} - Reserved {byte_size} bytes\n"  # 1,2,4,8 bytes
+        #         elif Configuration.Architecture.riscv:
+        #             tmp_data_code += f".skip {byte_size}  # {name} - Reserved {byte_size} bytes\n"
+        #         else:
+        #             raise ValueError('Unsupported Architecture')
 
+        # # tmp_data_code += "\n"
+
+        # # always planting the .bss segment, even if empty # TODO:: need to refactor this logic
+        # if data_code_counter != 0:
+        #     tmp_data_code += "\n"
+        # else:
+        #     tmp_data_code += f"{get_comment_mark()} No uninitialized data on {segment_name} bss segment.\n"
+        #     tmp_data_code += f".space {segment_size}\n"
         # tmp_data_code += "\n"
-
-        # always planting the .bss segment, even if empty # TODO:: need to refactor this logic
-        if data_code_counter != 0:
-            tmp_data_code += "\n"
-        else:
-            tmp_data_code += f"{get_comment_mark()} No uninitialized data on {segment_name} bss segment.\n"
-            tmp_data_code += f".space {segment_size}\n"
-        tmp_data_code += "\n"
-        data_code += tmp_data_code
-        data_code_counter = 0
-        tmp_data_code = ""
+        # data_code += tmp_data_code
+        # data_code_counter = 0
+        # tmp_data_code = ""
 
     if Configuration.Architecture.arm:
         pass
@@ -375,6 +375,7 @@ def handle_barrier_vector(data_unit):
     # and setting its init data only to the registered cores.
     barrier_manager = get_barrier_manager()
     barriers = barrier_manager.get_all_barriers()
+
     for barrier in barriers:
         barrier_memory = barrier.get_memory()
         if barrier_memory.name in data_unit.name:
