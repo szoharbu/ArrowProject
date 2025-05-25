@@ -115,7 +115,7 @@ def run_PGT_prototype():
         setVerbosity(WARN)   
 
         state_manager = get_state_manager()
-        cores_states = state_manager.list_states()
+        cores_states = state_manager.get_all_states()
         for core_state in cores_states:
             state_manager.set_active_state(core_state)
             curr_state = state_manager.get_active_state()
@@ -128,11 +128,6 @@ def run_PGT_prototype():
             EL3 = createStg1TS(f"EL3_{curr_state.state_name}", VMSAv8_64, PL3R)
             setTranslationSystemProp(EL3, TG0=TG_4KB)#, T0SZ=16)
             setMemoryManager(EL3, PMM)
-
-
-            print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz need to seperate logic per state, and add the PMM and VMM into the state")
-            print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz need to seperate logic per state, and add the PMM and VMM into the state")
-            # Call create_automated_memory_mapping and capture the returned pages
 
             pages = create_automated_memory_mapping(PMM, EL3)
 
@@ -292,7 +287,7 @@ def create_automated_memory_mapping(PMM, EL3):
     # Get current state and page table manager
     current_state = get_current_state()
     page_table_manager = current_state.page_table_manager
-    memory_manager = current_state.memory_manager
+    segment_manager = current_state.segment_manager
     
 
     # Trickbox device memory 
@@ -336,7 +331,7 @@ def create_automated_memory_mapping(PMM, EL3):
 
 
     memory_log(f"Completed memory mapping process")
-    # All of these pages are now available for the test to use via memory_manager
+    # All of these pages are now available for the test to use via segment_manager
 
     return all_pages
 

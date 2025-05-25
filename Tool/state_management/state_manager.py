@@ -1,6 +1,6 @@
 from Utils.singleton_management import SingletonManager
 from Tool.register_management.register_manager import RegisterManager, Register
-from Tool.memory_management.memory_manager import MemoryManager, MemorySegment, MemoryRange
+from Tool.memory_management.segment_manager import SegmentManager, MemorySegment, MemoryRange
 from Tool.memory_management.page_manager import PageTableManager
 
 
@@ -11,14 +11,14 @@ class State:
     """
 
     def __init__(self, state_name: str, state_id: int, privilege_level: int, processor_mode: str, register_manager: RegisterManager,
-                 page_table_manager: PageTableManager, memory_manager: MemoryManager, current_code: MemorySegment, base_register: Register, base_register_value: int, memory_range: MemoryRange):
+                 page_table_manager: PageTableManager, segment_manager: SegmentManager, current_code: MemorySegment, base_register: Register, base_register_value: int, memory_range: MemoryRange):
         self.state_name: str = state_name
         self.state_id: int = state_id
         self.privilege_level: int = privilege_level
         self.processor_mode: str = processor_mode
         self.register_manager: RegisterManager = register_manager
         self.page_table_manager: PageTableManager = page_table_manager
-        self.memory_manager: MemoryManager = memory_manager
+        self.segment_manager: SegmentManager = segment_manager
         self.current_code_block:MemorySegment = current_code
         self.base_register: Register = base_register
         self.base_register_value:int = base_register_value
@@ -31,7 +31,7 @@ class State:
                 f"processor_mode={self.processor_mode}, "
                 f"register_manager={self.register_manager}, "
                 f"page_table_manager={self.page_table_manager}, "
-                f"memory_manager={self.memory_manager}, "
+                f"segment_manager={self.segment_manager}, "
                 f"current_code={self.current_code_block}, "
                 f"base_register={self.base_register}, "
                 f"base_register_value={self.base_register_value}, "
@@ -77,7 +77,7 @@ class State_manager:
             raise RuntimeError("No active state set.")
         return self.states_dict[self.active_state_id]
 
-    def list_states(self) -> list[str]:
+    def get_all_states(self) -> list[str]:
         """
         Lists all state IDs managed by the StateManager.
         Returns:

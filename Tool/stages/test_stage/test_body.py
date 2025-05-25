@@ -30,7 +30,7 @@ def do_scenario(current_scenario: Optional[int], max_scenario:Optional[int]):
     current_state = state_manager.get_active_state()
     scenario_manager = get_scenario_manager()
 
-    available_blocks = current_state.memory_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
+    available_blocks = current_state.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
     # Filter the list to exclude the current code block
     available_blocks_without_current = [block for block in available_blocks if block != current_state.current_code_block]
     # Randomly select from the filtered list

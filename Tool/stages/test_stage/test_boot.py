@@ -23,7 +23,7 @@ def do_boot():
     curr_state = state_manager.get_active_state()
 
     # Allocate BSP boot block. a single block that act as trampoline for all cores    
-    bsp_boot_blocks = curr_state.memory_manager.get_segments(pool_type=Configuration.Memory_types.BSP_BOOT_CODE)
+    bsp_boot_blocks = curr_state.segment_manager.get_segments(pool_type=Configuration.Memory_types.BSP_BOOT_CODE)
     if len(bsp_boot_blocks) != 1:
         raise ValueError(
             "bsp_boot_block must contain exactly one element, but it contains: {}".format(len(bsp_boot_blocks)))
@@ -46,7 +46,7 @@ def do_boot():
     # Load the stack pointer
     sp_reg = register_manager.get(reg_name="sp")
     register_manager.reserve(sp_reg)
-    stack_data_start_address = curr_state.memory_manager.get_stack_data_start_address()
+    stack_data_start_address = curr_state.segment_manager.get_stack_data_start_address()
 
     AsmLogger.comment(f"Load the stack pointer (address of {stack_data_start_address})")
     #AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
@@ -82,7 +82,7 @@ def do_boot():
         # TODO:: this is a hack, need to fix this and allow ability to get state without switching to it!!!
         state_manager.set_active_state(state)
         tmp_state = state_manager.get_active_state()
-        boot_blocks = tmp_state.memory_manager.get_segments(pool_type=Configuration.Memory_types.BOOT_CODE)
+        boot_blocks = tmp_state.segment_manager.get_segments(pool_type=Configuration.Memory_types.BOOT_CODE)
         if len(boot_blocks) != 1:
             raise ValueError(
                 "boot_blocks must contain exactly one element, but it contains: {}".format(len(boot_blocks)))
@@ -110,7 +110,7 @@ def do_boot():
         state_manager.set_active_state(state)
         curr_state = state_manager.get_active_state()
 
-        boot_blocks = curr_state.memory_manager.get_segments(pool_type=Configuration.Memory_types.BOOT_CODE)
+        boot_blocks = curr_state.segment_manager.get_segments(pool_type=Configuration.Memory_types.BOOT_CODE)
         if len(boot_blocks) != 1:
             raise ValueError(
                 "boot_blocks must contain exactly one element, but it contains: {}".format(len(boot_blocks)))
@@ -136,7 +136,7 @@ def do_boot():
             #generate(instruction_count=10)
 
         # selecting random block to jump to for test body
-        available_blocks = curr_state.memory_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
+        available_blocks = curr_state.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
         selected_block = choice.choice(values=available_blocks)
         branch_to_segment.BranchToSegment(selected_block).one_way_branch()
 

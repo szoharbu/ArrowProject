@@ -63,14 +63,14 @@ def handle_run_button(code_input):
                 # from Utils.arg_parser import arg_parser
                 # from Utils.configuration_management import configuration_management
                 # from Tool.generation_management import generate
-                # from Tool.memory_management import memory_manager
+                # from Tool.memory_management import segment_manager
                 # Logger.clean_logger()
                 # reload(Utils.arg_parser.arg_parser)
                 # reload(Utils.logger_management)
                 # reload(Utils.configuration_management.configuration_management)
                 # reload(Utils.configuration_management.knob_manager)
                 # reload(Utils.configuration_management.knobs)
-                # reload(Tool.memory_management.memory_manager)
+                # reload(Tool.memory_management.memory_segment)
                 #
                 #
                 # # reload(Tool.ingredient_management)

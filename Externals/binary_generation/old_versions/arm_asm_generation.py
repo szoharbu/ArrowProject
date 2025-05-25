@@ -127,8 +127,8 @@ def generate_data_from_DataUnits(data_blocks):
 def generate_arm_assembly():
 
     current_state = Tool.state_manager.get_active_state()
-    all_code_blocks = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
-    all_data_blocks = current_state.memory_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE])
+    all_code_blocks = current_state.segment_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
+    all_data_blocks = current_state.segment_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE])
 
     # Generate assembly code for instructions and data blocks
     asm_code = generate_asm_from_AsmUnits(all_code_blocks)

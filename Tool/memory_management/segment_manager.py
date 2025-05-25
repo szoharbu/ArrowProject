@@ -4,28 +4,25 @@ from typing import List, Dict
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
 from Tool.asm_blocks import DataUnit
-from Tool.state_management import get_current_state
+from Tool.state_management import get_current_state, get_state_manager
 from Tool.memory_management.memory_segments import MemorySegment, CodeSegment, DataSegment, MemoryRange
 from Tool.memory_management.memory_block import MemoryBlock
 from Tool.memory_management import interval_lib
 from Tool.memory_management.memory_space_manager import get_memory_space_manager
 from Tool.memory_management.utils import memory_log, print_segments_by_type
 
-class MemoryManager:
+class SegmentManager:
     def __init__(self, memory_range:MemoryRange):
         """
         Memory manager class to manage a pool of memory segments.
         """
         logger = get_logger()
-        memory_log("==================== MemoryManager")
+        memory_log("==================== SegmentManager")
 
         self.memory_range = memory_range
 
         # Keep a reference to the memory space manager for allocations
         self.memory_space_manager = get_memory_space_manager()
-        
-        # Legacy interval_lib - kept for backward compatibility with existing code
-        #self.interval_lib = interval_lib.IntervalLib(start_address=self.memory_range.address, total_size=self.memory_range.byte_size)
         
         self.memory_segments: List[MemorySegment] = []
         self.pool_type_mapping: Dict[Configuration.Memory_types, List[MemorySegment]] = {}  # To map pool types to blocks
@@ -95,18 +92,18 @@ class MemoryManager:
             # Log detailed information about the allocation, including covered pages
             if hasattr(allocation, 'covered_pages') and allocation.covered_pages:
                 num_pages = len(allocation.covered_pages)
-                memory_log(f"Allocated memory segment at VA:0x{segment_start:x}, PA:0x{segment_pa_start:x}, size:0x{segment_size:x}, type:{page_type}, " 
+                memory_log(f"Allocated memory segment at VA:{hex(segment_start)}:{hex(segment_start+segment_size-1)}, PA:{hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size:0x{segment_size:x}, type:{page_type}, " 
                            f"spanning {num_pages} {'page' if num_pages == 1 else 'pages'}")
                 
                 # If VA_eq_PA, verify that the allocation satisfies this constraint
                 if VA_eq_PA:
                     for page in allocation.covered_pages:
-                        memory_log(f"  Page: VA=0x{page.va:x}, PA=0x{page.pa:x}")
+                        memory_log(f"  Page: VA:{hex(page.va)}:{hex(page.va+page.size-1)}, PA:{hex(page.pa)}:{hex(page.pa+page.size-1)}")
                         if page.va != page.pa:
                             memory_log(f"Page does not satisfy VA=PA constraint (VA:0x{page.va:x} ≠ PA:0x{page.pa:x})", level="error")
                             raise ValueError(f"Page does not satisfy VA=PA constraint (VA:0x{page.va:x} ≠ PA:0x{page.pa:x})")
             else:
-                memory_log(f"Allocated memory segment at VA:0x{segment_start:x}, PA:0x{segment_pa_start:x}, size:0x{segment_size:x}, type:{page_type}")
+                memory_log(f"Allocated memory segment at VA:{hex(segment_start)}:{hex(segment_start+segment_size-1)}, PA:{hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size:0x{segment_size:x}, type:{page_type}")
         except ValueError as e:
             memory_log(f"Failed to allocate memory: {e}", level="error")
             raise ValueError(f"Could not allocate memory segment '{name}' of size {byte_size} with type {page_type}. "
@@ -136,6 +133,200 @@ class MemoryManager:
 
         return memory_segment
 
+
+    def allocate_cross_core_memory_segment(self)->MemorySegment:
+        """
+        Allocate a cross-core segment of data memory, making sure same physical address
+        is used for all cores. Each core may have a different virtual address mapping to 
+        the same physical memory.
+        """
+        name = "cross_core_page_segment"
+        byte_size = 2048 # 2KB
+        memory_type = Configuration.Memory_types.DATA_PRESERVE
+        page_type = Configuration.Page_types.TYPE_DATA
+
+        state_manager = get_state_manager()
+        all_state_ids = state_manager.get_all_states()
+        
+        # First, find a suitable cross-core page with shared physical memory
+        # Note: Different cores may map this physical memory to different virtual addresses
+        first_state_id = all_state_ids[0]
+        memory_log(f"\n\n ==================== {first_state_id} - Finding suitable cross-core memory interval")
+        
+        state_manager.set_active_state(first_state_id)
+        first_state = get_current_state()
+        page_table_manager = first_state.page_table_manager
+        
+        # Find all cross-core data pages in the first state
+        all_pages = page_table_manager.get_page_table_entries_by_type(Configuration.Page_types.TYPE_DATA)
+        cross_core_pages = []
+        for page in all_pages:
+            if page.is_cross_core:
+                cross_core_pages.append(page)
+                
+        if len(cross_core_pages) == 0:
+            memory_log(f"No cross-core page found in state {first_state_id}", level="error")
+            raise ValueError(f"No cross-core page found in state {first_state_id}")
+        
+        # Select a cross-core page
+        cross_core_page = random.choice(cross_core_pages)
+        memory_log(f"Selected cross-core page: VA={hex(cross_core_page.va)}:{hex(cross_core_page.va+cross_core_page.size-1)}, PA={hex(cross_core_page.pa)}:{hex(cross_core_page.pa+cross_core_page.size-1)}")
+        
+        # The physical address of this page is what will be shared across cores
+        shared_pa = cross_core_page.pa
+        memory_log(f"Using shared physical address: PA={hex(shared_pa)}:{hex(shared_pa+cross_core_page.size-1)}")
+
+        # Find available (unallocated) intervals within this page
+        memory_space_manager = get_memory_space_manager()
+        
+        # Get all available intervals within this page
+        all_non_allocated_data_intervals = memory_space_manager.state_non_allocated_va_data_intervals[first_state_id]
+        contained_intervals = []
+        
+        for interval in all_non_allocated_data_intervals.free_intervals:
+            int_start, int_size = interval
+            int_end = int_start + int_size - 1
+            
+            # Calculate intersection with page
+            if int_end >= cross_core_page.va and int_start <= cross_core_page.va+cross_core_page.size-1:
+                # There is some overlap - calculate the contained portion
+                contained_start = max(int_start, cross_core_page.va)
+                contained_end = min(int_end, cross_core_page.va+cross_core_page.size-1)
+                contained_size = contained_end - contained_start + 1
+                
+                # Only include if the interval is big enough
+                if contained_size >= byte_size:
+                    contained_intervals.append((contained_start, contained_size))
+                    memory_log(f"Found suitable interval: VA:{hex(contained_start)}-{hex(contained_end)}, size:0x{contained_size:x}")
+        
+        if len(contained_intervals) == 0:
+            memory_log(f"No suitable unallocated interval found in cross-core page in state {first_state_id}", level="error")
+            raise ValueError(f"No suitable unallocated interval found in cross-core page in state {first_state_id}")
+        
+        # Choose a random interval from available unallocated intervals
+        selected_interval = random.choice(contained_intervals)
+        interval_start, interval_size = selected_interval
+        memory_log(f"Selected unallocated interval: VA:{hex(interval_start)}-{hex(interval_start+interval_size-1)}, size:0x{interval_size:x}")
+        
+        # Now randomly select a position within this interval, respecting alignment
+        alignment_bits = 4  # 16-byte alignment
+        alignment = 1 << alignment_bits
+        
+        # Calculate the maximum possible start address that ensures the sub-interval fits
+        max_start = interval_start + interval_size - byte_size
+        
+        # Calculate the minimum aligned start address
+        min_start = (interval_start + alignment - 1) & ~(alignment - 1)
+        
+        # Check if there's room after alignment
+        if min_start > max_start:
+            memory_log(f"No valid aligned position found in the selected interval", level="error")
+            raise ValueError(f"No valid aligned position found in the selected interval")
+        
+        # Choose a random aligned position
+        available_positions = ((max_start - min_start) // alignment) + 1
+        if available_positions > 1:
+            random_position = random.randrange(available_positions)
+            chosen_va_start = min_start + (random_position * alignment)
+        else:
+            chosen_va_start = min_start
+        
+        # Calculate offset from page start (needed to find corresponding VA in other cores)
+        page_offset = chosen_va_start - cross_core_page.va
+        
+        memory_log(f"Chosen position in interval: VA:{hex(chosen_va_start)}, offset from page start: 0x{page_offset:x}")
+        memory_log(f"This corresponds to PA:{hex(shared_pa+page_offset)}-{hex(shared_pa+page_offset+byte_size-1)}")
+        
+        # Now allocate in each state using the corresponding VA mapping
+        created_segments = []
+        
+        for state_id in all_state_ids:
+            memory_log(f"\n\n ==================== {state_id} - Allocating cross-core memory segment with PA:{hex(shared_pa+page_offset)}")
+            
+            state_manager.set_active_state(state_id)
+            current_state = get_current_state()
+            page_table_manager = current_state.page_table_manager
+            segment_manager = current_state.segment_manager
+            
+            # Find the corresponding cross-core page in this state
+            # It should have the same physical address as the first state's cross-core page
+            all_pages = page_table_manager.get_page_table_entries_by_type(Configuration.Page_types.TYPE_DATA)
+            matching_cross_core_page = None
+            
+            for page in all_pages:
+                if page.is_cross_core and page.pa == shared_pa:
+                    matching_cross_core_page = page
+                    break
+            
+            if not matching_cross_core_page:
+                memory_log(f"No matching cross-core page found in state {state_id} with PA={hex(shared_pa)}", level="error")
+                raise ValueError(f"No matching cross-core page found in state {state_id} with PA={hex(shared_pa)}")
+            
+            memory_log(f"Found matching cross-core page: VA={hex(matching_cross_core_page.va)}:{hex(matching_cross_core_page.va+matching_cross_core_page.size-1)}, PA={hex(matching_cross_core_page.pa)}:{hex(matching_cross_core_page.pa+matching_cross_core_page.size-1)}")
+            
+            # Calculate the VA for this state based on the page mapping and PA offset
+            # Use the same offset from page start
+            state_va_start = matching_cross_core_page.va + page_offset
+            memory_log(f"Using VA={hex(state_va_start)} for PA={hex(shared_pa+page_offset)} in state {state_id}")
+            
+            # Check if the calculated VA falls within this page
+            if state_va_start < matching_cross_core_page.va or (state_va_start + byte_size) > (matching_cross_core_page.va + matching_cross_core_page.size):
+                memory_log(f"Calculated VA:{hex(state_va_start)} doesn't fall within cross-core page VA:{hex(matching_cross_core_page.va)}-{hex(matching_cross_core_page.va+matching_cross_core_page.size-1)} in state {state_id}", level="error")
+                raise ValueError(f"Calculated VA doesn't fall within cross-core page in state {state_id}")
+            
+            # Check if the interval is available (not allocated) in this state
+            state_non_allocated_intervals = memory_space_manager.state_non_allocated_va_data_intervals[state_id]
+            
+            # Check if the requested interval is available
+            is_available = False
+            for int_start, int_size in state_non_allocated_intervals.free_intervals:
+                int_end = int_start + int_size - 1
+                if state_va_start >= int_start and (state_va_start + byte_size - 1) <= int_end:
+                    is_available = True
+                    break
+            
+            if not is_available:
+                memory_log(f"Calculated VA:{hex(state_va_start)} is not available for allocation in state {state_id}", level="error")
+                raise ValueError(f"Calculated VA is not available for allocation in state {state_id}")
+            
+            # Allocate at the calculated VA
+            allocation = memory_space_manager.allocate_data_memory_from_given_page(
+                page=matching_cross_core_page, 
+                state_name=current_state, 
+                byte_size=byte_size, 
+                alignment_bits=alignment_bits,
+                va_start=state_va_start)
+            
+            segment_start = allocation.va_start
+            segment_size = allocation.size
+            segment_pa_start = allocation.pa_start
+            
+            # Log allocation information
+            memory_log(f"Allocated memory segment at VA:{hex(segment_start)}:{hex(segment_start+segment_size-1)}, PA:{hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size:0x{segment_size:x}, type:{page_type}")
+            
+            memory_segment = DataSegment(name=name, address=segment_start, pa_address=segment_pa_start, byte_size=segment_size, memory_type=memory_type, is_cross_core=True)
+            
+            # Store the allocation with the segment for future reference (e.g., for freeing)
+            memory_segment.allocation = allocation
+            
+            # Store page information in the memory segment for better tracking
+            if hasattr(allocation, 'covered_pages'):
+                memory_segment.covered_pages = allocation.covered_pages
+            
+            segment_manager.memory_segments.append(memory_segment)
+            
+            # Map the segment to the pool type
+            if memory_type not in segment_manager.pool_type_mapping:
+                segment_manager.pool_type_mapping[memory_type] = []
+            segment_manager.pool_type_mapping[memory_type].append(memory_segment)
+            
+            created_segments.append(memory_segment)
+            
+        # Return the first segment for backward compatibility
+        memory_log(f"Created cross-core memory segments at fixed PA={hex(shared_pa+page_offset)} across {len(created_segments)} cores")
+        return created_segments[0] if created_segments else None
+
+
     def _is_code_page_type(self, page_type):
         """Helper to determine if a page type is code"""
         return page_type == Configuration.Page_types.TYPE_CODE
@@ -157,7 +348,7 @@ class MemoryManager:
         else:
             pool_types = pool_type
 
-        filtered_segmentss = []
+        filtered_segments = []
         for pool_type in pool_types:
             if not isinstance(pool_type, Configuration.Memory_types):
                 memory_log(f"ID of pool_type's type:", id(type(pool_type)), level="warning")
@@ -165,12 +356,12 @@ class MemoryManager:
                 raise ValueError(f"Invalid pool type {pool_type}.")
             # Filter blocks based on pool_type
             if pool_type in self.pool_type_mapping:
-                filtered_segmentss = filtered_segmentss + [segment for segment in self.memory_segments if segment in self.pool_type_mapping[pool_type]]
+                filtered_segments = filtered_segments + [segment for segment in self.memory_segments if segment in self.pool_type_mapping[pool_type]]
 
-        if not filtered_segmentss:
+        if not filtered_segments:
                 raise ValueError("No segments available to match the query request.")
 
-        return filtered_segmentss
+        return filtered_segments
 
     def get_segment(self, segment_name:str) -> MemorySegment:
         """
@@ -219,7 +410,7 @@ class MemoryManager:
         """
         self.memory_space_manager.print_memory_summary(verbose)
         
-        # Also print a summary of segments managed by this MemoryManager
+        # Also print a summary of segments managed by this SegmentManager
         memory_log("\n==== MEMORY SEGMENTS SUMMARY ====")
         memory_log(f"Total segments: {len(self.memory_segments)}")
         
@@ -256,7 +447,13 @@ class MemoryManager:
                 
     #     memory_log("==== END MEMORY BLOCKS SUMMARY ====")
 
-    def allocate_data_memory(self, name:str, memory_block_id:str, pool_type:Configuration.Memory_types, byte_size:int=8, init_value_byte_representation:list[int]=None, alignment:int=None) -> DataUnit:
+    def allocate_data_memory(self, name:str, 
+                             memory_block_id:str, 
+                             pool_type:Configuration.Memory_types, 
+                             byte_size:int=8, 
+                             init_value_byte_representation:list[int]=None, 
+                             alignment:int=None,
+                             cross_core:bool=False) -> DataUnit:
         """
         Retrieve data memory operand from the given pools.
 
@@ -277,6 +474,13 @@ class MemoryManager:
             raise ValueError(f"Can't initialize value in a shared memory")
 
         data_segments = self.get_segments(pool_type)
+
+        if cross_core:
+            # filter data_segments to only include cross-core segments
+            data_segments = [segment for segment in data_segments if segment.is_cross_core]
+            print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz current_state [ {get_current_state().state_name} ]")
+            print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz data_segments [ {data_segments} ]")
+
         memory_log(f"Found {len(data_segments)} segments of type {pool_type}:")
         for i, segment in enumerate(data_segments):
             memory_log(f"  {i+1}. Segment '{segment.name}' VA:0x{segment.address:x}-0x{segment.address+segment.byte_size-1:x}, size:0x{segment.byte_size:x}")
@@ -311,36 +515,25 @@ class MemoryManager:
                     current_state = get_current_state()
                     state_name = current_state.state_name
                     memory_log(f"DATA_PRESERVE allocation in state '{state_name}', segment '{selected_segment.name}'")
-                    
-                    # TODO: This is a simplification - we should create a subsegment allocation 
-                    # mechanism in memory_space_manager to properly allocate within a segment
-                    
-                    # For now, just randomly select a position within the segment
-                    start_offset = selected_segment.address
-                    max_offset = selected_segment.address + selected_segment.byte_size - byte_size
-                    
-                    if alignment:
-                        # Align the start_offset
-                        alignment_value = 1 << alignment
-                        start_offset = (start_offset + alignment_value - 1) & ~(alignment_value - 1)
-                        # Align the max_offset
-                        max_offset = max_offset & ~(alignment_value - 1)
-                        memory_log(f"Using alignment {alignment} (1<<{alignment}={alignment_value})")
-                        memory_log(f"Aligned range: 0x{start_offset:x} to 0x{max_offset:x}")
-                    
-                    if max_offset < start_offset:
-                        memory_log(f"Not enough space in segment for aligned allocation", level="error")
-                        raise ValueError(f"Not enough space in segment {selected_segment.name} for aligned allocation")
-                        
-                    address = random.randint(start_offset, max_offset)
-                    if alignment:
-                        # Ensure address is aligned
-                        alignment_value = 1 << alignment
-                        address = (address + alignment_value - 1) & ~(alignment_value - 1)
 
+                    if selected_segment.interval_tracker is None:
+                        raise ValueError(f"No interval tracker found in segment {selected_segment.name}")
+
+                    # Find an available region with proper alignment
+                    allocation = selected_segment.interval_tracker.find_region(byte_size, alignment)
+                    if not allocation:
+                        memory_log(f"No available space in segment for allocation", level="error")
+                        raise ValueError(f"No available space in segment {selected_segment.name}")
+                            
+                    address, _ = allocation
+                    
+                    # Remove the allocated region from the available pool
+                    selected_segment.interval_tracker.remove_region(address, byte_size)
+                    
                     segment_offset = address - selected_segment.address
                     pa_address = selected_segment.pa_address + segment_offset
-                    memory_log(f"DATA_PRESERVE allocation in segment '{selected_segment.name}' at VA:{hex(address)}, PA:{hex(pa_address)}, size:{byte_size}, type:{page_type}")
+                    memory_log(f"DATA_PRESERVE allocation in segment '{selected_segment.name}' at VA:{hex(address)}, PA:{hex(pa_address)}, size:{byte_size}")
+                        
                 except Exception as e:
                     memory_log(f"Failed to allocate data memory: {e}", level="error")
                     raise ValueError(f"Could not allocate data memory in segment {selected_segment.name}")

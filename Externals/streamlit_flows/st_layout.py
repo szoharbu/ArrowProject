@@ -31,7 +31,7 @@ def create_home_layout():
             
 from Utils.configuration_management import Configuration
 from Arrow_API import AR
-from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
+from Arrow_API.resources.segment_manager import SegmentManager_API as SegmentManager
 from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
 Configuration.Knobs.Template.scenario_count.set_value(3)
@@ -49,7 +49,7 @@ def basic_loop_scenario():
 def load_store_stress_scenario():
     AR.comment("inside load_store_stress_scenario")
 
-    mem = MemoryManager.Memory(init_value=0x456)
+    mem = SegmentManager.Memory(init_value=0x456)
     reg = RegisterManager.get_and_reserve()
     AR.generate(dest=mem, comment=f"store to mem")
     AR.generate(dest=reg, src=mem, comment=f"load from mem to reg")
