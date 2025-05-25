@@ -124,8 +124,8 @@ def SPE_setup():
 def WFIT_CROSS_SPE_scenario():
     AR.comment("inside WFIT_CROSS_SPE_scenario")
 
-    with AR.SwitchState(state="core0"):
+    with AR.SwitchState(state="core_0"):
         enter_sleep_state()
 
-    with AR.SwitchState(state="core1"):
+    with AR.SwitchState(state="core_1"):
         SPE_setup()

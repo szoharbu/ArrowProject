@@ -1,7 +1,7 @@
 import random
 
 from Utils.configuration_management import Configuration, get_config_manager
-from Tool.memory_management.memory import Memory
+from Tool.memory_management.memory_memory import Memory
 from Tool.register_management.register import Register
 
 

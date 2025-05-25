@@ -16,8 +16,7 @@ class MemoryAllocation:
         self.va_start = va_start
         self.pa_start = pa_start
         self.size = size
-        # For cross-page allocations, track all involved pages
-        self.page_mappings = page_mappings or []  # List of (va_page, pa_page, size) tuples
+        self.page_mappings = page_mappings or []  # List of (va_page, pa_page, size) tuples - For cross-page allocations, track all involved pages
         self.page_type = page_type  # Track the page type (code, data, etc.)
         self.covered_pages = covered_pages or []  # List of actual Page objects this allocation spans
 
@@ -34,12 +33,13 @@ class MemorySpaceManager:
     '''
     MemorySpaceManager
     responsible for managing the memory space across the entire test. 
-    any MemoryManager or PageTableManager will use this class to manage the memory space.
+    any SegmentManager or PageTableManager will use this class to manage the memory space.
     '''
     def __init__(self):
         """
         MemorySpaceManager class to manage the memory space across the entire test.
         """
+        memory_log("\n")
         memory_log("======================== MemorySpaceManager - init", "info")
 
         # TODO:: Need to extract the PA space from the configuration
@@ -119,7 +119,7 @@ class MemorySpaceManager:
         state_manager = get_state_manager()
         
         # Initialize all existing states
-        for state_name in state_manager.states_dict:
+        for state_name in state_manager.get_all_states():
             self._initialize_state(state_name)
             memory_log(f"Initialized memory intervals for state: {state_name}")
     
@@ -544,6 +544,7 @@ class MemorySpaceManager:
             # If we can't find the page entries (shouldn't happen with proper page management)
             # fall back to the original logic as a last resort
             memory_log(f"CRITICAL ERROR: Cannot find pages covering VA:0x{va_start:x}-0x{va_end:x}. Page table may be inconsistent!", "error")
+            raise ValueError(f"CRITICAL ERROR: Cannot find pages covering VA:0x{va_start:x}-0x{va_end:x}. Page table may be inconsistent!")
             if is_code:
                 pa_avail = self.non_allocated_pa_code_intervals.find_region(size, alignment_bits)
                 if not pa_avail:
@@ -558,6 +559,7 @@ class MemorySpaceManager:
         memory_log(f"Using PA region starting at 0x{pa_start:x}")
         
         return va_start, pa_start, overlapping_pages
+
 
     def allocate_memory(self, state_name, size, page_type, alignment_bits=None, VA_eq_PA=False, page_size=4096):
         """
@@ -640,7 +642,153 @@ class MemorySpaceManager:
         
         self.allocations.append(allocation)
         return allocation
-    
+
+
+    # def allocate_data_memory_from_given_page(self, page, state_name, byte_size, alignment_bits=None, va_start=None):
+    #     """
+    #     Allocates data memory from mapped but non-allocated regions, from a given page.
+    #     If va_start is provided, tries to allocate exactly at that address.
+        
+    #     :param page: The page to allocate from
+    #     :param state_name: State name or object 
+    #     :param byte_size: Size in bytes to allocate
+    #     :param alignment_bits: Alignment requirements in bits
+    #     :param va_start: Specific virtual address to start allocation (if None, one is chosen randomly)
+    #     :return: MemoryAllocation object
+    #     """
+    #     # Handle both state objects and state names
+    #     if hasattr(state_name, 'state_name'):
+    #         state_name = state_name.state_name
+        
+    #     memory_log(f"Allocating data memory of size {byte_size} from page {page} in state {state_name}")
+        
+    #     all_non_allocated_data_intervals = self.state_non_allocated_va_data_intervals[state_name]
+    #     # Find intervals that are fully or partially within the page
+    #     contained_intervals = []
+    #     for interval in all_non_allocated_data_intervals.free_intervals:
+    #         int_start, int_size = interval
+    #         int_end = int_start + int_size - 1
+    #         memory_log(f"Checking interval: VA:{hex(int_start)}-{hex(int_end)}, size:0x{int_size:x}")
+            
+    #         # Calculate intersection with page
+    #         if int_end >= page.va and int_start <= page.va+page.size-1:
+    #             # There is some overlap - calculate the contained portion
+    #             contained_start = max(int_start, page.va)
+    #             contained_end = min(int_end, page.va+page.size-1)
+    #             contained_size = contained_end - contained_start + 1
+                
+    #             contained_intervals.append((contained_start, contained_size))
+    #             memory_log(f"Found contained interval: VA:{hex(contained_start)}-{hex(contained_end)}, size:0x{contained_size:x}")
+        
+    #     if len(contained_intervals) == 0:
+    #         memory_log(f"No contained interval found in state {state_name}", level="error")
+    #         raise ValueError(f"No contained interval found in state {state_name}")
+        
+    #     memory_log(f"Available intervals before allocation:")
+    #     for i, interval in enumerate(contained_intervals):
+    #         int_start, int_size = interval  
+    #         memory_log(f"  interval {i}: VA:{hex(int_start)}-{hex(int_start+int_size-1)}, size:0x{int_size:x}")
+
+    #     # If va_start is provided, use that specific address instead of randomly selecting an interval
+    #     if va_start is not None:
+    #         va_start_end = va_start + byte_size - 1
+    #         memory_log(f"Attempting to allocate fixed interval VA:{hex(va_start)}-{hex(va_start_end)}, size:0x{byte_size:x}")
+            
+    #         # Check if the requested interval is within the page
+    #         if va_start < page.va or va_start_end > page.va + page.size - 1:
+    #             memory_log(f"Requested interval VA:{hex(va_start)}-{hex(va_start_end)} is not fully contained in page VA:{hex(page.va)}-{hex(page.va+page.size-1)}", level="error")
+    #             raise ValueError(f"Requested interval is not fully contained in the specified page")
+            
+    #         # Check if the requested interval is available (not allocated)
+    #         is_available = False
+    #         for int_start, int_size in contained_intervals:
+    #             if (va_start >= int_start) and (va_start_end <= int_start + int_size - 1):
+    #                 is_available = True
+    #                 break
+            
+    #         if not is_available:
+    #             memory_log(f"Requested interval VA:{hex(va_start)}-{hex(va_start_end)} is not available for allocation", level="error")
+    #             raise ValueError(f"Requested interval VA:{hex(va_start)}-{hex(va_start_end)} is not available for allocation")
+            
+    #         # Check alignment if specified
+    #         if alignment_bits is not None:
+    #             alignment = 1 << alignment_bits
+    #             if va_start % alignment != 0:
+    #                 memory_log(f"Requested address 0x{va_start:x} is not aligned to {alignment_bits} bits", level="error")
+    #                 raise ValueError(f"Requested address 0x{va_start:x} is not aligned to {alignment_bits} bits")
+            
+    #         interval_start = va_start
+    #         chosen_start = va_start
+    #     else:
+    #         # Original random selection logic when no fixed address is provided
+    #         selected_interval = random.choice(contained_intervals)
+    #         memory_log(f"Selected interval: VA:{hex(selected_interval[0])}-{hex(selected_interval[0]+selected_interval[1]-1)}, size:0x{selected_interval[1]:x}")
+
+    #         interval_start, interval_size = selected_interval
+
+    #         # find a valid interval space, based on given size and alignment, in the given interval
+    #         alignment = 1 if alignment_bits is None else (1 << alignment_bits)
+            
+    #         # Calculate the maximum possible start address to ensures the sub-interval fits entirely in the larger interval
+    #         max_start = interval_start + interval_size - byte_size
+            
+    #         # Calculate the minimum aligned start address - Round up interval_start to the next aligned address
+    #         min_start = (interval_start + alignment - 1) & ~(alignment - 1)
+            
+    #         # Check if there's still room after alignment
+    #         if min_start > max_start:
+    #             raise ValueError(f"No valid interval found in the given interval")
+            
+    #         # Calculate how many aligned positions are available
+    #         if alignment > 1:
+    #             # For aligned addresses, we need to calculate how many alignment-sized steps fit between min_start and max_start
+    #             available_positions = ((max_start - min_start) // alignment) + 1
+                
+    #             # Choose a random position
+    #             if available_positions == 1:
+    #                 chosen_start = min_start
+    #             else:
+    #                 random_offset = random.randrange(0, available_positions) * alignment
+    #                 chosen_start = min_start + random_offset
+    #         else:
+    #             # No alignment required, any position between min_start and max_start is valid
+    #             chosen_start = random.randint(min_start, max_start)
+        
+    #     va_start = chosen_start
+    #     pa_start = page.pa + (va_start - page.va)
+            
+    #     # Mark as allocated (add to allocated, remove from non-allocated)
+    #     self.state_allocated_va_intervals[state_name].add_region(va_start, byte_size)
+    #     self.state_non_allocated_va_intervals[state_name].remove_region(va_start, byte_size)
+        
+    #     self.allocated_pa_intervals.add_region(pa_start, byte_size)
+    #     self.non_allocated_pa_intervals.remove_region(pa_start, byte_size)
+        
+    #     # Update type-specific allocation tracking
+    #     self.state_non_allocated_va_data_intervals[state_name].remove_region(va_start, byte_size)
+    #     self.non_allocated_pa_data_intervals.remove_region(pa_start, byte_size)
+        
+    #     # Create MemoryAllocation object with all the details
+    #     allocation = MemoryAllocation(
+    #         va_start=va_start,
+    #         pa_start=pa_start,
+    #         size=byte_size,
+    #         page_mappings=[page],
+    #         page_type=Configuration.Page_types.TYPE_DATA,
+    #         covered_pages=[page]
+    #     )
+        
+    #     memory_log(f"Created allocation: VA=0x{va_start:x}, PA=0x{pa_start:x}, size={byte_size}")
+        
+    #     self.allocations.append(allocation)
+    #     return allocation
+
+
+
+
+
+
+
     def free_memory(self, allocation):
         """
         Frees previously allocated memory
@@ -720,6 +868,7 @@ class MemorySpaceManager:
         """
         state_manager = get_state_manager()
         
+        memory_log("\n")
         memory_log("==== MEMORY ALLOCATION SUMMARY ====")
         
         # First, print summary of PA space

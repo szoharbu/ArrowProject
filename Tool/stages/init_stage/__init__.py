@@ -7,7 +7,7 @@ from Utils.logger_management import get_logger
 from Tool.state_management import get_state_manager, get_current_state
 from Tool.state_management.state_manager import State
 from Tool.register_management import register_manager
-from Tool.memory_management import memory_manager, MemoryRange, page_manager
+from Tool.memory_management import segment_manager, MemoryRange, page_manager
 from Tool.memory_management.interval_lib import IntervalLib
 from Utils.APIs.choice import choice
 from Tool.memory_management.utils import print_memory_state
@@ -26,7 +26,7 @@ def init_state():
         state_id = f'core_{i}'
         logger.info(f'--------------- Creating state for {state_id}')
 
-        # allocating 2M MemoryRange per core, and set memory_manager withing this range
+        # allocating 2M MemoryRange per core, and set segment_manager withing this range
         core_memory_region_start, core_memory_region_size = region_intervals.allocate(
             Configuration.ByteSize.SIZE_2M.in_bytes())
         core_memory_range = MemoryRange(core=state_id, address=core_memory_region_start,
@@ -53,7 +53,7 @@ def init_state():
             register_manager=register_manager.RegisterManager(),
             page_table_manager=None, # require active state. 
             memory_range=core_memory_range,
-            memory_manager=memory_manager.MemoryManager(memory_range=core_memory_range),
+            segment_manager=segment_manager.SegmentManager(memory_range=core_memory_range),
             current_code=None,
             base_register=None,
             base_register_value=base_register_value,
@@ -62,7 +62,7 @@ def init_state():
         curr_state.page_table_manager = page_manager.PageTableManager()
 
 
-    cores = state_manager.list_states()
+    cores = state_manager.get_all_states()
     for core in cores:
         state_manager.set_active_state(core)
         curr_state = state_manager.get_active_state()
@@ -96,7 +96,8 @@ def init_page_tables():
     states = state_manager.states_dict
     for state_id in states.keys():
         
-        memory_log(f"\n\n================ init_page_table: {state_id}")
+        memory_log("\n")
+        memory_log(f"================ init_page_table: {state_id}")
         #TODO:: improve page table heuristic!!!!
         #TODO:: improve page table heuristic!!!!
         #TODO:: improve page table heuristic!!!!
@@ -105,7 +106,7 @@ def init_page_tables():
         page_table_manager = current_state.page_table_manager
 
         for type in [Configuration.Page_types.TYPE_CODE, Configuration.Page_types.TYPE_DATA]:
-            count = 10
+            count = random.randint(7, 10)
             for _ in range(count):
                 sequential_page_count = choice(values={1:90, 2:9, 3:1})
                 size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])
@@ -114,7 +115,16 @@ def init_page_tables():
         #Always allocate a code page table that has a VA=PA mapping, needed for BSP boot block
         page_table_manager.allocate_page(size=Configuration.Page_sizes.SIZE_4K, page_type=Configuration.Page_types.TYPE_CODE, sequential_page_count=1, VA_eq_PA=True)
 
+    # Allocating one cross-core page, ensuring that all core will have one shared PA space
+    page_table_manager.allocate_cross_core_page()
+
+    for state_id in states.keys():
+        state_manager.set_active_state(state_id)
+        current_state = get_current_state()
+        page_table_manager = current_state.page_table_manager
         page_table_manager.print_page_tables()
+
+
 
 def init_memory():
     logger = get_logger()
@@ -127,57 +137,67 @@ def init_memory():
     for state_id in states.keys():
         state_manager.set_active_state(state_id)
         curr_state = state_manager.get_active_state()
-        memory_log(f"\n\n================ init_memory: {state_id}")
+        memory_log("\n")
+        memory_log(f"================ init_memory: {state_id}")
 
         if state_id == "core_0":
-            # Allocate BSP boot block. a single block that act as trampoline for all cores
+            # Allocate BSP boot segment. a single segment that act as trampoline for all cores
             state_manager.set_active_state("core_0")
             curr_state = state_manager.get_active_state()
-            bsp_boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"BSP__boot_segment", 
+            bsp_boot_segment = curr_state.segment_manager.allocate_memory_segment(name=f"BSP__boot_segment", 
                                                                             byte_size=0x200,
                                                                             memory_type=Configuration.Memory_types.BSP_BOOT_CODE, 
                                                                             alignment_bits=4, 
                                                                             VA_eq_PA=True)
-            logger.debug(f"init_memory: allocating BSP boot_block {bsp_boot_block}")
+            logger.debug(f"init_memory: allocating BSP boot_segment {bsp_boot_segment}")
+
+            # Allocating one cross-core page, ensuring that all core will have one shared PA space
+            # This allocation is done here, as it is needed for all cores, and should be done before any other allocation to avoid conflicts
+            cross_page_segment = curr_state.segment_manager.allocate_cross_core_memory_segment()
+            logger.debug(f"init_memory: allocating cross_page_segment {cross_page_segment}")
 
 
-        boot_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__boot_segment",
+
+        boot_segment = curr_state.segment_manager.allocate_memory_segment(name=f"{state_id}__boot_segment",
                                                                        byte_size=0x200,
                                                                        memory_type=Configuration.Memory_types.BOOT_CODE, 
                                                                        alignment_bits=4, 
                                                                        VA_eq_PA=True)
-        logger.debug(f"init_memory: allocating boot_block {boot_block}")
+        logger.debug(f"init_memory: allocating boot_segment {boot_segment}")
 
-        code_block_count = Configuration.Knobs.Memory.code_block_count.get_value()
-        for i in range(code_block_count):
-            code_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__code_segment_{i}",
+        code_segment_count = Configuration.Knobs.Memory.code_segment_count.get_value()
+        for i in range(code_segment_count):
+            code_segment = curr_state.segment_manager.allocate_memory_segment(name=f"{state_id}__code_segment_{i}",
                                                                            byte_size=0x1000,
                                                                            memory_type=Configuration.Memory_types.CODE, 
                                                                            alignment_bits=4)
-            logger.debug(f"init_memory: allocating code_block {code_block}")
+            logger.debug(f"init_memory: allocating code_segment {code_segment}")
 
-        data_block_count = Configuration.Knobs.Memory.data_block_count.get_value()
-        data_shared_count = data_block_count // 2  # First part is half of n (floored)
-        data_preserve_count = data_block_count - data_shared_count  # Second part is the remainder
+        data_segment_count = Configuration.Knobs.Memory.data_segment_count.get_value()
+        data_shared_count = data_segment_count // 2  # First part is half of n (floored)
+        data_preserve_count = data_segment_count - data_shared_count  # Second part is the remainder
         for i in range(data_shared_count):
-            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__data_shared_segment_{i}",
+            data_segment = curr_state.segment_manager.allocate_memory_segment(name=f"{state_id}__data_shared_segment_{i}",
                                                                            byte_size=0x1000,
                                                                            alignment_bits=4,
                                                                            memory_type=Configuration.Memory_types.DATA_SHARED)
-            logger.debug(f"init_memory: allocating data_shared_block {data_block}")
+            logger.debug(f"init_memory: allocating data_shared_segment {data_segment}")
 
         for i in range(data_preserve_count):
-            data_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__data_preserve_segment_{i}", 
+            data_segment = curr_state.segment_manager.allocate_memory_segment(name=f"{state_id}__data_preserve_segment_{i}", 
                                                                            byte_size=0x1000,
                                                                            alignment_bits=4,
                                                                            memory_type=Configuration.Memory_types.DATA_PRESERVE)
-            logger.debug(f"init_memory: allocating data_preserve_block {data_block}")
+            logger.debug(f"init_memory: allocating data_preserve_segment {data_segment}")
 
-        stack_block = curr_state.memory_manager.allocate_memory_segment(name=f"{state_id}__stack_segment",
+        # Allocate stack space for each core
+        stack_segment = curr_state.segment_manager.allocate_memory_segment(name=f"{state_id}__stack_segment",
                                                                            byte_size=0x800,
                                                                            alignment_bits=4,
                                                                            memory_type=Configuration.Memory_types.STACK)
-        logger.debug(f"init_memory: allocating stack_block {stack_block}")
+        logger.debug(f"init_memory: allocating stack_segment {stack_segment}")
+
+            
 
 
 def init_scenarios():

@@ -1,6 +1,6 @@
 from Utils.singleton_management import SingletonManager
 from Tool.state_management import get_current_state
-from Tool.memory_management.memory import Memory
+from Tool.memory_management.memory_memory import Memory
 from Tool.asm_libraries.asm_logger import AsmLogger
 
 
@@ -10,11 +10,8 @@ class Barrier:
         self._registered_cores = set()  # Set of cores registered to use this barrier
         barrier_memory_name = f"{self.name}_barrier_vector"
 
-        # TODO:: currently the barrier vector is hardcoded for 2 cores. need to make it dynamic
-        # TODO:: currently the barrier vector is hardcoded for 2 cores. need to make it dynamic
-        # TODO:: currently the barrier vector is hardcoded for 2 cores. need to make it dynamic
-        # TODO:: currently the barrier vector is hardcoded for 2 cores. need to make it dynamic
-        self.memory = Memory(name=barrier_memory_name, init_value=0xff, byte_size=4)
+        # this is a cross-core memory, so it will be allocated in all cores.
+        self.memory = Memory(name=barrier_memory_name, init_value=0xff, byte_size=4, cross_core=True, alignment=3)
 
     def __str__(self):
         return f"Barrier(name='{self.name}', registered_cores={self._registered_cores})"
@@ -28,6 +25,8 @@ class Barrier:
         self._registered_cores.add(core_id)
 
     def get_memory(self) -> Memory:
+        curr_state = get_current_state()
+
         """Get the memory object associated with this barrier."""
         return self.memory
 

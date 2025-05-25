@@ -55,17 +55,21 @@ class CodeSegment(MemorySegment):
 
 # DataSegment inherits from MemorySegment and may add more data-specific attributes
 class DataSegment(MemorySegment):
-    def __init__(self, name: str, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types, init_value: str=None):
+    def __init__(self, name: str, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types, init_value: str=None, is_cross_core:bool=False):
         super().__init__(name, address, pa_address, byte_size, memory_type)
         self.init_value = init_value  # Example of additional attribute
 
         # per DataSegment list that holds all DataUnits and all MemorySegments
         self.data_units_list:list[DataUnit] = []
         self.memory_block_list:list[MemoryBlock] = []
+        self.is_cross_core = is_cross_core
+
+        if is_cross_core and memory_type != Configuration.Memory_types.DATA_PRESERVE:
+            raise ValueError(f"Cross-core segments must be of type DATA_PRESERVE, but got {memory_type}")
 
         if memory_type == Configuration.Memory_types.DATA_PRESERVE:
             # Initially, the entire block is free
-            self.interval_lib = interval_lib.IntervalLib(start_address=address, total_size=byte_size)
+            self.interval_tracker = interval_lib.IntervalLib(start_address=address, total_size=byte_size)
 
 # Each Core get allocated with a memory-range, to be used for code and data allocations. initial size is 2G per core.
 # each memory-range maintains internal interval-list, and have a preserve base-reg to work with.

@@ -25,6 +25,8 @@ class Memory:
             init_value:int = None,
             memory_block: MemoryBlock = None,
             memory_block_offset: int = None,
+            cross_core: bool = False,
+            alignment: Optional[int] = None,
     ):
         """
         Initializes a Memory to be used as memory operand.
@@ -38,7 +40,7 @@ class Memory:
         - memory_block: needed if memory is part a bigger sequential block
         - address (int): The address of the memory, relevant for 'baremetal' execution_platform
         - type (str): The type of the memory, relevant for 'baremetal' execution_platform
-
+        - cross_core (bool): decide if the memory should be cross-core
         """
         logger = get_logger()
         config_manager = get_config_manager()
@@ -54,7 +56,8 @@ class Memory:
         self.init_value = init_value
         self.memory_block = memory_block
         self.memory_block_offset = memory_block_offset
-
+        self.cross_core = cross_core
+        self.alignment = alignment
         self.reused_memory = False
 
         execution_platform = config_manager.get_value('Execution_platform')
@@ -90,6 +93,9 @@ class Memory:
             # TODO:: is this limitation really needed? why not allow it the first time and force not to use a reused-memory ?
             raise ValueError(f"Can't initialize value in a shared memory")
 
+        if cross_core and shared:
+            raise ValueError(f"Cross-core memory can't be shared")
+        
         #Validates the size of a memory operand. If no size is provided, it randomly selects one from VALID_SIZES.
         if byte_size is None:
             # Randomize size if not provided
@@ -97,6 +103,11 @@ class Memory:
         elif byte_size not in VALID_SIZES:
             # Raise error if size is invalid
             raise ValueError(f"Invalid memory byte size: {self.byte_size}. Valid sizes are {VALID_SIZES}.")
+
+        if alignment is None:
+            # to reduce the probability of getting "Aliggnment fault" 
+            # TODO:: need to model this better
+            self.alignment = choice.choice(values={0:10, 1:30, 2:60})
 
         #==================================================
 
@@ -113,7 +124,7 @@ class Memory:
 
                 if should_reuse and (name is None) and (self.address is None) and (self.init_value is None):
                     # reuse memory only applicable for DATA_SHARED memory, and when no explicit parameter were asked. Notice I'm checking name and not self.name for that usage
-                    self.memory_block = curr_state.memory_manager.get_used_memory_block(byte_size=byte_size)
+                    self.memory_block = curr_state.segment_manager.get_used_memory_block(byte_size=byte_size)
                     # check if such shared memory_block exist
                     if self.memory_block is not None:
                         self.reused_memory = True
@@ -129,35 +140,48 @@ class Memory:
                     byte_size_extension = choice.choice(values={0:50, random.randint(1, 10):45, random.randint(10, 20):5})
                     new_byte_size = self.byte_size + byte_size_extension
                     self.memory_block = MemoryBlock(name=self.unique_label, byte_size=new_byte_size, address=self.address,
-                                                    memory_type=self.memory_type, shared=shared,
+                                                    memory_type=self.memory_type, shared=shared, alignment=self.alignment,
                                                     init_value=self.init_value, _use_name_as_unique_label=True)
                     max_offset = new_byte_size - self.byte_size
                     self.memory_block_offset = random.randint(0, max_offset)
             else:
                 # creating a dedicated MemoryBlock
-                self.memory_block = MemoryBlock(name=self.unique_label, byte_size=self.byte_size, address=self.address,memory_type=self.memory_type, shared=shared, init_value=self.init_value, _use_name_as_unique_label=True)
+                self.memory_block = MemoryBlock(name=self.unique_label, byte_size=self.byte_size, address=self.address,
+                                                memory_type=self.memory_type, shared=shared, init_value=self.init_value, 
+                                                cross_core=self.cross_core, _use_name_as_unique_label=True, alignment=self.alignment)
                 self.memory_block_offset = 0x0
+                self.unique_label = self.memory_block.get_label() # unique_label
 
         else:
             """
             use existing MemoryBlock and all its attributes. current memory will have an offset withing the existing block.
             """
-            self.unique_label = self.memory_block.unique_label
+            self.unique_label = self.memory_block.get_label() # unique_label
             if self.name is None:
                 self.name = self.memory_block.name
             self.memory_type = self.memory_block.memory_type
 
             self.reused_memory = False
 
-        self.address = self.memory_block.address + self.memory_block_offset
-        self.pa_address = self.memory_block.pa_address + self.memory_block_offset
+        self.address = self.memory_block.get_address() + self.memory_block_offset
+        self.pa_address = self.memory_block.get_pa_address() + self.memory_block_offset
+        self.cross_core = self.memory_block.cross_core
 
         logger = get_logger()
 
-        self.memory_str = f"Memory access: name={self.name}, address={hex(self.address)}, pa_address={hex(self.pa_address)}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}"
+        self.memory_str = f"Memory access: [ name={self.name}, address={hex(self.address)}, pa_address={hex(self.pa_address)}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}, cross_core={self.cross_core} ]"
+  
         memory_log(self.memory_str)
         logger.debug(self.memory_str)
         #print(self.memory_str)
+
+    def get_label(self):
+        if self.cross_core:
+            curr_state = get_state_manager().get_active_state()
+            return self.memory_block.cross_core_blocks[curr_state.state_name].unique_label
+        else:
+            return self.unique_label
+
 
     def format_reg_as_label(self, register:Register):
         '''

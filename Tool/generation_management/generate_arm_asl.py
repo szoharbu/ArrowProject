@@ -8,7 +8,7 @@ from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
 from Utils.APIs.choice import choice
 # from Tool.frontend.sources_API import Sources
-from Tool.memory_management.memory import Memory
+from Tool.memory_management.memory_memory import Memory
 from Tool.state_management import get_current_state
 from Utils.configuration_management import get_config_manager
 
@@ -67,7 +67,7 @@ def generate_arm_asl(
             comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} ({hex(memory_operand.address)}:{hex(memory_operand.pa_address)}) for next instruction"
 
         dynamic_init_instruction = GeneratedInstruction(mnemonic='ldr', operands=[dynamic_init_memory_address_reg,
-                                                                                  f"={memory_operand.memory_block.name}"],
+                                                                                  f"={memory_operand.memory_block.get_label()}"],
                                                         comment=comment)
         
 

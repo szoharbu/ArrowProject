@@ -4,7 +4,7 @@ from Externals.db_manager.models import Instruction
 from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
 from Tool.state_management import get_state_manager
-from Tool.memory_management.memory import Memory
+from Tool.memory_management.memory_memory import Memory
 import ast
 
 def generate_riscv(

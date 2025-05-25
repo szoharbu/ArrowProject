@@ -131,7 +131,6 @@ def do_boot():
 
         skip_boot = Configuration.Knobs.Config.skip_boot
         if not skip_boot:
-            AsmLogger.asm("nop", comment=f"Empty boot code of {curr_state.state_name} at the moment, skipping")
             enable_pgt_page_table()
             #generate(instruction_count=10)
 
