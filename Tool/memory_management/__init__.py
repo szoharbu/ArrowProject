@@ -54,7 +54,7 @@ Classes and Responsibilities
      - allocate_pages() - Allocates pages of a specific type
      - map_va_to_pa() - Creates mappings between virtual and physical addresses
 
-3. MemoryManager
+3. SegmentManager
    - Manages a pool of memory segments with different types
    - Delegates to memory_space_manager for actual memory allocation
    - Provides high-level APIs for memory segment and data unit allocation
@@ -125,13 +125,13 @@ Each memory allocation spans one or more pages:
 
 Memory Mapping Workflow
 ----------------------
-1. Application requests a memory segment through MemoryManager
-2. MemoryManager delegates to MemorySpaceManager for allocation
+1. Application requests a memory segment through SegmentManager
+2. SegmentManager delegates to MemorySpaceManager for allocation
 3. MemorySpaceManager:
    - Allocates VA space from appropriate interval
    - Allocates PA space to back it
    - Works with PageTableManager to create VA→PA mappings
-4. MemoryManager creates a MemorySegment using the allocation
+4. SegmentManager creates a MemorySegment using the allocation
 5. Application can create MemoryBlocks and DataUnits within the segment
 
 Correlation Between Components
@@ -148,7 +148,7 @@ Glossary
 --------
 - `MemorySpaceManager`: Top-level manager for all memory spaces (VA/PA) across states
 - `PageTableManager`: Manages page tables and VA→PA mappings
-- `MemoryManager`: Manages memory segments and provides allocation APIs
+- `SegmentManager`: Manages memory segments and provides allocation APIs
 - `MemorySegment`: A logical segment of memory with specific type and purpose
 - `MemoryBlock`: A contiguous block of memory within a segment
 - `DataUnit`: The smallest memory unit with all necessary information for access

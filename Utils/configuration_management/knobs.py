@@ -13,7 +13,7 @@ class Knobs:
         scenario_count = Knob(name='scenario_count', value_func=lambda: random.randint(3,6), read_only=True, dynamic=False, global_knob=False)
         scenario_query = Knob(name='scenario_query', value_func={Tag.REST:100}, read_only=True, dynamic=True, global_knob=False)
     class Memory:
-        code_block_count = Knob(name='code_block_count', value_func=lambda: random.randint(3,6), read_only=True, dynamic=False, global_knob=False)
-        data_block_count = Knob(name='data_block_count', value_func=lambda: random.randint(3,6), read_only=True, dynamic=False, global_knob=False)
+        code_segment_count = Knob(name='code_segment_count', value_func=lambda: random.randint(3,6), read_only=True, dynamic=False, global_knob=False)
+        data_segment_count = Knob(name='data_segment_count', value_func=lambda: random.randint(3,6), read_only=True, dynamic=False, global_knob=False)
         shared_memory_reuse = Knob(name='shared_memory_reuse', value_func=lambda: random.randint(45, 60), read_only=True, dynamic=False, global_knob=False, description="Probability to reuse shared memory, 100 mean always, default is around 50 ")
 

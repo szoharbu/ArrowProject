@@ -83,7 +83,7 @@ def switch_code(new_code:CodeSegment):
 
     curr_state = state_manager.get_active_state()
 
-    all_code_blocks = curr_state.memory_manager.get_segments(
+    all_code_blocks = curr_state.segment_manager.get_segments(
         pool_type=[Configuration.Memory_types.BOOT_CODE,
                    Configuration.Memory_types.BSP_BOOT_CODE,
                    Configuration.Memory_types.CODE])

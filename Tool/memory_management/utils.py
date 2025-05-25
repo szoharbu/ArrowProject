@@ -274,13 +274,13 @@ def convert_bytes_to_words(byte_representation):
 
     return words
 
-def print_memory_state(memory_space_manager=None, memory_manager=None, print_both=False):
+def print_memory_state(memory_space_manager=None, segment_manager=None, print_both=False):
     """
     Print a comprehensive summary of the current memory state across all states.
     Shows all states, pages, and segments without unmapped/unallocated regions.
     
     :param memory_space_manager: Optional MemorySpaceManager instance
-    :param memory_manager: Optional MemoryManager instance
+    :param segment_manager: Optional SegmentManager instance
     """
     # Import here to avoid circular imports
     from Tool.memory_management.memory_space_manager import get_memory_space_manager
@@ -353,14 +353,14 @@ def print_memory_state(memory_space_manager=None, memory_manager=None, print_bot
                          f"PA:0x{alloc.pa_start:x}, size:0x{alloc.size:x}, type:{alloc.page_type}{page_str}", print_both=print_both)
     
     # 2. List all memory segments if a memory manager was provided
-    if memory_manager is not None and hasattr(memory_manager, "memory_segments"):
+    if segment_manager is not None and hasattr(segment_manager, "memory_segments"):
         memory_log("\n--- Memory Segments ---", print_both=print_both)
         
         # Group segments by type
         code_segments = []
         data_segments = []
         
-        for segment in memory_manager.memory_segments:
+        for segment in segment_manager.memory_segments:
             if segment.memory_type in [Configuration.Memory_types.CODE, 
                                     Configuration.Memory_types.BOOT_CODE, 
                                     Configuration.Memory_types.BSP_BOOT_CODE]:
@@ -368,7 +368,7 @@ def print_memory_state(memory_space_manager=None, memory_manager=None, print_bot
             else:
                 data_segments.append(segment)
         
-        memory_log(f"Total segments: {len(memory_manager.memory_segments)} ({len(code_segments)} code, {len(data_segments)} data)", print_both=print_both)
+        memory_log(f"Total segments: {len(segment_manager.memory_segments)} ({len(code_segments)} code, {len(data_segments)} data)", print_both=print_both)
         
         if code_segments:
             memory_log(f"Code Segments:", print_both=print_both)

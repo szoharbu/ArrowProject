@@ -114,7 +114,7 @@ def generate_data_from_DataUnits(data_segments):
 
         state_manager.set_active_state(state)
         curr_state = state_manager.get_active_state()
-        memory_manager = curr_state.memory_manager
+        segment_manager = curr_state.segment_manager
 
         segment_name = segment.name
         segment_address = hex(segment.address)
@@ -126,7 +126,7 @@ def generate_data_from_DataUnits(data_segments):
         # First, process initialized data (go to .data section)
         tmp_data_code += get_output(location="data_segment_header", segment_name=segment_name)
         
-        data_unit_list = memory_manager.get_segment_dataUnit_list(segment.name)
+        data_unit_list = segment_manager.get_segment_dataUnit_list(segment.name)
 
 
         if segment.memory_type == Configuration.Memory_types.DATA_SHARED:
@@ -232,7 +232,7 @@ def generate_data_from_DataUnits(data_segments):
         # Now, process uninitialized data (go to .bss section)
         tmp_data_code += get_output(location="bss_segment_header", segment_name=segment_name)
 
-        data_unit_list = memory_manager.get_segment_dataUnit_list(segment.name)
+        data_unit_list = segment_manager.get_segment_dataUnit_list(segment.name)
         for data_unit in data_unit_list:
             name = data_unit.name if data_unit.name is not None else 'no-name'
             # unique_label = data_dict.get('unique_label', 'None')
@@ -317,18 +317,18 @@ def generate_assembly():
     all_data_segments = []
 
     orig_state = state_manager.get_active_state()
-    cores_states = state_manager.list_states()
+    cores_states = state_manager.get_all_states()
     for core_state in cores_states:
         state_manager.set_active_state(core_state)
         curr_state = state_manager.get_active_state()
 
-        all_code_segments.extend(curr_state.memory_manager.get_segments(
+        all_code_segments.extend(curr_state.segment_manager.get_segments(
             pool_type=[Configuration.Memory_types.BSP_BOOT_CODE,
                        Configuration.Memory_types.BOOT_CODE,
                        Configuration.Memory_types.CODE]))
 
         # Need to pass the data segments along with their state, as its needed for the data generation
-        current_state_data_segments = curr_state.memory_manager.get_segments(
+        current_state_data_segments = curr_state.segment_manager.get_segments(
             pool_type=[Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE, Configuration.Memory_types.STACK])
         current_state_data_segments_with_state = [(datasegment, core_state) for datasegment in current_state_data_segments]
         all_data_segments.extend(current_state_data_segments_with_state)
@@ -376,7 +376,8 @@ def handle_barrier_vector(data_unit):
     barrier_manager = get_barrier_manager()
     barriers = barrier_manager.get_all_barriers()
     for barrier in barriers:
-        if barrier.memory.name in data_unit.name:
+        barrier_memory = barrier.get_memory()
+        if barrier_memory.name in data_unit.name:
             # go over all the registered cores and set the init value to the barrier vector
             core_vector = 0x0
             registered_cores = barrier.get_all_registered_cores()

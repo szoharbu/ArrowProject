@@ -185,7 +185,7 @@ class ArmBuildPipeline(BuildPipeline):
 
         # TODO:: refactor this code and take cores_counts from elsewhere.
         state_manager = get_state_manager()
-        cpu_count = len(state_manager.list_states())
+        cpu_count = len(state_manager.get_all_states())
         # set bit for each core
         core_activation_vector = 0
         for i in range(cpu_count):
@@ -247,13 +247,13 @@ class ArmBuildPipeline(BuildPipeline):
 
             # Get all memory segments per state
             state_manager = get_state_manager()
-            cores_states = state_manager.list_states()
+            cores_states = state_manager.get_all_states()
             for core_state in cores_states:
                 state_manager.set_active_state(core_state)
                 curr_state = state_manager.get_active_state()
 
-                memory_manager = curr_state.memory_manager
-                state_segments = memory_manager.get_segments(pool_type=[
+                segment_manager = curr_state.segment_manager
+                state_segments = segment_manager.get_segments(pool_type=[
                     Configuration.Memory_types.BSP_BOOT_CODE, 
                     Configuration.Memory_types.BOOT_CODE, 
                     Configuration.Memory_types.CODE,
@@ -297,7 +297,7 @@ class ArmBuildPipeline(BuildPipeline):
                         f.write("  } > main_mem\n\n")
                 
                 # Add standard sections
-                stack_data_start_address = curr_state.memory_manager.get_stack_data_start_address()
+                stack_data_start_address = curr_state.segment_manager.get_stack_data_start_address()
                 f.write(f"  .stack {hex(stack_data_start_address)} : AT({hex(stack_data_start_address)})\n")
                 f.write("  {\n")
                 f.write("    *(.stack)\n")
@@ -343,12 +343,12 @@ class ArmBuildPipeline(BuildPipeline):
     def get_bsp_boot_code_start_label(self):
         state_manager = get_state_manager()
         bsp_segments = []
-        for state in state_manager.list_states():
+        for state in state_manager.get_all_states():
             state_manager.set_active_state(state)
             current_state = get_current_state()
-            memory_manager = current_state.memory_manager
+            segment_manager = current_state.segment_manager
             try:
-                bsp_segments.extend(memory_manager.get_segments(pool_type=[Configuration.Memory_types.BSP_BOOT_CODE]))
+                bsp_segments.extend(segment_manager.get_segments(pool_type=[Configuration.Memory_types.BSP_BOOT_CODE]))
             except ValueError as e:
                 pass        
         
