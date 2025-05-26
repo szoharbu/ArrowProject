@@ -1,4 +1,3 @@
-
 from Utils.logger_management import get_logger
 from Utils.configuration_management import get_config_manager
 from Tool.stages.final_stage.json_dump import generation_json_dump, memory_usage_json_dump
@@ -41,8 +40,15 @@ def final_section():
 def close_instruction_db():
     logger = get_logger()
     # Close the database connection
-    Instruction = get_instruction_db()
-    Instruction._meta.database.close()
+    db_models = get_instruction_db()
+    
+    if isinstance(db_models, dict):
+        # ARM case - returns dict with Instruction and Operand models
+        Instruction = db_models['Instruction']
+        Instruction._meta.database.close()
+    else:
+        # Standard case - returns Instruction model directly
+        db_models._meta.database.close()
 
     logger.debug(f"------ close DB connection")
 

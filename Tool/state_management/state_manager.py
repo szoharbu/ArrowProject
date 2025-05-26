@@ -56,6 +56,11 @@ class State_manager:
         if state_id in self.states_dict:
             raise ValueError(f"State with ID {state_id} already exists.")
         self.states_dict[state_id] = state
+        
+        # Force initialize memory space manager for this state
+        from Tool.memory_management.memory_space_manager import get_memory_space_manager
+        memory_space_manager = get_memory_space_manager()
+        memory_space_manager.force_initialize_state(state_id)
 
     # def remove_state(self, state_id: str, state: State):
 

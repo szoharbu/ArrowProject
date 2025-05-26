@@ -110,8 +110,9 @@ class MemorySpaceManager:
         # Track allocations for cross-page references
         self.allocations = []  # List of MemoryAllocation objects
         
-        # Initialize per-state VA intervals for all current states
-        self._initialize_all_states()
+        # Don't initialize states here - they don't exist yet!
+        # States will be initialized when they're added via force_initialize_state()
+        memory_log("MemorySpaceManager initialized - states will be initialized when added")
     
     def _initialize_all_states(self):
         """Initialize intervals for all known states"""
@@ -919,6 +920,11 @@ class MemorySpaceManager:
             print_allocation_summary(state_allocations, "    ", verbose)
         
         memory_log("==== END MEMORY SUMMARY ====")
+
+    def force_initialize_state(self, state_name):
+        """Force initialization of a specific state"""
+        memory_log(f"Force initializing state: {state_name}")
+        self._initialize_state(state_name)
 
 
 # Factory function to retrieve the MemorySpaceManager instance

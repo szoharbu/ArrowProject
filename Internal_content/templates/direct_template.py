@@ -15,6 +15,7 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 # Done:: debug code branching issue with WFIT (thread0 is waking after sleep state to threa1 code)
 # Done:: Add ability to use "with core" that will allow same scenario to address multiple cores
 # Done:: Need to add ability for Memblock to me aligned, using .align(4) or .align(8), and set some default
+# TODO:: add logic to check that every get_and_reserve is freed at the end of the scenario scope.
 # TODO:: create an lst like file, that shows both lips from the objdump and the asm+comment+file+line from the asm file
 # TODO:: Barrier
     # Done:: Work on barrier , add barrier manager to take care of uniuq names and mem addresses
@@ -32,10 +33,10 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 
 
 Configuration.Knobs.Config.core_count.set_value(2)
-Configuration.Knobs.Template.scenario_count.set_value(1)
+Configuration.Knobs.Template.scenario_count.set_value(10)
 #Configuration.Knobs.Template.scenario_query.set_value({"simple_cache_scenario":100, "WFIT_CROSS_SPE_scenario": 0, Configuration.Tag.REST: 1})
-Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
-#Configuration.Knobs.Template.scenario_query.set_value({"ldstcc_release_rar_check": 100, Configuration.Tag.REST: 1})
+#Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
+Configuration.Knobs.Template.scenario_query.set_value({"ldstcc_release_rar_check": 100, Configuration.Tag.REST: 1})
 
 
 @AR.scenario_decorator(random=True, )
@@ -43,22 +44,31 @@ def random_instructions():
     AR.comment("inside random_instructions")
 
     AR.asm("nop")
-    
+    import time
+    start_time = time.time()
+    for _ in range(10):
+        AR.generate()
+    print(f"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx time= {time.time() - start_time}")
+    start_time = time.time()
+    for _ in range(40):
+        AR.generate(query=(AR.Instruction.mnemonic.contains("ldsetal")))
+    print(f"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx time= {time.time() - start_time}")
+
+
     with AR.Loop(counter=10):
         for _ in range(10):
             AR.asm("nop")
-        #AR.generate(instruction_count=10)
+#        AR.generate(instruction_count=10)
     
     return 
+    for _ in range(10):
 
-        # for _ in range(10):
-
-        #     AR.asm("nop")
-        #     AR.generate()
-        #     reg = RegisterManager.get(reg_type="gpr")
-        #     AR.generate(src=reg)
-        #     AR.generate(dest=reg, comment=f"use reg as {reg} as dest")
-        #     RegisterManager.free(reg)
+        AR.asm("nop")
+        AR.generate()
+        reg = RegisterManager.get(reg_type="gpr")
+        AR.generate(src=reg)
+        AR.generate(dest=reg, comment=f"use reg as {reg} as dest")
+        RegisterManager.free(reg)
 
     return
 
