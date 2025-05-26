@@ -47,3 +47,7 @@ def barrier_arm(barrier_name: str):
 
     AsmLogger.comment("Barrier reached - all cores have arrived")
     AsmLogger.comment(f"==== finished barrier sequence - {barrier_name} ====")
+
+    register_manager.free(reg1)
+    register_manager.free(reg2)
+    register_manager.free(reg3)

@@ -3,7 +3,7 @@ from typing import Optional
 from Tool.asm_blocks import DataUnit
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_state_manager, get_current_state
 from Tool.memory_management.utils import convert_int_value_to_bytes, memory_log
 
 '''
@@ -170,7 +170,6 @@ class MemoryBlock:
                                  f"cross_core={self.cross_core}]")
 
         memory_log(self.memory_block_str)
-        logger.debug(self.memory_block_str)
         # print(self.memory_block_str)
 
         # add self to the memory_segment's memory_block_list
@@ -183,9 +182,12 @@ class MemoryBlock:
             current_state_name = curr_state.state_name            
             for state_name, data_unit in per_state_data_units.items():
                 if state_name != current_state_name:
+                    state_manager.set_active_state(state_name)
                     # Create a cross-core copy
                     copy_block = MemoryBlock.create_cross_core_copy(self, state_name, data_unit)
                     per_state_cross_core_blocks[state_name] = copy_block
+
+            state_manager.set_active_state(current_state_name)
 
         self.cross_core_blocks = per_state_cross_core_blocks
         
@@ -236,35 +238,16 @@ class MemoryBlock:
         # Set the data unit
         copy.data_unit = data_unit
         
-        state_manager = get_state_manager()
-        orig_state = state_manager.get_active_state()
-        state_manager.set_active_state(state_name)
-        tmp_state = state_manager.get_active_state()
+        tmp_state = get_current_state()
 
         # Set up remaining properties based on the data unit
         copy.memory_segment_name = data_unit.memory_segment_id
         copy.memory_segment = tmp_state.segment_manager.get_segment(copy.memory_segment_name)
-
-        state_manager.set_active_state(orig_state.state_name)
         
         # Set up memory addresses based on execution platform
-        config_manager = get_config_manager()
-        execution_platform = config_manager.get_value('Execution_platform')
-        if execution_platform == 'baremetal':
-            # Set up baremetal-specific properties
-            copy.address = data_unit.address
-            copy.offset_from_segment_start = copy.address - copy.memory_segment.address
-            copy.pa_address = copy.memory_segment.pa_address + copy.offset_from_segment_start
-            copy.base_reg = None
-            copy.base_reg_value = None
-            copy.offset = None
-        else:
-            copy.address = None
-            copy.offset_from_segment_start = None
-            copy.pa_address = None
-            copy.base_reg = None
-            copy.base_reg_value = None
-            copy.offset = None
+        copy.address = data_unit.address
+        copy.offset_from_segment_start = copy.address - copy.memory_segment.address
+        copy.pa_address = copy.memory_segment.pa_address + copy.offset_from_segment_start
         
         # Generate the string representation
         copy.memory_block_str = (f"[MemoryBlock {state_name}: name={copy.name}, "
@@ -281,7 +264,6 @@ class MemoryBlock:
         
         # Log the new block
         memory_log(copy.memory_block_str)
-        get_logger().debug(copy.memory_block_str)
         
         # Add to memory segment
         copy.memory_segment.memory_block_list.append(copy)

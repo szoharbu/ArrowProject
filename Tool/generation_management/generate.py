@@ -42,28 +42,17 @@ def generate(
     if instruction_debug_prints:
         print(f"--------------------- generate -------------------------")
 
-    asl_extract = True  # TODO:: remove this after testing!!!!
-    if Configuration.Architecture.arm and asl_extract:
-        from Externals.db_manager.asl_testing import asl_models
-        from peewee import SqliteDatabase
-
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        db_path = os.path.join(base_dir, '..', 'Externals', 'db_manager', 'db', 'arm_instructions_isalib.db')
-
-        # Check if the file exists
-        if not os.path.exists(db_path):
-            raise ValueError(f"SQL DB file not found: {db_path}")
-
-        sql_db = SqliteDatabase(db_path)
-        asl_models.Instruction._meta.database = sql_db
-        asl_models.Operand._meta.database = sql_db
-
-        sql_db.connect()
-        Instruction = asl_models.Instruction
-        Operand = asl_models.Operand
+    # Get optimized database connection (handles ARM ASL case automatically)
+    db_models = get_instruction_db()
+    
+    if isinstance(db_models, dict):
+        # ARM ASL case - returns dict with Instruction and Operand
+        Instruction = db_models['Instruction']
+        Operand = db_models['Operand']
     else:
-        # Get the bound Instruction model
-        Instruction = get_instruction_db()
+        # Standard case - returns Instruction model only
+        Instruction = db_models
+        Operand = None
 
     # Start with a base query for instructions
     query_filter = Instruction.select()
@@ -86,7 +75,6 @@ def generate(
 
     # If query is an existing Expression or dict, add it to the query_filter
     if query:
-        # query_filter = query_filter.where(Instruction.mnemonic.contains("mul"))
         if isinstance(query, Expression):
             # If query is a single expression, apply it directly
             query_filter = query_filter.where(query)
@@ -100,51 +88,41 @@ def generate(
 
     # Add operand-based filters (if provided)
     if src is not None:
-        query_filter = add_operand_filter(query_filter, src, role="src")
-
+        query_filter = add_operand_filter(query_filter, src, role="src", Instruction=Instruction, Operand=Operand)
     if dest is not None:
-        query_filter = add_operand_filter(query_filter, dest, role="dest")
+        query_filter = add_operand_filter(query_filter, dest, role="dest", Instruction=Instruction, Operand=Operand)
 
-    # Fetch all matching instructions and select one at random
-    instructions = list(query_filter)
-
-    if not instructions:
+    instruction_count_in_db = query_filter.count()
+    if instruction_count_in_db == 0:
         raise ValueError("No instructions found matching the specified criteria.")
 
     instruction_list = []
     for _ in range(instruction_count):
-
-        # selected_instruction = random.choice(instructions)
-
-        # modify the logic from a random choice the below logic that will select the first valid instruction, as at this stage the ASL parser is not 100% reliable
-        # TODO:: remove this after the ASL parser is 100% reliable
-
-        # print(f"   Selecting a valid instruction from {len(instructions)} instructions")
-        random.shuffle(instructions)
-
+        # Use database OFFSET to get a random instruction (including invalid ones)
+        # Try up to 10 times to find a valid instruction (same retry logic as before)
         selected_instruction = None
-        for instruction in instructions:
-            if instruction.is_valid:
-                selected_instruction = instruction
+        for attempt in range(10):
+            random_offset = random.randint(0, instruction_count_in_db - 1)
+            candidate_instruction = query_filter.offset(random_offset).limit(1).first()
+           
+            if candidate_instruction and candidate_instruction.is_valid:
+                selected_instruction = candidate_instruction
                 break
+            elif candidate_instruction:
+                # Log invalid instructions (same as original behavior)
+                if instruction_debug_prints:
+                    print(f"        ⚠️   Skipping instruction!!! instruction {candidate_instruction.syntax} is not parsed correctly yet.")
+       
+        if not selected_instruction:
+            raise ValueError("No valid instructions found matching the specified criteria after multiple attempts.")
 
-            instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
-            if instruction_debug_prints:
-                print(f"        ⚠️   Skipping instruction!!! instruction {instruction.syntax} is not parsed correctly yet.")
-
-        if selected_instruction is None:
-            raise ValueError("No valid instructions found matching the specified criteria.")
-
-        # print_instruction(selected_instruction)
-
+        # Generate the instruction based on architecture
         if Configuration.Architecture.x86:
             gen_instructions = generate_x86(selected_instruction, src, dest, comment=comment)
         elif Configuration.Architecture.riscv:
             gen_instructions = generate_riscv(selected_instruction, src, dest, comment=comment)
-        elif Configuration.Architecture.arm and asl_extract:
-            gen_instructions = generate_arm_asl(selected_instruction, src, dest, comment=comment)
         elif Configuration.Architecture.arm:
-            gen_instructions = generate_arm(selected_instruction, src, dest, comment=comment)
+            gen_instructions = generate_arm_asl(selected_instruction, src, dest, comment=comment)
         else:
             raise ValueError(f"Unknown Architecture requested")
 
@@ -153,37 +131,8 @@ def generate(
     return instruction_list
 
 
-def add_operand_filter(query_filter, operand, role):
-
-    asl_extract = True  # TODO:: remove this after fixing this code!!!!
-    if Configuration.Architecture.arm and asl_extract:
-        from Externals.db_manager.asl_testing import asl_models
-        from peewee import SqliteDatabase
-
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        db_path = os.path.join(base_dir, '..', 'Externals', 'db_manager', 'db', 'arm_instructions_isalib.db')
-
-        # Check if the file exists
-        if not os.path.exists(db_path):
-            raise ValueError(f"SQL DB file not found: {db_path}")
-
-        sql_db = SqliteDatabase(db_path)
-        asl_models.Instruction._meta.database = sql_db
-        asl_models.Operand._meta.database = sql_db
-
-        sql_db.connect()
-        Instruction = asl_models.Instruction
-        Operand = asl_models.Operand
-    else:
-        # Get the bound Instruction model
-        Instruction = get_instruction_db()
-
-    # for instr in query:
-    #     print(f"    Instruction: {instr.unique_id} | {instr.mnemonic} | {instr.syntax} ")
-    #     extracted_operands = Operand.select().where(Operand.instruction == instr)
-    #     for op in extracted_operands:
-    #         print(f"      name: {op.name}, index: {op.index}, Text: {op.text}, Type: {op.type}, Role: {op.role}, Size: {op.size} ")
-    # print(f"Total instructions before filter:  { len(query_filter)}")
+def add_operand_filter(query_filter, operand, role, Instruction, Operand):
+    """Add operand-based filters to the query using provided Instruction and Operand models"""
 
     config_manager = get_config_manager()
     instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')
@@ -195,7 +144,9 @@ def add_operand_filter(query_filter, operand, role):
         if operand.type == "sve_pred" and (int(operand.name[1:]) >= 8):
             # if type is of Predicate (P1-P16) and op.name is higher than P7, need to make sure we are querying for width of 4 and not 3. lower Predicates can have both width 3 and 4.
             # Then join Operand if not already joined, and add filters from Operand
-
+            if Operand is None:
+                raise ValueError("Operand model not available for sve_pred filtering")
+                
             query_filter = query_filter.join(Operand).where(
                 (Operand.role == role) &
                 (Operand.type == "sve_pred") &
@@ -231,3 +182,4 @@ def add_operand_filter(query_filter, operand, role):
         )
 
     return query_filter
+

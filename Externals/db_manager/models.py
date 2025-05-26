@@ -80,7 +80,16 @@ class Instruction(Model):
 
 # Factory function to retrieve the InstructionDB instance
 def get_instruction_db(architecture:str=None):
-    """Get a cached Instruction model or create a new one bound to the correct database."""
+    """Get a cached Instruction model or create a new one bound to the correct database.
+    
+    Args:
+        architecture: Target architecture (defaults to current config)
+    
+    Returns:
+        For ARM with Asl_extract=True: dict with 'Instruction' and 'Operand' models
+        For other cases: Instruction model only
+    """
+    
     # Access or initialize the singleton variable
     model_cache_instance = SingletonManager.get("model_cache_instance", default=None)
 
@@ -90,15 +99,57 @@ def get_instruction_db(architecture:str=None):
     if model_cache_instance is None:
         model_cache_instance = {}
 
+
     if architecture not in model_cache_instance:
-        db_path = get_db_path(architecture)
-        sql_db = SqliteDatabase(db_path)
-        # Properly rebind the model to the new database
-        Instruction.bind_to_database(sql_db)
-        # Reset the database connection state (if lingering)
-        if not sql_db.is_closed():
-            sql_db.close()
-        model_cache_instance[architecture] = Instruction
+        if architecture == 'arm':
+            # ARM ASL case with optimized pragmas
+            from Externals.db_manager.asl_testing import asl_models
+            
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            db_path = os.path.join(base_dir, 'db_manager', 'db', 'arm_instructions_isalib.db')
+            
+            if not os.path.exists(db_path):
+                raise ValueError(f"SQL DB file not found: {db_path}")
+            
+            # Create optimized SQLite connection for read-only, single-process usage
+            sql_db = SqliteDatabase(db_path, pragmas={
+                # Memory and caching
+                'cache_size': -64000,       # 64MB cache (negative = KB)
+                'temp_store': 'memory',     # Store temp tables/indices in memory
+                'mmap_size': 268435456,     # 256MB memory-mapped I/O
+                
+                # Performance optimizations (safe for read-only, single-process)
+                'journal_mode': 'off',      # No journaling needed for read-only (fastest)
+                'synchronous': 'off',       # No sync needed for read-only (fastest)
+                'locking_mode': 'exclusive', # Exclusive lock for single-process (faster)
+                
+                # Read-only optimizations
+                'query_only': 'true',       # Read-only mode (safe since you never write)
+                'read_uncommitted': 'true', # Allow dirty reads (safe for single-process read-only)
+                
+                # Query and connection optimizations
+                'optimize': None,           # Run PRAGMA optimize on connection
+            })
+            
+            asl_models.Instruction._meta.database = sql_db
+            asl_models.Operand._meta.database = sql_db
+            sql_db.connect()
+            
+            # Cache both Instruction and Operand models
+            model_cache_instance[architecture] = {
+                'Instruction': asl_models.Instruction,
+                'Operand': asl_models.Operand
+            }
+        else:
+            # Standard case for other architectures or ARM without ASL
+            db_path = get_db_path(architecture)
+            sql_db = SqliteDatabase(db_path)
+            # Properly rebind the model to the new database
+            Instruction.bind_to_database(sql_db)
+            # Reset the database connection state (if lingering)
+            if not sql_db.is_closed():
+                sql_db.close()
+            model_cache_instance[architecture] = Instruction
 
         SingletonManager.set("model_cache_instance", model_cache_instance)
 
