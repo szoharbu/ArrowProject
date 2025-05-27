@@ -62,12 +62,12 @@ def generate_arm_asl(
 
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
         dynamic_init_memory_address_reg = RegisterManager.get_and_reserve()
-        comment = f"dynamic init: loading {dynamic_init_memory_address_reg} for next instruction ({hex(memory_operand.address)}:{hex(memory_operand.pa_address)})"
+        comment = f"dynamic init: loading {dynamic_init_memory_address_reg} for next instruction ({hex(memory_operand.get_address())}:{hex(memory_operand.get_pa_address())})"
         if memory_operand.reused_memory:
-            comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} ({hex(memory_operand.address)}:{hex(memory_operand.pa_address)}) for next instruction"
+            comment = f"dynamic init: loading {dynamic_init_memory_address_reg} with reused memory {memory_operand.unique_label} ({hex(memory_operand.get_address())}:{hex(memory_operand.get_pa_address())}) for next instruction"
 
         dynamic_init_instruction = GeneratedInstruction(mnemonic='ldr', operands=[dynamic_init_memory_address_reg,
-                                                                                  f"={memory_operand.memory_block.get_label()}"],
+                                                                                  f"={memory_operand.memory_block.get_label()}+{memory_operand.memory_block_offset}"],
                                                         comment=comment)
         
 

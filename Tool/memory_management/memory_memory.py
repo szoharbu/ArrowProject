@@ -50,7 +50,7 @@ class Memory:
         Memory._memory_initial_seed_id += 1
         self.name = name if name is not None else f"mem{Memory._memory_initial_seed_id}"
         self.unique_label = self.name if name is None else f"{self.name}_mem{Memory._memory_initial_seed_id}"
-        self.address = address
+        self._address = address
         self.byte_size = byte_size
         self.memory_type = memory_type
         self.init_value = init_value
@@ -81,11 +81,11 @@ class Memory:
             if shared is None:
                 raise ValueError("Memory.shared can't be provided when using a memory_block.")
             if self.byte_size > self.memory_block.byte_size:
-                raise ValueError("Memory.byte_size cannot exceed MemoryBlock byte_size.")
+                raise ValueError(f"Memory.byte_size cannot exceed MemoryBlock byte_size. Memory.byte_size: {self.byte_size}, MemoryBlock byte_size: {self.memory_block.byte_size}")
             if self.memory_block_offset < 0:
-                raise ValueError("Memory.memory_block_offset cannot be negative.")
+                raise ValueError(f"Memory.memory_block_offset cannot be negative. Memory.memory_block_offset: {self.memory_block_offset}")
             if self.memory_block_offset + self.byte_size > self.memory_block.byte_size:
-                raise ValueError("Memory byte_size + offset cannot exceed MemoryBlock byte_size.")
+                raise ValueError(f"Memory byte_size + offset cannot exceed MemoryBlock byte_size. Memory byte_size: {self.byte_size}, MemoryBlock byte_size: {self.memory_block.byte_size}, Memory.memory_block_offset: {self.memory_block_offset}")
 
         # if address is not None and _parent_block is None:
         #     raise ValueError("Memory with address constraints is not supported at the moment.")
@@ -122,7 +122,7 @@ class Memory:
                 rand_num = random.randint(0,100)
                 should_reuse = True if (rand_num < reuse_memory_probability) else False
 
-                if should_reuse and (name is None) and (self.address is None) and (self.init_value is None):
+                if should_reuse and (name is None) and (self._address is None) and (self.init_value is None):
                     # reuse memory only applicable for DATA_SHARED memory, and when no explicit parameter were asked. Notice I'm checking name and not self.name for that usage
                     self.memory_block = curr_state.segment_manager.get_used_memory_block(byte_size=byte_size)
                     # check if such shared memory_block exist
@@ -139,14 +139,14 @@ class Memory:
                     # In 50% probability, allocate a bigger memory block to allow later sharing with overlapping
                     byte_size_extension = choice.choice(values={0:50, random.randint(1, 10):45, random.randint(10, 20):5})
                     new_byte_size = self.byte_size + byte_size_extension
-                    self.memory_block = MemoryBlock(name=self.unique_label, byte_size=new_byte_size, address=self.address,
+                    self.memory_block = MemoryBlock(name=self.unique_label, byte_size=new_byte_size, address=self._address,
                                                     memory_type=self.memory_type, shared=shared, alignment=self.alignment,
                                                     init_value=self.init_value, _use_name_as_unique_label=True)
                     max_offset = new_byte_size - self.byte_size
                     self.memory_block_offset = random.randint(0, max_offset)
             else:
                 # creating a dedicated MemoryBlock
-                self.memory_block = MemoryBlock(name=self.unique_label, byte_size=self.byte_size, address=self.address,
+                self.memory_block = MemoryBlock(name=self.unique_label, byte_size=self.byte_size, address=self._address,
                                                 memory_type=self.memory_type, shared=shared, init_value=self.init_value, 
                                                 cross_core=self.cross_core, _use_name_as_unique_label=True, alignment=self.alignment)
                 self.memory_block_offset = 0x0
@@ -163,17 +163,27 @@ class Memory:
 
             self.reused_memory = False
 
-        self.address = self.memory_block.get_address() + self.memory_block_offset
-        self.pa_address = self.memory_block.get_pa_address() + self.memory_block_offset
+        self._address = self.memory_block.get_address() + self.memory_block_offset
+        self._pa_address = self.memory_block.get_pa_address() + self.memory_block_offset
         self.cross_core = self.memory_block.cross_core
 
         logger = get_logger()
 
-        self.memory_str = f"Memory access: [ name={self.name}, address={hex(self.address)}, pa_address={hex(self.pa_address)}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}, cross_core={self.cross_core} ]"
+        self.memory_str = f"Memory access: [ name={self.name}, address={hex(self._address)}, pa_address={hex(self._pa_address)}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}, cross_core={self.cross_core} ]"
   
         memory_log(self.memory_str)
         logger.debug(self.memory_str)
         #print(self.memory_str)
+
+    def get_address(self):
+        if self.cross_core:
+            curr_state = get_state_manager().get_active_state()
+            return self.memory_block.cross_core_blocks[curr_state.state_name].get_address()+self.memory_block_offset
+        else:
+            return self._address
+
+    def get_pa_address(self):
+        return self._pa_address
 
     def get_label(self):
         if self.cross_core:

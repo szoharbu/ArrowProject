@@ -66,7 +66,7 @@ class MemoryBlock:
             self.unique_label = self.name
         else:
             self.unique_label = self.name if name is None else f"{self.name}_mem{MemoryBlock._memory_block_initial_seed_id}"
-        self.address = address
+        self._address = address
         self.byte_size = byte_size
         self.memory_type = memory_type
         self.shared = shared
@@ -245,15 +245,15 @@ class MemoryBlock:
         copy.memory_segment = tmp_state.segment_manager.get_segment(copy.memory_segment_name)
         
         # Set up memory addresses based on execution platform
-        copy.address = data_unit.address
-        copy.offset_from_segment_start = copy.address - copy.memory_segment.address
-        copy.pa_address = copy.memory_segment.pa_address + copy.offset_from_segment_start
+        copy._address = data_unit.address
+        copy.offset_from_segment_start = copy._address - copy.memory_segment.address
+        copy._pa_address = copy.memory_segment.pa_address + copy.offset_from_segment_start
         
         # Generate the string representation
         copy.memory_block_str = (f"[MemoryBlock {state_name}: name={copy.name}, "
                                 f"memory_segment_name={copy.memory_segment_name}, "
-                                f"address={hex(copy.address) if copy.address else 'None'}, "
-                                f"pa_address={hex(copy.pa_address) if copy.pa_address else 'None'}, "
+                                f"address={hex(copy._address) if copy._address else 'None'}, "
+                                f"pa_address={hex(copy._pa_address) if copy._pa_address else 'None'}, "
                                 f"unique_label={copy.unique_label}, "
                                 f"shared={copy.shared}, "
                                 f"bytesize={copy.byte_size}, "
