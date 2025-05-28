@@ -18,14 +18,27 @@ def barrier_arm(barrier_name: str):
     reg1 = register_manager.get_and_reserve()
     reg2 = register_manager.get_and_reserve()
     reg3 = register_manager.get_and_reserve()
-    # Get the current core ID
-    AsmLogger.comment("Get the current core ID")
+    # Get the current core ID from MPIDR_EL1
     AsmLogger.asm(f"mrs {reg1}, mpidr_el1")
-    AsmLogger.asm(f"ubfx {reg1.as_size(32)}, {reg1.as_size(32)}, #0, #3", comment=f"Extract bits 0, 1 and 2 into w0")
+    
+    # Create a simple sequential core ID mapping for this 4-core system:
+    # 0x81000000 -> 0, 0x81000001 -> 1, 0x81010000 -> 2, 0x81010001 -> 3
+    
+    # Extract Aff0 (core within cluster) - bits [7:0]
+    AsmLogger.asm(f"and {reg2.as_size(32)}, {reg1.as_size(32)}, #0xff", comment="Extract Aff0 (core within cluster)")
+    
+    # Extract Aff2 (cluster ID) - bits [23:16] 
+    AsmLogger.asm(f"lsr {reg3}, {reg1}, #16", comment="Shift right by 16 to get Aff2 in lower bits")
+    AsmLogger.asm(f"and {reg3.as_size(32)}, {reg3.as_size(32)}, #0xff", comment="Extract Aff2 (cluster ID)")
+    
+    # Create sequential core ID: (cluster_id * 2) + core_in_cluster
+    # This gives: cluster0_core0=0, cluster0_core1=1, cluster1_core0=2, cluster1_core1=3
+    AsmLogger.asm(f"lsl {reg3.as_size(32)}, {reg3.as_size(32)}, #1", comment="cluster_id * 2 (2 cores per cluster)")
+    AsmLogger.asm(f"add {reg1.as_size(32)}, {reg2.as_size(32)}, {reg3.as_size(32)}", comment="sequential_core_id = core_in_cluster + (cluster_id * 2)")
 
     AsmLogger.comment("Calculate the bit position for this core")
     AsmLogger.asm(f"mov {reg2.as_size(32)}, #1")
-    AsmLogger.asm(f"lsl {reg2.as_size(32)}, {reg2.as_size(32)}, {reg1.as_size(32)}", comment=f"w1 = 1 << core_id")
+    AsmLogger.asm(f"lsl {reg2.as_size(32)}, {reg2.as_size(32)}, {reg1.as_size(32)}", comment=f"w1 = 1 << unique_core_id")
 
     AsmLogger.comment("Set this core's bit in the barrier vector (active low)")
 

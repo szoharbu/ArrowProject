@@ -15,6 +15,17 @@ class Memory_types(Enum):
     DATA_PRESERVE = "data_reserved"
     STACK = "stack"
 
+class Execution_context(Enum):
+    EL3 = "EL3" # Secure Monitor (Root/EL3)
+    EL2_NS = "EL2_NS" # EL2, Non-secure Hypervisor
+    EL2_S = "EL2_S" # EL2, Secure Hypervisor (less common)
+    EL1_NS = "EL1_NS" # EL1, Non-secure
+    EL1_S = "EL1_S" # EL1, Secure
+    EL1_Realm = "EL1_Realm" # EL1, Realm (Armv9+)
+    EL0_NS = "EL0_NS" # User-space, Non-secure
+    EL0_S = "EL0_S" # User-space, Secure (TrustZone aware)
+    EL0_Realm = "EL0_Realm" # User-space in Realm world
+
 class Page_types(Enum):
     TYPE_CODE = "code"
     TYPE_DATA = "data"

@@ -4,7 +4,7 @@ from Utils.configuration_management.knobs import Knobs
 
 
 class Configuration:
-    from Utils.configuration_management.enums import Architecture, Memory_types, Page_types, Page_sizes, ByteSize, Tag, Priority, PRIORITY_WEIGHTS, Frequency
+    from Utils.configuration_management.enums import Architecture, Memory_types, Page_types, Page_sizes, ByteSize, Tag, Priority, PRIORITY_WEIGHTS, Frequency, Execution_context
 
     Architecture = Architecture
     Memory_types = Memory_types
@@ -15,6 +15,7 @@ class Configuration:
     Priority = Priority
     PRIORITY_WEIGHTS = PRIORITY_WEIGHTS
     Frequency = Frequency
+    Execution_context = Execution_context
 
     Knobs = Knobs()
 

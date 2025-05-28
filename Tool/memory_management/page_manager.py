@@ -92,15 +92,15 @@ class PageTableManager:
             raise ValueError(f"Could not find any aligned unmapped region where VA=PA is possible for size {size_bytes}")
         
         # Choose the first matching region
-        va_start, pa_start, region_size = aligned_regions[0]
+        va_start, pa_start, region_size = random.choice(aligned_regions)
         memory_log(f"Selected VA=PA unmapped region at address 0x{va_start:x} (VA=PA), size: {region_size}")
         
         return va_start, pa_start, region_size
 
-    def allocate_page(self, size:Configuration.Page_sizes=None, alignment_bits:int=None, page_type:Configuration.Page_types=None, permissions:int=None, cacheable:str=None, shareable:str=None, security:str=None, custom_attributes:dict=None, sequential_page_count:int=1, VA_eq_PA:bool=False):
+    def allocate_page(self, size:Configuration.Page_sizes=None, alignment_bits:int=None, page_type:Configuration.Page_types=None, permissions:int=None, cacheable:str=None, shareable:str=None, execution_context:Configuration.Execution_context=None, custom_attributes:dict=None, sequential_page_count:int=1, VA_eq_PA:bool=False):
         memory_log("\n")
         memory_log("======================== PageTableManager - allocate_page")
-        memory_log(f"==== size: {size}, alignment_bits: {alignment_bits}, page_type: {page_type}, permissions: {permissions}, cacheable: {cacheable}, shareable: {shareable}, security: {security}, custom_attributes: {custom_attributes}, sequential_page_count: {sequential_page_count}, VA_eq_PA: {VA_eq_PA}")
+        memory_log(f"==== size: {size}, alignment_bits: {alignment_bits}, page_type: {page_type}, permissions: {permissions}, cacheable: {cacheable}, shareable: {shareable}, execution_context: {execution_context}, custom_attributes: {custom_attributes}, sequential_page_count: {sequential_page_count}, VA_eq_PA: {VA_eq_PA}")
 
         if size is None:
             size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])#, Configuration.Page_sizes.SIZE_1G])
@@ -134,8 +134,8 @@ class PageTableManager:
             cacheable = Page.CACHE_WB
         if shareable is None:
             shareable = Page.SHARE_NONE
-        if security is None:
-            security = "non-secure"
+        if execution_context is None:
+            execution_context = Configuration.Execution_context.EL1_NS
         if custom_attributes is None:
             custom_attributes = {}
 
@@ -216,7 +216,7 @@ class PageTableManager:
                 permissions=permissions, 
                 cacheable=cacheable, 
                 shareable=shareable, 
-                security=security, 
+                execution_context=execution_context, 
                 custom_attributes=custom_attributes
             )
             
@@ -252,10 +252,10 @@ class PageTableManager:
         permissions = Page.PERM_READ | Page.PERM_WRITE | Page.PERM_EXECUTE
         cacheable = Page.CACHE_WB
         shareable = Page.SHARE_NONE
-        security = "non-secure"
+        execution_context = Configuration.Execution_context.EL1_NS
         custom_attributes = {}
 
-        memory_log(f"==== size: {size}, alignment_bits: {alignment_bits}, page_type: {page_type}, permissions: {permissions}, cacheable: {cacheable}, shareable: {shareable}, security: {security}, custom_attributes: {custom_attributes}")
+        memory_log(f"==== size: {size}, alignment_bits: {alignment_bits}, page_type: {page_type}, permissions: {permissions}, cacheable: {cacheable}, shareable: {shareable}, execution_context: {execution_context}, custom_attributes: {custom_attributes}")
 
         size_bytes = size.value
 
@@ -291,7 +291,7 @@ class PageTableManager:
                     permissions=permissions, 
                     cacheable=cacheable, 
                     shareable=shareable, 
-                    security=security, 
+                    execution_context=execution_context, 
                     custom_attributes=custom_attributes,
                     is_cross_core=True
                 )

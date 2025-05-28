@@ -1,3 +1,4 @@
+import random
 from Arrow_API import AR
 from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
 from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
@@ -19,5 +20,5 @@ def ldstcc_release_rar_check():
     with AR.SwitchState(state_name="core_1"):
         AR.Barrier(barrier_label)
         for _ in range(10):
-            AR.generate(query=(AR.Instruction.mnemonic.contains("stlr")), src=mem0)
-            AR.generate(query=(AR.Instruction.mnemonic.contains("ldar")), src=mem1)
+            AR.generate(query=(AR.Instruction.mnemonic.contains("stlr")), src=mem1)
+            AR.generate(query=(AR.Instruction.mnemonic.contains("ldar")), src=mem0)

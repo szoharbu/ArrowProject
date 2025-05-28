@@ -5,6 +5,7 @@ from Tool.state_management.switch_state import switch_code
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.branch_to_segment import branch_to_segment
 from Tool.asm_libraries.label import Label
+from Tool.asm_libraries.barrier.barrier import Barrier
 #from Tool.generation_management.generate import generate
 
 from Utils.APIs import choice
@@ -49,31 +50,28 @@ def do_boot():
     stack_data_start_address = curr_state.segment_manager.get_stack_data_start_address()
 
     AsmLogger.comment(f"Load the stack pointer (address of {stack_data_start_address})")
-    #AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
     AsmLogger.asm(f"ldr {tmp_reg1}, ={hex(stack_data_start_address)}")
-    #AsmLogger.asm(f"ldr {tmp_reg1}, {hex(stack_data_start_address)}")
-    # AsmLogger.asm(f"adrp {tmp_reg1}, {hex(stack_data_start_address)}", comment="read value of LABEL_TTBR0_EL3 from memory") 
-    # AsmLogger.asm(f"add {tmp_reg1}, {tmp_reg1}, :lo12:{hex(stack_data_start_address)}", comment="add low 12 bits of LABEL_TTBR0_EL3") 
-    # AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TTBR0_EL3")    
 
     AsmLogger.asm(f"mov {sp_reg}, {tmp_reg1}")
     register_manager.free(sp_reg)
 
-    # Configure CPU
-    # AsmLogger.comment("cpu_if_cfg")
-    # AsmLogger.asm("bl      cpu_if_cfg")
-    # AsmLogger.comment("isb")
-    # AsmLogger.asm("isb")
-    # AsmLogger.comment("core_interrupt_en")
-    # AsmLogger.asm("bl      core_interrupt_en")
-    # AsmLogger.comment("Jump to the test")
-    # AsmLogger.asm("b       test")
-
     # switch according to thread
     tmp_reg2 = register_manager.get_and_reserve(reg_type="gpr")
+    tmp_reg3 = register_manager.get_and_reserve(reg_type="gpr")
     AsmLogger.comment("switch according to thread")
     AsmLogger.asm(f"mrs {tmp_reg1}, mpidr_el1")
-    AsmLogger.asm(f"ubfx {tmp_reg2}, {tmp_reg1}, #0, #1    //thread_id")
+    
+    # Create sequential core ID mapping: 0x81000000->0, 0x81000001->1, 0x81010000->2, 0x81010001->3
+    # Extract Aff0 (core within cluster) - bits [7:0]
+    AsmLogger.asm(f"and {tmp_reg2.as_size(32)}, {tmp_reg1.as_size(32)}, #0xff", comment="Extract Aff0 (core within cluster)")
+    
+    # Extract Aff2 (cluster ID) - bits [23:16] 
+    AsmLogger.asm(f"lsr {tmp_reg3}, {tmp_reg1}, #16", comment="Shift right by 16 to get Aff2 in lower bits")
+    AsmLogger.asm(f"and {tmp_reg3.as_size(32)}, {tmp_reg3.as_size(32)}, #0xff", comment="Extract Aff2 (cluster ID)")
+    
+    # Create sequential core ID: (cluster_id * 2) + core_in_cluster
+    AsmLogger.asm(f"lsl {tmp_reg3.as_size(32)}, {tmp_reg3.as_size(32)}, #1", comment="cluster_id * 2")
+    AsmLogger.asm(f"add {tmp_reg2.as_size(32)}, {tmp_reg2.as_size(32)}, {tmp_reg3.as_size(32)}", comment="sequential_core_id = core_in_cluster + (cluster_id * 2)")
 
     curr_state = state_manager.get_active_state()
 
@@ -100,12 +98,10 @@ def do_boot():
 
     register_manager.free(tmp_reg1)
     register_manager.free(tmp_reg2)
+    register_manager.free(tmp_reg3)
 
-    # # setting back to boot code for the print, later return to selected block
-    # switch_code(bsp_boot_block)
-    # AsmLogger.comment(f"========================= BSP BOOT CODE - end =====================")
-    # switch_code(boot_block)
 
+    end_boot_barrier_label = Label("end_boot_barrier")
     for state in state_manager.states_dict:
         state_manager.set_active_state(state)
         curr_state = state_manager.get_active_state()
@@ -133,6 +129,8 @@ def do_boot():
         if not skip_boot:
             enable_pgt_page_table()
             #generate(instruction_count=10)
+            logger.debug("============ Boot end barrier")
+            Barrier(end_boot_barrier_label)
 
         # selecting random block to jump to for test body
         available_blocks = curr_state.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE)

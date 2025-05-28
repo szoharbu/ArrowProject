@@ -629,7 +629,7 @@ class SegmentManager:
                 #print(f"mem_block: {mem_block}")
                 if mem_block.byte_size >= byte_size:
                     memory_log(f"  Found valid memory block '{mem_block.name}' in segment '{segment.name}', "
-                               f"size: {mem_block.byte_size} bytes, address: {hex(mem_block.address if mem_block.address is not None else 0)}")
+                               f"size: {mem_block.byte_size} bytes, address: {hex(mem_block.get_address() if mem_block.get_address() is not None else 0)}")
                     valid_memory_blocks.append((segment, mem_block))
 
         if not valid_memory_blocks:
@@ -639,7 +639,7 @@ class SegmentManager:
         # Select a random memory block
         selected_segment, selected_memory_block = random.choice(valid_memory_blocks)
         memory_log(f"Selected memory block '{selected_memory_block.name}' from segment '{selected_segment.name}', "
-                   f"address: {hex(selected_memory_block.address if selected_memory_block.address is not None else 0)}, "
+                   f"address: {hex(selected_memory_block.get_address() if selected_memory_block.get_address() is not None else 0)}, "
                    f"size: {selected_memory_block.byte_size} bytes")
 
         return selected_memory_block

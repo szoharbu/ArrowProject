@@ -21,7 +21,7 @@ class Page:
     SHARE_OUTER = "outer-shareable"
     
     def __init__(self, va, pa, size, page_type=Configuration.Page_types, permissions=PERM_READ, 
-                 cacheable=CACHE_WB, shareable=SHARE_NONE, security="non-secure", 
+                 cacheable=CACHE_WB, shareable=SHARE_NONE, execution_context=Configuration.Execution_context.EL3, 
                  custom_attributes=None, is_cross_core=False):
         """
         Initialize a page mapping with detailed memory attributes.
@@ -34,7 +34,7 @@ class Page:
             permissions (int): Combination of PERM_READ, PERM_WRITE, PERM_EXECUTE
             cacheable (str): Cacheability setting
             shareable (str): Shareability domain
-            security (str): Security state (secure, non-secure, realm)
+            execution_context (Configuration.Execution_context): Execution context (EL3, EL1_NS, EL1_S, EL2_NS, EL2_S, EL0_NS, EL0_S, EL0_Realm)
             custom_attributes (dict): Any additional custom attributes
             is_cross_core (bool): Whether the page is cross-core
         """
@@ -45,7 +45,7 @@ class Page:
         self.permissions = permissions
         self.cacheable = cacheable
         self.shareable = shareable
-        self.security = security
+        self.execution_context = execution_context
         self.custom_attributes = custom_attributes or {}
         self.is_cross_core = is_cross_core
 
@@ -107,7 +107,7 @@ class Page:
             },
             "cacheable": self.cacheable,
             "shareable": self.shareable,
-            "security": self.security,
+            "execution_context": self.execution_context,
             **self.custom_attributes
         }
         

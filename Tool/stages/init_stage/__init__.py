@@ -85,6 +85,7 @@ def init_registers():
         # Preserving a register to be used as base_register
         curr_state.base_register = curr_state.register_manager.get_and_reserve()
 
+    state_manager.set_active_state("core_0")
 
 def init_page_tables():
     logger = get_logger()
@@ -105,15 +106,17 @@ def init_page_tables():
         current_state = get_current_state()
         page_table_manager = current_state.page_table_manager
 
-        for type in [Configuration.Page_types.TYPE_CODE, Configuration.Page_types.TYPE_DATA]:
-            count = random.randint(7, 10)
-            for _ in range(count):
-                sequential_page_count = choice(values={1:90, 2:9, 3:1})
-                size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])
-                page_table_manager.allocate_page(size=size, page_type=type, sequential_page_count=sequential_page_count)
-
         #Always allocate a code page table that has a VA=PA mapping, needed for BSP boot block
-        page_table_manager.allocate_page(size=Configuration.Page_sizes.SIZE_4K, page_type=Configuration.Page_types.TYPE_CODE, sequential_page_count=1, VA_eq_PA=True)
+        page_table_manager.allocate_page(size=Configuration.Page_sizes.SIZE_4K, page_type=Configuration.Page_types.TYPE_CODE, sequential_page_count=1, VA_eq_PA=True, execution_context=Configuration.Execution_context.EL3)
+
+        for execution_context in [Configuration.Execution_context.EL3, Configuration.Execution_context.EL1_NS]:
+            for type in [Configuration.Page_types.TYPE_CODE, Configuration.Page_types.TYPE_DATA]:
+                count = random.randint(6, 8)
+                for _ in range(count):
+                    sequential_page_count = choice(values={1:90, 2:9, 3:1})
+                    size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])
+                    page_table_manager.allocate_page(size=size, page_type=type, sequential_page_count=sequential_page_count, execution_context=execution_context)
+
 
     # Allocating one cross-core page, ensuring that all core will have one shared PA space
     page_table_manager.allocate_cross_core_page()
@@ -124,6 +127,7 @@ def init_page_tables():
         page_table_manager = current_state.page_table_manager
         page_table_manager.print_page_tables()
 
+    state_manager.set_active_state("core_0")
 
 
 def init_memory():
@@ -197,6 +201,7 @@ def init_memory():
                                                                            memory_type=Configuration.Memory_types.STACK)
         logger.debug(f"init_memory: allocating stack_segment {stack_segment}")
 
+    state_manager.set_active_state("core_0")
             
 
 
@@ -246,11 +251,7 @@ def init_section():
     init_registers()
     init_page_tables()
     init_memory()
-
     init_scenarios()
-    # Add additional needed initialization here
-    # Instruction loader
-    # ...
     print_memory_state(print_both=True)
 
 def ensure_submodule_initialized():
