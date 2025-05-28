@@ -325,13 +325,13 @@ def print_memory_state(memory_space_manager=None, segment_manager=None, print_bo
                 memory_log(f"------------ Code Pages ({len(code_pages)}):", print_both=print_both)
                 for i, page in enumerate(code_pages):
                     page_size = page.end_va - page.va + 1
-                    memory_log(f"---------------- Page {i}: VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}", print_both=print_both)
+                    memory_log(f"---------------- Page {i}: {page.execution_context.value}, VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}", print_both=print_both)
             
             if data_pages:
                 memory_log(f"------------ Data Pages ({len(data_pages)}):", print_both=print_both)
                 for i, page in enumerate(data_pages):
                     page_size = page.end_va - page.va + 1
-                    memory_log(f"---------------- Page {i}: VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}", print_both=print_both)
+                    memory_log(f"---------------- Page {i}: {page.execution_context.value}, VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}", print_both=print_both)
             
             if other_pages:
                 memory_log(f"------------ Other Pages ({len(other_pages)}):", print_both=print_both)

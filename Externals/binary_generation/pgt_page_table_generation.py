@@ -1,23 +1,11 @@
 import os
-import re
+import random
 import sys
 import shutil
 from Tool.state_management import get_state_manager
 from Utils.configuration_management import get_config_manager
 from Utils.logger_management import get_logger
 from Tool.memory_management.utils import memory_log
-
-# def enable_mmu():
-#     logger = get_logger()
-#     logger.info("============ enable_mmu")
-    
-#     state_manager = get_state_manager()
-#     cores_states = state_manager.list_states()
-#     for core_state in cores_states:
-#         state_manager.set_active_state(core_state)
-#         curr_state = state_manager.get_active_state()
-#         logger.info(f"================ enable_mmu - running GPT for {core_state.name}")
-#         run_PGT_prototype()
 
 
 def run_PGT_prototype():
@@ -42,20 +30,17 @@ def run_PGT_prototype():
         #import _pgt as pgt
         from _pgt import setProfile, createPlatformMemoryManager, UNTAGGED, addMemory, pgtSetTargetInfo, IS_RME_IMPLEMENTED
         from _pgt import createGranuleProtectionTable, createGptAttributes, createMemoryManager, mapGpt, setMemoryManager
-        from _pgt import createAddress, ROOT_PAS, SIZE_512MB, setGptTableMemoryManager, createStg1TS, VMSAv8_64, PL3R, PL3, PL1_RW
+        from _pgt import createAddress, ROOT_PAS, SIZE_512MB, setGptTableMemoryManager, createStg1TS, createStg2TS, createVirtStg1TS, mapAlias, getLeafBlock
+        from _pgt import VMSAv8_64, PL3R, PL3, PL2R, PL2S, PL2NS, PL1_RW, PL1NS, LEVEL_0
         from _pgt import createMmuAttributes, getOutputAddr, generateOutputs, setVerbosity, WARN, ERROR, PL1NS, SET, REALM, SECURE, NON_SECURE
         from _pgt import setGpt, setAutoGptFlag, getAddressObjectValue, blockMemory, blockNamedMemory, mapWithPA, XN_CLEAR, RW_RW, USR_RW, TRUE, FALSE
         from _pgt import setPgtOutputFileFormat, ARM_ASSEMBLY, GENERIC
         from _pgt import Dev, Dev_GRE, Dev_nGnRnE, mapDevice
 
-
         from helperFunctions import V9A, V8A, setGptProperties, OUT_SH, CACHE_NON, CACHE_NON # *
         from helperFunctions import setTranslationSystemProp, FillStage1BlockAttributes, ROOT
         from helperFunctions import SIZE_4KB, SIZE_64KB, SIZE_2MB, SIZE_1GB, TG_4KB, TG_64KB, PGS_4KB, PA_48_BITS
 
-        #from customer_mem_map import pgtInitPlatformMemoryMap # *
-
-        print("*****************************************************************************************")
 
         memory_log(f"\n\n") 
         memory_log(f"---- Creating Platform Memory Manager - Physical_Stage1_Mapping ::  EL3, ROOT, Stage1",print_both=True) 
@@ -96,10 +81,7 @@ def run_PGT_prototype():
                         map(EL1NS_1, createAddress(0x0), SIZE_4KB, stage1_attr) 
                         blk1 = getLeafBlock(EL1NS_1, createAddress(0x0))
                         mapAlias(EL1NS_1, createAddress(0x4000), SIZE_4KB, stage1_attr, blk1) 
-
-
-
-                    
+       
         '''
 
         setProfile(V9A)
@@ -119,7 +101,7 @@ def run_PGT_prototype():
         for core_state in cores_states:
             state_manager.set_active_state(core_state)
             curr_state = state_manager.get_active_state()
-            logger.info(f"================ enable_mmu - running GPT for {curr_state.state_name}")
+            memory_log(f"================ enable_mmu - running GPT for {curr_state.state_name}")
 
             pgtSetTargetInfo(IS_RME_IMPLEMENTED, TRUE) # enable RME to allow ROOT and REALM memory regions support
 
@@ -129,9 +111,27 @@ def run_PGT_prototype():
             setTranslationSystemProp(EL3, TG0=TG_4KB)#, T0SZ=16)
             setMemoryManager(EL3, PMM)
 
-            pages = create_automated_memory_mapping(PMM, EL3)
 
-            memory_log(f"Successfully processed {len(pages) if pages else 0} pages", print_both=True)
+            print("********************************************************************************************")
+            print("********************************************************************************************")
+            print("********************************************************************************************")
+
+            EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1NS)
+            setTranslationSystemProp(EL1NS, TG0=TG_4KB, T0SZ=16)
+            setMemoryManager(EL1NS, PMM)
+
+            print("********************************************************************************************")
+            print("********************************************************************************************")
+            print("********************************************************************************************")
+
+            # attr=createMmuAttributes()
+            # map(EL1_NS, createAddress(0x0),  SIZE_4KB, attr)
+
+
+            pages = create_automated_memory_mapping(PMM, EL3, EL1NS)
+
+            memory_log(f"Successfully processed {len(pages) if pages else 0} pages")
+            memory_log(f"================ enable_mmu - running GPT for {curr_state.state_name} - {len(pages) if pages else 0} pages were processed", print_both=True)
 
 
         setPgtOutputFileFormat(GENERIC) # GENERIC or ARM_ASSEMBLY
@@ -263,13 +263,13 @@ def convert_generic_to_gnu():
             f.write(f"{label}:\n")
             f.write(f"    .quad {value}\n\n")
     
-    print(f"Converting {input_file} to GNU format at {output_file}")
-    print(f"Generated constants file at {constants_file}")
+    memory_log(f"Converting {input_file} to GNU format at {output_file}")
+    memory_log(f"Generated constants file at {constants_file}")
     
     return output_file
 
 
-def create_automated_memory_mapping(PMM, EL3):
+def create_automated_memory_mapping(PMM, EL3, EL1NS):
     """
     Create memory mappings using the automated approach by processing existing pages.
     """
@@ -279,7 +279,7 @@ def create_automated_memory_mapping(PMM, EL3):
     from Utils.configuration_management import Configuration
 
     #import _pgt as pgt
-    from _pgt import createAddress, PL3R, PL1_RW, createMmuAttributes, mapWithPA, XN_CLEAR, mapDevice, Dev, Dev_nGnRnE, ROOT
+    from _pgt import createAddress, PL3R, PL1_RW, createMmuAttributes, mapWithPA, XN_CLEAR, mapDevice, Dev, Dev_nGnRnE, ROOT, NON_SECURE
     from _pgt import blockMemory
     from helperFunctions import setTranslationSystemProp, FillStage1BlockAttributes, ROOT, SIZE_2MB
 
@@ -287,7 +287,6 @@ def create_automated_memory_mapping(PMM, EL3):
     # Get current state and page table manager
     current_state = get_current_state()
     page_table_manager = current_state.page_table_manager
-    segment_manager = current_state.segment_manager
     
 
     # Trickbox device memory 
@@ -309,29 +308,40 @@ def create_automated_memory_mapping(PMM, EL3):
      
     # Create PGT mappings for code pages
     for idx, page in enumerate(code_pages):
-        memory_log(f"Processing code page {idx}: {page}")
+        context = Configuration.Execution_context.EL3 # page.execution_context
+        print(f"Processing code page {idx}: {page} in {context.value}")
+        memory_log(f"Processing code page {idx}: {page} in {context.value}")
         code_size = page.size
         code_va = createAddress(page.va) 
         code_pa = createAddress(page.pa) 
         blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
         code_attr = createMmuAttributes()
-        FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-        mapWithPA(EL3, code_va, code_pa, code_size, code_attr)
+        if context == Configuration.Execution_context.EL3:
+            FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
+            mapWithPA(EL3, code_va, code_pa, code_size, code_attr)
+        elif context == Configuration.Execution_context.EL1_NS:
+            FillStage1BlockAttributes(code_attr, NS=NON_SECURE)
+            mapWithPA(EL1NS, code_va, code_pa, code_size, code_attr)
 
     # Create PGT mappings for data pages
     for idx, page in enumerate(data_pages):
-        memory_log(f"Processing data page {idx}: {page}")
+        context = Configuration.Execution_context.EL3 # page.execution_context
+        print(f"Processing data page {idx}: {page} in {context.value}")
+        memory_log(f"Processing data page {idx}: {page} in {context.value}")
         data_size = page.size
         data_va = createAddress(page.va) 
         data_pa = createAddress(page.pa) 
         blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
         data_attr = createMmuAttributes()
-        FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-        mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
+        if context == Configuration.Execution_context.EL3:
+            FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
+            mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
+        elif context == Configuration.Execution_context.EL1_NS:
+            FillStage1BlockAttributes(data_attr, NS=NON_SECURE)
+            mapWithPA(EL1NS, data_va, data_pa, data_size, data_attr)
 
 
     memory_log(f"Completed memory mapping process")
-    # All of these pages are now available for the test to use via segment_manager
 
     return all_pages
 
