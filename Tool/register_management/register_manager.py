@@ -88,9 +88,14 @@ class RegisterManager:
                 reg = Register(name_mapping={64:name,}, type="gpr", default_size=64, is_random=False)
                 self._registers_pool.append(reg)
 
+            ############################### SIMD integer registers
+            for i in range(0, 31):
+                reg = Register(name_mapping={128:f"q{i}"}, type="simd_int", default_size=128, is_random=True)
+                self._registers_pool.append(reg)
+
             ############################### SIMD&FP registers
             for i in range(0, 31):
-                reg = Register(name_mapping={128:f"v{i}",64:f"d{i}",32:f"s{i}",16:f"h{i}",8:f"b{i}"}, type="simdfp", default_size=128, is_random=True)
+                reg = Register(name_mapping={128:f"v{i}",64:f"d{i}",32:f"s{i}",16:f"h{i}",8:f"b{i}"}, type="simd_fp", default_size=128, is_random=True)
                 self._registers_pool.append(reg)
 
             ############################### Extended vector registers

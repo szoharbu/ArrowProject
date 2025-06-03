@@ -235,7 +235,7 @@ class ArmBuildPipeline(BuildPipeline):
             # Write memory regions
             f.write("MEMORY\n{\n")
             f.write("  trickbox_mem : ORIGIN = 0x0, LENGTH = 0x200000\n")
-            f.write("  main_mem : ORIGIN = 0x80000000, LENGTH = 0x200000000\n")
+            f.write("  main_mem : ORIGIN = 0x80000000, LENGTH = 0x200200000\n")
             f.write("}\n\n")
             
             # Start sections

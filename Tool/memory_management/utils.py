@@ -274,7 +274,7 @@ def convert_bytes_to_words(byte_representation):
 
     return words
 
-def print_memory_state(memory_space_manager=None, segment_manager=None, print_both=False):
+def print_memory_state(print_both=False):
     """
     Print a comprehensive summary of the current memory state across all states.
     Shows all states, pages, and segments without unmapped/unallocated regions.
@@ -282,29 +282,28 @@ def print_memory_state(memory_space_manager=None, segment_manager=None, print_bo
     :param memory_space_manager: Optional MemorySpaceManager instance
     :param segment_manager: Optional SegmentManager instance
     """
-    # Import here to avoid circular imports
-    from Tool.memory_management.memory_space_manager import get_memory_space_manager
-    
-    # Get memory space manager if not provided
-    if memory_space_manager is None:
-        memory_space_manager = get_memory_space_manager()
-    
+    from Tool.memory_management.memory_space_manager import get_mmu_manager
+
     state_manager = get_state_manager()
+    mmu_manager = get_mmu_manager()
+
     memory_log("\n\n\n")
     memory_log("==== MEMORY STATE SUMMARY ====", print_both=print_both)
     
     # 1. Summarize states and their pages
-    memory_log(f"Total states: {len(state_manager.states_dict)}", print_both=print_both)
+    memory_log(f"Total states: {len(state_manager.get_all_states())}", print_both=print_both)
     
-    for state_name, state in state_manager.states_dict.items():
+    for state_name in state_manager.get_all_states():
         state_manager.set_active_state(state_name)
         state = state_manager.get_active_state()
         memory_log(f"---- State: {state_name}", print_both=print_both)
+
+        core_mmus = mmu_manager.get_core_mmus(state_name)
+        for mmu in core_mmus:
+
+            memory_log(f"-------- MMU: {mmu.mmu_name}", print_both=print_both)
+            page_table_entries = mmu.get_pages()
         
-        # Get page table entries if available
-        if hasattr(state, 'page_table_manager'):
-            page_table_entries = state.page_table_manager.get_page_table_entries()
-            
             # Group pages by type
             code_pages = []
             data_pages = []
@@ -319,76 +318,33 @@ def print_memory_state(memory_space_manager=None, segment_manager=None, print_bo
                     other_pages.append(page)
             
             # Print page summaries
-            memory_log(f"-------- Pages: {len(page_table_entries)} total ({len(code_pages)} code, {len(data_pages)} data, {len(other_pages)} other)", print_both=print_both)
+            memory_log(f"------------ Pages: {len(page_table_entries)} total ({len(code_pages)} code, {len(data_pages)} data, {len(other_pages)} other)", print_both=print_both)
             
             if code_pages:
-                memory_log(f"------------ Code Pages ({len(code_pages)}):", print_both=print_both)
+                memory_log(f"---------------- Code Pages ({len(code_pages)}):", print_both=print_both)
                 for i, page in enumerate(code_pages):
                     page_size = page.end_va - page.va + 1
-                    memory_log(f"---------------- Page {i}: {page.execution_context.value}, VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}", print_both=print_both)
+                    memory_log(f"-------------------- Page {i}: {page.execution_context.value}, VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}", print_both=print_both)
             
             if data_pages:
-                memory_log(f"------------ Data Pages ({len(data_pages)}):", print_both=print_both)
+                memory_log(f"---------------- Data Pages ({len(data_pages)}):", print_both=print_both)
                 for i, page in enumerate(data_pages):
                     page_size = page.end_va - page.va + 1
-                    memory_log(f"---------------- Page {i}: {page.execution_context.value}, VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}", print_both=print_both)
+                    memory_log(f"-------------------- Page {i}: {page.execution_context.value}, VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}", print_both=print_both)
             
             if other_pages:
-                memory_log(f"------------ Other Pages ({len(other_pages)}):", print_both=print_both)
+                memory_log(f"---------------- Other Pages ({len(other_pages)}):", print_both=print_both)
                 for i, page in enumerate(other_pages):
                     page_size = page.end_va - page.va + 1
-                    memory_log(f"---------------- Page {i}: VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}, type:{page.page_type}", print_both=print_both)
-        else:
-            memory_log(f"------------ No page table manager available for this state", print_both=print_both)
-        
-        # Get state allocations
-        if state_name in memory_space_manager.state_allocated_va_intervals:
-            state_allocations = [a for a in memory_space_manager.allocations 
-                              if memory_space_manager.state_allocated_va_intervals[state_name].is_region_available(a.va_start, a.size)]
+                    memory_log(f"-------------------- Page {i}: VA:0x{page.va:x}-0x{page.end_va:x}, PA:0x{page.pa:x}, size:0x{page_size:x}, type:{page.page_type}", print_both=print_both)
             
-            memory_log(f"-------- Memory Segments : {len(state_allocations)}", print_both=print_both)
-            for i, alloc in enumerate(state_allocations):
-                page_str = f", spans {len(alloc.covered_pages)} pages" if hasattr(alloc, 'covered_pages') and alloc.covered_pages else ""
-                memory_log(f"---------------- Segment {i}: VA:0x{alloc.va_start:x}-0x{alloc.va_start+alloc.size-1:x}, "
-                         f"PA:0x{alloc.pa_start:x}, size:0x{alloc.size:x}, type:{alloc.page_type}{page_str}", print_both=print_both)
-    
-    # 2. List all memory segments if a memory manager was provided
-    if segment_manager is not None and hasattr(segment_manager, "memory_segments"):
-        memory_log("\n--- Memory Segments ---", print_both=print_both)
+        # # Get state allocations
+        # for mmu in core_mmus:
+            mmu_allocations = mmu.allocated_va_intervals.get_intervals()
+            memory_log(f"----------- Memory Segments : {len(mmu_allocations)}", print_both=print_both)
+            for i, alloc in enumerate(mmu_allocations):
+                memory_log(f"-------------------- Segment {i}: VA:{hex(alloc.start)}-{hex(alloc.end)}, size:{hex(alloc.size)}, type:{alloc.metadata['page_type']}", print_both=print_both)
+
         
-        # Group segments by type
-        code_segments = []
-        data_segments = []
-        
-        for segment in segment_manager.memory_segments:
-            if segment.memory_type in [Configuration.Memory_types.CODE, 
-                                    Configuration.Memory_types.BOOT_CODE, 
-                                    Configuration.Memory_types.BSP_BOOT_CODE]:
-                code_segments.append(segment)
-            else:
-                data_segments.append(segment)
-        
-        memory_log(f"Total segments: {len(segment_manager.memory_segments)} ({len(code_segments)} code, {len(data_segments)} data)", print_both=print_both)
-        
-        if code_segments:
-            memory_log(f"Code Segments:", print_both=print_both)
-            for i, segment in enumerate(code_segments):
-                memory_log(f"  {i}: {segment.name}, VA:0x{segment.address:x}-0x{segment.address+segment.byte_size-1:x}, "
-                        f"size:0x{segment.byte_size:x}, type:{segment.memory_type}", print_both=print_both)
-        
-        if data_segments:
-            memory_log(f"Data Segments:", print_both=print_both)
-            for i, segment in enumerate(data_segments):
-                memory_log(f"  {i}: {segment.name}, VA:0x{segment.address:x}-0x{segment.address+segment.byte_size-1:x}, "
-                        f"size:0x{segment.byte_size:x}, type:{segment.memory_type}", print_both=print_both)
-                
-                # List data units if available
-                if hasattr(segment, 'data_units_list') and segment.data_units_list:
-                    memory_log(f"    Data Units: {len(segment.data_units_list)}", print_both=print_both)
-                    for j, data_unit in enumerate(segment.data_units_list[:5]):  # Show only first 5 to avoid excessive output
-                        memory_log(f"      Unit {j}: {data_unit}", print_both=print_both)
-                    if len(segment.data_units_list) > 5:
-                        memory_log(f"      ... and {len(segment.data_units_list) - 5} more data units", print_both=print_both)
-    
     memory_log("==== END MEMORY STATE SUMMARY ====", print_both=print_both)
     memory_log("\n\n\n")

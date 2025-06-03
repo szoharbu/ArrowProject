@@ -144,9 +144,9 @@ def generate_arm_asl(
                 else:
                     eval_operand = RegisterManager.get(reg_type="gpr").as_size(op.size)
             elif "simdfp_scalar" in op.type:
-                eval_operand = RegisterManager.get(reg_type="simdfp").as_size(op.size)
+                eval_operand = RegisterManager.get(reg_type="simd_fp").as_size(op.size)
             elif "simdfp_vec" in op.type:
-                eval_operand = RegisterManager.get(reg_type="simdfp").as_size(op.size)
+                eval_operand = RegisterManager.get(reg_type="simd_fp").as_size(op.size)
             elif op.type == "sve_reg":
                 eval_operand = RegisterManager.get(reg_type="sve_reg")
                 if op.syntax == "Zdn":

@@ -12,7 +12,7 @@ class MemorySegment(ABC):
     # generate incremental memory_segment_unique_id
     _memory_segment_initial_seed_id = random.randint(1234, 5678)  # start at a random label
 
-    def __init__(self, name: str, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types):
+    def __init__(self, name: str, mmu, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types):
         """
         Initialize a segment from a memory block.
         :param name: segment name.
@@ -31,6 +31,7 @@ class MemorySegment(ABC):
         self.allocation = None
         # List of actual Page objects this segment spans
         self.covered_pages = []
+        self.mmu = mmu
 
     def __str__(self):
         #return self.name
@@ -43,8 +44,8 @@ class MemorySegment(ABC):
 
 # CodeSegment inherits from MemorySegment and adds a start_label attribute
 class CodeSegment(MemorySegment):
-    def __init__(self, name: str, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types):
-        super().__init__(name, address, pa_address, byte_size, memory_type)
+    def __init__(self, name: str, mmu, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types):
+        super().__init__(name, mmu, address, pa_address, byte_size, memory_type)
         self.code_label = Label(postfix=f"{name}_code_segment")
 
         # per CodeSegment list that holds all AsmUnits
@@ -55,8 +56,8 @@ class CodeSegment(MemorySegment):
 
 # DataSegment inherits from MemorySegment and may add more data-specific attributes
 class DataSegment(MemorySegment):
-    def __init__(self, name: str, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types, init_value: str=None, is_cross_core:bool=False):
-        super().__init__(name, address, pa_address, byte_size, memory_type)
+    def __init__(self, name: str, mmu, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types, init_value: str=None, is_cross_core:bool=False):
+        super().__init__(name, mmu, address, pa_address, byte_size, memory_type)
         self.init_value = init_value  # Example of additional attribute
 
         # per DataSegment list that holds all DataUnits and all MemorySegments

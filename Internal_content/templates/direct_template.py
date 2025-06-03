@@ -32,12 +32,13 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 # TODO:: LOR manager and basic usage.
 
 
-Configuration.Knobs.Config.core_count.set_value(4)
+Configuration.Knobs.Config.core_count.set_value(2)
 Configuration.Knobs.Template.scenario_count.set_value(2)
 #Configuration.Knobs.Template.scenario_query.set_value({"simple_cache_scenario":100, "WFIT_CROSS_SPE_scenario": 0, Configuration.Tag.REST: 1})
 #Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
 Configuration.Knobs.Template.scenario_query.set_value({"ldstcc_release_rar_check": 100, Configuration.Tag.REST: 1})
 #Configuration.Knobs.Template.scenario_query.set_value({"basic_false_sharing_scenario": 100, Configuration.Tag.REST: 1})
+
 
 @AR.scenario_decorator(random=True, )
 def random_instructions():
