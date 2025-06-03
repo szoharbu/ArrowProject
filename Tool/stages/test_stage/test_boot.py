@@ -2,6 +2,7 @@ from Utils.logger_management import get_logger
 from Utils.configuration_management import Configuration, get_config_manager
 from Tool.state_management import get_state_manager, get_current_state
 from Tool.state_management.switch_state import switch_code
+from Tool.memory_management.memory_space_manager import get_mmu_manager
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.branch_to_segment import branch_to_segment
 from Tool.asm_libraries.label import Label
@@ -22,7 +23,11 @@ def do_boot():
 
     state_manager.set_active_state("core_0")
     curr_state = state_manager.get_active_state()
-
+    curr_mmu = curr_state.current_el_mmu
+    if curr_mmu.execution_context != Configuration.Execution_context.EL3:
+        raise ValueError(f"Current MMU is not EL3")
+    # mmu_manager = get_mmu_manager()
+    # el3_mmu = mmu_manager.get_mmu("core_0_el3_root")
     # Allocate BSP boot block. a single block that act as trampoline for all cores    
     bsp_boot_blocks = curr_state.segment_manager.get_segments(pool_type=Configuration.Memory_types.BSP_BOOT_CODE)
     if len(bsp_boot_blocks) != 1:
@@ -37,13 +42,6 @@ def do_boot():
 
     register_manager = curr_state.register_manager
     tmp_reg1 = register_manager.get_and_reserve(reg_type="gpr")
-    # # Load vector table
-    # AsmLogger.comment("Load vector table")
-    # AsmLogger.asm(f"ldr {tmp_reg1}, =vector_table_base")
-    # AsmLogger.asm(f"msr vbar_el3, {tmp_reg1}")
-    # AsmLogger.asm(f"msr vbar_el2, {tmp_reg1}")
-    # AsmLogger.asm(f"msr vbar_el1, {tmp_reg1}")
-
     # Load the stack pointer
     sp_reg = register_manager.get(reg_name="sp")
     register_manager.reserve(sp_reg)
@@ -117,13 +115,14 @@ def do_boot():
         logger.debug(f"BODY:: Running boot code")
         AsmLogger.comment(f"========================= {curr_state.state_name.upper()} BOOT CODE - start =====================")
 
-        execution_platform = config_manager.get_value('Execution_platform')
-        if execution_platform == "baremetal":
-            AsmLogger.comment(
-                f"-- memory range address is {hex(curr_state.memory_range.address)} with size of {hex(curr_state.memory_range.byte_size)}")
-            AsmLogger.comment(
-                f"-- setting base_register {curr_state.base_register} to address of {hex(curr_state.base_register_value)}")
-            # AsmLogger.store_value_into_register(register=current_state.base_register, value=current_state.base_register_value)
+        if Configuration.Architecture.x86:
+            execution_platform = config_manager.get_value('Execution_platform')
+            if execution_platform == "baremetal": 
+                AsmLogger.comment(
+                    f"-- memory range address is {hex(curr_state.memory_range.address)} with size of {hex(curr_state.memory_range.byte_size)}")
+                AsmLogger.comment(
+                    f"-- setting base_register {curr_state.base_register} to address of {hex(curr_state.base_register_value)}")
+                # AsmLogger.store_value_into_register(register=current_state.base_register, value=current_state.base_register_value)
 
         skip_boot = Configuration.Knobs.Config.skip_boot
         if not skip_boot:
@@ -155,43 +154,34 @@ def enable_pgt_page_table():
     AsmLogger.comment("First disable the MMU")
     AsmLogger.asm(f"mrs x0, sctlr_el3")
     AsmLogger.asm(f"bic x0, x0, #1", comment="Clear bit 0 (MMU enable)")
-    AsmLogger.asm(f"msr sctlr_el3, x0")
-    AsmLogger.asm(f"isb")
-    AsmLogger.asm(f"dsb sy")
-    
+    AsmLogger.asm(f"msr sctlr_el3, x0") 
 
     AsmLogger.comment("Load translation table base register with the address of our L0 table")
     AsmLogger.asm(f"ldr x0, =LABEL_TTBR0_EL3_{curr_state.state_name}", comment="read value of LABEL_TTBR0_EL3 from memory")
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TTBR0_EL3")    
     AsmLogger.asm(f"msr ttbr0_el3, x0")
-    AsmLogger.asm(f"isb")
-    AsmLogger.asm(f"dsb sy")
 
     AsmLogger.comment("Set up TCR_EL3 (Translation Control Register)")
     AsmLogger.asm(f"ldr x0, =LABEL_TCR_EL3_{curr_state.state_name}", comment="read value of LABEL_TCR_EL3 from memory") 
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_TCR_EL3")    
     AsmLogger.asm(f"msr tcr_el3, x0")
-    AsmLogger.asm(f"isb")
-    AsmLogger.asm(f"dsb sy")
 
     AsmLogger.comment("Set up MAIR_EL1 (Memory Attribute Indirection Register)")
     AsmLogger.asm(f"ldr x0, =LABEL_MAIR_EL3_{curr_state.state_name}", comment="read value of LABEL_MAIR_EL3 from memory")
     AsmLogger.asm(f"ldr x0, [x0]", comment="load the value of LABEL_MAIR_EL3")    
     AsmLogger.asm(f"msr mair_el3, x0")
-    AsmLogger.asm(f"isb")
-    AsmLogger.asm(f"dsb sy")
 
-    # TODO:: remove after testing
-    # TODO:: remove after testing
-    AsmLogger.asm(f"mrs x0, scr_el3")
-    AsmLogger.asm(f"bic x0, x0, #(1 << 9)", comment="Clear bit 9 (SCR_EL3.SIF)")
-    AsmLogger.asm(f"dsb sy")
-    AsmLogger.asm(f"msr scr_el3, x0")
-    AsmLogger.asm(f"isb")
-    AsmLogger.asm(f"dsb sy")
-    AsmLogger.asm(f"mrs x0, scr_el3")
-    # TODO:: remove after testing
-    # TODO:: remove after testing
+    # # TODO:: remove after testing
+    # # TODO:: remove after testing
+    # AsmLogger.asm(f"mrs x0, scr_el3")
+    # AsmLogger.asm(f"bic x0, x0, #(1 << 9)", comment="Clear bit 9 (SCR_EL3.SIF)")
+    # AsmLogger.asm(f"dsb sy")
+    # AsmLogger.asm(f"msr scr_el3, x0")
+    # AsmLogger.asm(f"isb")
+    # AsmLogger.asm(f"dsb sy")
+    # AsmLogger.asm(f"mrs x0, scr_el3")
+    # # TODO:: remove after testing
+    # # TODO:: remove after testing
 
 
     AsmLogger.comment("Enable MMU")
@@ -199,8 +189,8 @@ def enable_pgt_page_table():
     AsmLogger.asm(f"orr x0, x0, #1", comment="Set bit 0 (MMU enable)")
     AsmLogger.asm(f"bic x0, x0, #(1 << 20)", comment="Clear bit 20 (WXN)")
     AsmLogger.asm(f"msr sctlr_el3, x0")
-    AsmLogger.asm(f"isb")
-    AsmLogger.asm(f"dsb sy")
+    AsmLogger.asm(f"isb", comment="Instruction Synchronization Barrier, must to ensure context-syncronization after enabling MMU")
+
 
 
     # AsmLogger.asm(f"// Jump to virtual address")

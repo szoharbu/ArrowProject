@@ -111,22 +111,9 @@ def run_PGT_prototype():
             setTranslationSystemProp(EL3, TG0=TG_4KB)#, T0SZ=16)
             setMemoryManager(EL3, PMM)
 
-
-            print("********************************************************************************************")
-            print("********************************************************************************************")
-            print("********************************************************************************************")
-
             EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1NS)
             setTranslationSystemProp(EL1NS, TG0=TG_4KB, T0SZ=16)
             setMemoryManager(EL1NS, PMM)
-
-            print("********************************************************************************************")
-            print("********************************************************************************************")
-            print("********************************************************************************************")
-
-            # attr=createMmuAttributes()
-            # map(EL1_NS, createAddress(0x0),  SIZE_4KB, attr)
-
 
             pages = create_automated_memory_mapping(PMM, EL3, EL1NS)
 
@@ -286,9 +273,9 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
     
     # Get current state and page table manager
     current_state = get_current_state()
-    page_table_manager = current_state.page_table_manager
-    
+    core_mmus = current_state.enabled_mmus
 
+   
     # Trickbox device memory 
     trickbox_size = SIZE_2MB               
     trickbox_va = createAddress(0x13000000) 
@@ -296,51 +283,51 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
     FillStage1BlockAttributes(trickbox_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Dev, MEM_ATTR_INNER=Dev_nGnRnE)
     mapDevice(EL3, "TRICKBOX", trickbox_va, trickbox_size, trickbox_attr)
 
-
-    all_pages = page_table_manager.get_page_table_entries()
-    memory_log(f"Found {len(all_pages)} pages in page table")
+    for mmu in core_mmus:
+        all_pages = mmu.get_pages()
+        memory_log(f"Found {len(all_pages)} pages in page table at {mmu.mmu_name}")
     
-    # Group pages by type for better handling
-    code_pages = page_table_manager.get_page_table_entries_by_type(Configuration.Page_types.TYPE_CODE)
-    data_pages = page_table_manager.get_page_table_entries_by_type(Configuration.Page_types.TYPE_DATA)
-    
-    memory_log(f"Processing {len(code_pages)} code pages and {len(data_pages)} data pages")
+        # Group pages by type for better handling
+        code_pages = mmu.get_pages_by_type(Configuration.Page_types.TYPE_CODE)
+        data_pages = mmu.get_pages_by_type(Configuration.Page_types.TYPE_DATA)
+        
+        memory_log(f"Processing {len(code_pages)} code pages and {len(data_pages)} data pages")
      
-    # Create PGT mappings for code pages
-    for idx, page in enumerate(code_pages):
-        context = Configuration.Execution_context.EL3 # page.execution_context
-        print(f"Processing code page {idx}: {page} in {context.value}")
-        memory_log(f"Processing code page {idx}: {page} in {context.value}")
-        code_size = page.size
-        code_va = createAddress(page.va) 
-        code_pa = createAddress(page.pa) 
-        blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
-        code_attr = createMmuAttributes()
-        if context == Configuration.Execution_context.EL3:
-            FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-            mapWithPA(EL3, code_va, code_pa, code_size, code_attr)
-        elif context == Configuration.Execution_context.EL1_NS:
-            FillStage1BlockAttributes(code_attr, NS=NON_SECURE)
-            mapWithPA(EL1NS, code_va, code_pa, code_size, code_attr)
+        # Create PGT mappings for code pages
+        for idx, page in enumerate(code_pages):
+            context = mmu.execution_context
+            # print(f"Processing {current_state.state_name}-{mmu.mmu_name} - code page {idx}: {page} in {context.value}")
+            memory_log(f"Processing {current_state.state_name} - {mmu.mmu_name} - code page {idx}: {page} in {context.value}")
+            code_size = page.size
+            code_va = createAddress(page.va) 
+            code_pa = createAddress(page.pa) 
+            blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
+            code_attr = createMmuAttributes()
+            if context == Configuration.Execution_context.EL3:
+                FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
+                mapWithPA(EL3, code_va, code_pa, code_size, code_attr)
+            elif context == Configuration.Execution_context.EL1_NS:
+                FillStage1BlockAttributes(code_attr, NS=NON_SECURE)
+                mapWithPA(EL1NS, code_va, code_pa, code_size, code_attr)
 
-    # Create PGT mappings for data pages
-    for idx, page in enumerate(data_pages):
-        context = Configuration.Execution_context.EL3 # page.execution_context
-        print(f"Processing data page {idx}: {page} in {context.value}")
-        memory_log(f"Processing data page {idx}: {page} in {context.value}")
-        data_size = page.size
-        data_va = createAddress(page.va) 
-        data_pa = createAddress(page.pa) 
-        blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
-        data_attr = createMmuAttributes()
-        if context == Configuration.Execution_context.EL3:
-            FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-            mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
-        elif context == Configuration.Execution_context.EL1_NS:
-            FillStage1BlockAttributes(data_attr, NS=NON_SECURE)
-            mapWithPA(EL1NS, data_va, data_pa, data_size, data_attr)
+        # Create PGT mappings for data pages
+        for idx, page in enumerate(data_pages):
+            context = mmu.execution_context
+            # print(f"Processing {current_state.state_name}-{mmu.mmu_name} - data page {idx}: {page} in {context.value}")
+            memory_log(f"Processing {current_state.state_name}-{mmu.mmu_name} - data page {idx}: {page} in {context.value}")
+            data_size = page.size
+            data_va = createAddress(page.va) 
+            data_pa = createAddress(page.pa) 
+            blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
+            data_attr = createMmuAttributes()
+            if context == Configuration.Execution_context.EL3:
+                FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
+                mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
+            elif context == Configuration.Execution_context.EL1_NS:
+                FillStage1BlockAttributes(data_attr, NS=NON_SECURE)
+                mapWithPA(EL1NS, data_va, data_pa, data_size, data_attr)
 
-
+    print(f"Completed memory mapping process for {current_state.state_name}")
     memory_log(f"Completed memory mapping process")
 
     return all_pages

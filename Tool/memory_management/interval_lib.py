@@ -1,298 +1,194 @@
 import random
+from typing import Dict, Any, Optional, List, Tuple, Union, Callable
 
 '''
-Here's a conceptual design:
+IntervalLib - Pure Interval Management Utility
 
-1. Memory Interval Representation:
-We'll represent memory intervals using tuples, where an interval is represented as (start, size).
+This library provides generic interval management without allocation state tracking.
+It maintains a single list of intervals and provides operations to:
+- Add/remove regions
+- Find suitable regions
+- Split/merge intervals
+- Query by metadata
 
-2. Free and Used Pools:
-free_intervals: A list (or set) of free intervals.
-used_intervals: A list (or set) of used intervals.
-3. Basic Functions:
-Initialization: Define the initial memory space.
-Allocate Block: Find a random free interval, slice it to match the requested size, and move it to the used pool.
-Free Block: Move an interval from the used pool back to the free pool.
+The caller is responsible for managing allocation states (unmapped/mapped/allocated).
 '''
+
+class Interval:
+    """
+    Represents a memory interval with metadata support.
+    """
+    
+    def __init__(self, start: int, size: int, metadata: Dict[str, Any] = None):
+        """
+        Initialize an interval with optional metadata.
+        
+        :param start: Starting address of the interval
+        :param size: Size of the interval in bytes
+        :param metadata: Metadata dictionary (can include memory_type, purpose, etc.)
+        """
+        self.start = start
+        self.size = size
+        self.metadata = metadata or {}
+        
+    @property
+    def end(self) -> int:
+        """End address of the interval (exclusive)"""
+        return self.start + self.size
+    
+    def __repr__(self) -> str:
+        return f"Interval(start=0x{self.start:x}, end=0x{self.end:x}, size=0x{self.size:x}, metadata={self.metadata})"
+    
+    def __str__(self) -> str:
+        meta_str = ", ".join(f"{k}={v}" for k, v in self.metadata.items()) if self.metadata else "no metadata"
+        # Show inclusive end address (last address that's actually part of the interval)
+        inclusive_end = self.start + self.size - 1
+        return f"[0x{self.start:x}-0x{inclusive_end:x}] size=0x{self.size:x} ({meta_str})"
+    
+    def contains(self, start: int, size: int) -> bool:
+        """Check if this interval fully contains the given region"""
+        return self.start <= start and start + size <= self.end
+    
+    def overlaps(self, start: int, size: int) -> bool:
+        """Check if this interval overlaps with the given region"""
+        return not (self.end <= start or self.start >= start + size)
+    
+    def is_adjacent(self, other: 'Interval') -> bool:
+        """Check if this interval is adjacent to another interval"""
+        return self.end == other.start or other.end == self.start
+    
+    def can_merge_with(self, other: 'Interval') -> bool:
+        """Check if this interval can be merged with another (adjacent and compatible metadata)"""
+        return self.is_adjacent(other) and self.metadata == other.metadata
+    
+    def merge_with(self, other: 'Interval') -> 'Interval':
+        """Merge this interval with another adjacent interval"""
+        if not self.can_merge_with(other):
+            raise ValueError("Cannot merge non-adjacent or incompatible intervals")
+        
+        new_start = min(self.start, other.start)
+        new_end = max(self.end, other.end)
+        new_size = new_end - new_start
+        
+        return Interval(new_start, new_size, self.metadata.copy())
+    
+    def split_at(self, split_start: int, split_size: int) -> Tuple[Optional['Interval'], 'Interval', Optional['Interval']]:
+        """
+        Split this interval at the given position.
+        Returns (before_interval, split_interval, after_interval)
+        Any of these can be None if they would have zero size.
+        """
+        if not self.contains(split_start, split_size):
+            raise ValueError("Split region is not fully contained in this interval")
+        
+        split_end = split_start + split_size
+        
+        # Before interval
+        before = None
+        if split_start > self.start:
+            before = Interval(self.start, split_start - self.start, self.metadata.copy())
+        
+        # Split interval (the requested part)
+        split_interval = Interval(split_start, split_size, self.metadata.copy())
+        
+        # After interval
+        after = None
+        if split_end < self.end:
+            after = Interval(split_end, self.end - split_end, self.metadata.copy())
+        
+        return before, split_interval, after
+    
+    def matches_criteria(self, criteria: Dict[str, Any]) -> bool:
+        """Check if this interval matches the given metadata criteria"""
+        if not criteria:
+            return True
+        
+        for key, value in criteria.items():
+            if key not in self.metadata or self.metadata[key] != value:
+                return False
+        return True
+    
+    def to_tuple(self) -> Tuple[int, int]:
+        """Convert to (start, size) tuple for backward compatibility"""
+        return (self.start, self.size)
+    
+    @classmethod
+    def from_tuple(cls, interval_tuple: Tuple[int, int], metadata: Dict[str, Any] = None) -> 'Interval':
+        """Create an Interval from a (start, size) tuple"""
+        start, size = interval_tuple
+        return cls(start, size, metadata)
+
 
 class IntervalLib:
-    def __init__(self, start_address, total_size, is_empty=False):
-        """
-        Initialize memory with a single large interval or empty.
-        :param start_address: starting address of the memory space in bytes.
-        :param total_size: Total size of the memory space in bytes.
-        :param is_empty: If True, initialize with no free intervals
-
-        PLEASE NOTICE:: Each interval consist of [start, size]
-        """
-        self.start_address = start_address
-        self.total_size = total_size
-        
-        # Start with the whole memory space as a single free interval or with empty free intervals
-        if is_empty:
-            self.free_intervals = []
-        else:
-            self.free_intervals = [(start_address, total_size)]
-            
-        self.used_intervals = []
-
-    def _find_suitable_intervals(self, size, alignment=1):
-        """
-        Find all intervals where the requested size will fit, considering alignment.
-        
-        :param size: Size of the memory block in bytes
-        :param alignment: Memory alignment requirement
-        :return: List of (interval, aligned_start, max_start) tuples
-        """
-        if size <= 0:
-            return []
-            
-        suitable_intervals = []
-        
-        # Filter free intervals where the size is greater than or equal to the requested size
-        for interval in self.free_intervals:
-            start, interval_size = interval
-            
-            if interval_size >= size:
-                # Handle alignment
-                if alignment > 1:
-                    # Calculate first aligned address in the interval
-                    first_aligned = (start + alignment - 1) & ~(alignment - 1)
-                    
-                    # Calculate last possible aligned address that fits the block
-                    max_start = start + interval_size - size
-                    last_aligned = max_start & ~(alignment - 1)
-                    
-                    if first_aligned <= last_aligned:
-                        suitable_intervals.append((interval, first_aligned, last_aligned))
-                else:
-                    # No alignment needed
-                    max_start = start + interval_size - size
-                    suitable_intervals.append((interval, start, max_start))
-                    
-        return suitable_intervals
-
-    def find_region(self, size, alignment_bits=None):
-        """
-        Find a region of the given size in the free intervals.
-        Returns the start address of a suitable region, or None if not found.
-        
-        :param size: Size of the region needed (in bytes)
-        :param alignment_bits: If provided, the allocated memory block will have its lower X bits set to 0
-        :return: (start, size) tuple or None if not found
-        """
-        if size <= 0:
-            return None
-            
-        # Handle alignment
-        if alignment_bits is None:
-            alignment_bits = 0
-        if alignment_bits < 0:
-            return None
-        # Calculate alignment value (2^alignment_bits)
-        alignment = 1 << alignment_bits if alignment_bits > 0 else 1
-        
-        # Find suitable intervals
-        suitable_intervals = self._find_suitable_intervals(size, alignment)
-        
-        if not suitable_intervals:
-            return None
-            
-        # Select an interval - randomized
-        if len(suitable_intervals) > 1:
-            chosen_idx = random.randrange(0, len(suitable_intervals))
-        else:
-            chosen_idx = 0
-            
-        interval, first_aligned, last_aligned = suitable_intervals[chosen_idx]
-        start, interval_size = interval
-        
-        # Determine the position within the interval - always randomized
-        if alignment > 1 and first_aligned != last_aligned:
-            # Count number of possible positions
-            count = ((last_aligned - first_aligned) // alignment) + 1
-            
-            # Choose a random position mathematically
-            random_offset = random.randint(0, count - 1) * alignment
-            position_start = first_aligned + random_offset
-        elif alignment <= 1:
-            # Randomize the position within the selected interval
-            max_start = start + interval_size - size
-            position_start = random.randint(start, max_start)
-        else:
-            # Just use first aligned position if there's only one option
-            position_start = first_aligned
-        
-        return (position_start, size)
-        
-    def allocate(self, size, alignment_bits=None):
-        """
-        Allocate a memory block of a given size from free intervals.
-        The block is selected randomly and removed from the free pool.
-        
-        :param size: Size of the memory block to allocate in bytes
-        :param alignment_bits: If provided, the allocated memory block will have its lower X bits set to 0
-        :return: The allocated memory interval (start, size)
-        """
-        if size <= 0 or size > self.total_size:
-            raise ValueError("Invalid block size")
-            
-        # Find a region using our randomized finder
-        region = self.find_region(size, alignment_bits)
-        
-        if region is None:
-            raise MemoryError("No suitable free intervals available")
-            
-        random_start, alloc_size = region
-        
-        # Find the interval that contains this region
-        containing_interval = None
-        for interval in self.free_intervals:
-            int_start, int_size = interval
-            int_end = int_start + int_size
-            
-            if int_start <= random_start and random_start + alloc_size <= int_end:
-                containing_interval = interval
-                break
-                
-        if not containing_interval:
-            raise RuntimeError("Internal error: region not found in free intervals")
-            
-        start, interval_size = containing_interval
-            
-        # Split the selected interval into pre and post-allocated parts
-        before_alloc = (start, random_start - start) if random_start > start else None
-        after_alloc = (random_start + size, interval_size - (
-                    random_start + size - start)) if random_start + size < start + interval_size else None
-
-        # Remove the selected free interval
-        self.free_intervals.remove(containing_interval)
-
-        # Add the remaining free parts back, if they exist
-        if before_alloc and before_alloc[1] > 0:
-            self.free_intervals.append(before_alloc)
-        if after_alloc and after_alloc[1] > 0:
-            self.free_intervals.append(after_alloc)
-
-        # Add the allocated block to the used pool
-        allocated_interval = (random_start, size)
-        self.used_intervals.append(allocated_interval)
-
-        return allocated_interval
-
-    def free(self, interval):
-        """
-        Free a previously allocated interval.
-        :param interval: The interval to free (start, size).
-        """
-        if interval not in self.used_intervals:
-            raise ValueError("Interval not found in used intervals")
-
-        # Remove from used intervals and add back to free intervals
-        self.used_intervals.remove(interval)
-        self.free_intervals.append(interval)
-
-        # In a more advanced version, we could also merge adjacent free intervals here
-
-    def get_free_intervals(self):
-        """
-        Get the list of current free intervals.
-        :return: List of free intervals.
-        """
-        return self.free_intervals
-
-    def get_used_intervals(self):
-        """
-        Get the list of current used intervals.
-        :return: List of used intervals.
-        """
-        return self.used_intervals
-        
-    # New methods for region management
+    """
+    Pure interval management utility.
     
-    def add_region(self, start, size):
+    Maintains a single list of intervals and provides operations to manipulate them.
+    Does not track allocation state - that's the caller's responsibility.
+    """
+    
+    def __init__(self, start_address: int = None, total_size: int = None, 
+                 default_metadata: Dict[str, Any] = None):
         """
-        Add a region to the free intervals pool.
+        Initialize interval library.
+        
+        :param start_address: If provided, initialize with a single interval covering this range
+        :param total_size: Size of the initial interval
+        :param default_metadata: Default metadata for new intervals
+        """
+        self.intervals: List[Interval] = []
+        self.default_metadata = default_metadata or {}
+        
+        # Initialize with a single interval if parameters provided
+        if start_address is not None and total_size is not None:
+            self.add_region(start_address, total_size, self.default_metadata.copy())
+
+    def add_region(self, start: int, size: int, metadata: Dict[str, Any] = None) -> bool:
+        """
+        Add a region to the interval list.
         
         :param start: Start address of the region
         :param size: Size of the region in bytes
+        :param metadata: Metadata for the region
         :return: True if added successfully, False otherwise
         """
-        # Check if region is valid
         if size <= 0:
             return False
             
-        new_interval = (start, size)
-        new_end = start + size
+        # Use default metadata if none provided
+        final_metadata = self.default_metadata.copy()
+        if metadata:
+            final_metadata.update(metadata)
+            
+        new_interval = Interval(start, size, final_metadata)
         
-        # Check if the region can be merged with existing free intervals
-        # This helps prevent fragmentation and ensures better randomization
-        merged = False
-        merged_intervals = []
+        # Try to merge with existing intervals
+        merged_intervals = [new_interval]
         remaining_intervals = []
         
-        for interval in self.free_intervals:
-            int_start, int_size = interval
-            int_end = int_start + int_size
+        for interval in self.intervals:
+            # Check if intervals can be merged
+            merged_any = False
+            for i, merged_interval in enumerate(merged_intervals):
+                if merged_interval.can_merge_with(interval):
+                    merged_intervals[i] = merged_interval.merge_with(interval)
+                    merged_any = True
+                    break
             
-            # Check if regions are adjacent or overlapping
-            if (int_start <= new_end and int_end >= start):
-                # Merge the intervals
-                merged = True
-                merged_start = min(start, int_start)
-                merged_end = max(new_end, int_end)
-                merged_size = merged_end - merged_start
-                merged_intervals.append((merged_start, merged_size))
-            else:
-                # Keep non-merged intervals
+            if not merged_any:
                 remaining_intervals.append(interval)
-                
-        if merged:
-            # Replace old intervals with merged ones
-            self.free_intervals = remaining_intervals
-            
-            # Add all merged intervals
-            for merged_interval in merged_intervals:
-                self.free_intervals.append(merged_interval)
-                
-            # Further merge any adjacent merged intervals
-            self._merge_adjacent_intervals()
-            return True
-        else:
-            # No merging needed, just add the new interval
-            self.free_intervals.append(new_interval)
-            return True
-            
-    def _merge_adjacent_intervals(self):
-        """Helper method to merge any adjacent intervals in the free pool"""
-        if not self.free_intervals or len(self.free_intervals) < 2:
-            return
-            
-        # Sort intervals by start address for easier merging
-        self.free_intervals.sort(key=lambda interval: interval[0])
         
-        # Merge adjacent intervals
-        i = 0
-        while i < len(self.free_intervals) - 1:
-            curr_start, curr_size = self.free_intervals[i]
-            curr_end = curr_start + curr_size
-            
-            next_start, next_size = self.free_intervals[i+1]
-            
-            # If intervals are adjacent
-            if curr_end == next_start:
-                # Merge them
-                merged_size = curr_size + next_size
-                self.free_intervals[i] = (curr_start, merged_size)
-                # Remove the next interval
-                del self.free_intervals[i+1]
-            else:
-                i += 1
+        # Update intervals
+        self.intervals = remaining_intervals + merged_intervals
         
-    def remove_region(self, start, size):
+        # Further merge any adjacent intervals
+        self._merge_adjacent_intervals()
+        return True
+
+    def remove_region(self, start: int, size: int) -> bool:
         """
-        Remove a region from the free intervals pool.
-        If the region overlaps with existing free intervals, split them accordingly.
+        Remove a region from the interval list.
+        If the region overlaps with existing intervals, split them accordingly.
         
         :param start: Start address of the region to remove
         :param size: Size of the region in bytes
@@ -301,57 +197,348 @@ class IntervalLib:
         if size <= 0:
             return False
             
-        region_end = start + size
         modified = False
+        new_intervals = []
         
-        # Create a new list for updated free intervals
-        new_free_intervals = []
-        
-        for interval in self.free_intervals:
-            int_start, int_size = interval
-            int_end = int_start + int_size
-            
+        for interval in self.intervals:
             # No overlap case - keep the interval as is
-            if region_end <= int_start or start >= int_end:
-                new_free_intervals.append(interval)
+            if not interval.overlaps(start, size):
+                new_intervals.append(interval)
                 continue
                 
             modified = True
             
-            # Check if we need to create a left fragment
-            if start > int_start:
-                left_size = start - int_start
-                new_free_intervals.append((int_start, left_size))
-                
-            # Check if we need to create a right fragment
-            if region_end < int_end:
-                right_size = int_end - region_end
-                new_free_intervals.append((region_end, right_size))
-                
-        # Update free intervals list
-        self.free_intervals = new_free_intervals
-        return modified
+            # Check if we need to create fragments
+            if interval.contains(start, size):
+                # Split the interval
+                before, _, after = interval.split_at(start, size)
+                if before:
+                    new_intervals.append(before)
+                if after:
+                    new_intervals.append(after)
+            elif start <= interval.start and start + size >= interval.end:
+                # Remove entire interval (it's fully contained in the region to remove)
+                pass  # Don't add it to new_intervals
+            elif start <= interval.start:
+                # Partial overlap at the beginning
+                remaining_start = start + size
+                remaining_size = interval.end - remaining_start
+                if remaining_size > 0:
+                    remaining = Interval(remaining_start, remaining_size, interval.metadata.copy())
+                    new_intervals.append(remaining)
+            else:
+                # Partial overlap at the end
+                remaining_size = start - interval.start
+                if remaining_size > 0:
+                    remaining = Interval(interval.start, remaining_size, interval.metadata.copy())
+                    new_intervals.append(remaining)
         
-    def is_region_available(self, start, size):
+        # Update intervals list
+        self.intervals = new_intervals
+        return modified
+
+    def find_region(self, size: int, alignment_bits: int = None, 
+                   criteria: Dict[str, Any] = None, 
+                   custom_filter: Callable[[Interval], bool] = None) -> Optional[Tuple[int, int]]:
         """
-        Check if a specific region is fully contained within free intervals.
+        Find a region of the given size that matches the criteria.
+        
+        :param size: Size of the region needed (in bytes)
+        :param alignment_bits: If provided, the region will be aligned to 2^alignment_bits
+        :param criteria: Metadata criteria that the interval must match
+        :param custom_filter: Optional custom filter function
+        :return: (start, size) tuple or None if not found
+        """
+        if size <= 0:
+            return None
+            
+        # Handle alignment
+        alignment = 1 << alignment_bits if alignment_bits and alignment_bits > 0 else 1
+        
+        # Find suitable intervals
+        suitable_intervals = self._find_suitable_intervals(size, alignment, criteria, custom_filter)
+        
+        if not suitable_intervals:
+            return None
+        
+        # print(f"zzzzzzzzzzzzzzzzzzzzzzzzzz find_region suitable_intervals:")
+        # for interval in suitable_intervals:
+        #     print(f"interval: {interval}")
+        # Select an interval - randomized
+        chosen_idx = random.randrange(0, len(suitable_intervals)) if len(suitable_intervals) > 1 else 0
+        interval, first_aligned, last_aligned = suitable_intervals[chosen_idx]
+        
+        # Determine the position within the interval - always randomized
+        if alignment > 1 and first_aligned != last_aligned:
+            # Count number of possible positions
+            count = ((last_aligned - first_aligned) // alignment) + 1
+            # Choose a random position
+            random_offset = random.randint(0, count - 1) * alignment
+            position_start = first_aligned + random_offset
+        elif alignment <= 1:
+            # Randomize the position within the selected interval
+            max_start = interval.start + interval.size - size
+            position_start = random.randint(interval.start, max_start)
+        else:
+            # Just use first aligned position if there's only one option
+            position_start = first_aligned
+        
+        return (position_start, size)
+
+    def split_region(self, start: int, size: int) -> Optional[Interval]:
+        """
+        Split a region from intervals without removing it.
+        Returns the split interval if successful.
+        
+        :param start: Start address of the region to split
+        :param size: Size of the region
+        :return: The split interval or None if not possible
+        """
+        if size <= 0:
+            return None
+        
+        # Find the interval that contains this region
+        containing_interval = None
+        for interval in self.intervals:
+            if interval.contains(start, size):
+                containing_interval = interval
+                break
+        
+        if not containing_interval:
+            return None
+        
+        # Split the interval
+        before, split_interval, after = containing_interval.split_at(start, size)
+        
+        # Remove the original interval
+        self.intervals.remove(containing_interval)
+        
+        # Add back the fragments
+        if before:
+            self.intervals.append(before)
+        if after:
+            self.intervals.append(after)
+        
+        return split_interval
+
+    def contains_region(self, start: int, size: int, criteria: Dict[str, Any] = None) -> bool:
+        """
+        Check if a specific region is fully contained within intervals matching criteria.
         
         :param start: Start address of the region
         :param size: Size of the region in bytes
+        :param criteria: Metadata criteria that the interval must match
         :return: True if the entire region is available, False otherwise
         """
         if size <= 0:
             return True
-            
-        region_end = start + size
         
-        # Check each free interval
-        for interval in self.free_intervals:
-            int_start, int_size = interval
-            int_end = int_start + int_size
+        # Check each interval
+        for interval in self.intervals:
+            # Check criteria compatibility
+            if criteria and not interval.matches_criteria(criteria):
+                continue
             
             # If the region is fully contained in this interval, it's available
-            if start >= int_start and region_end <= int_end:
+            if interval.contains(start, size):
                 return True
                 
         return False
+
+    def get_intervals(self, criteria: Dict[str, Any] = None, 
+                     custom_filter: Callable[[Interval], bool] = None) -> List[Interval]:
+        """
+        Get intervals matching the given criteria.
+        
+        :param criteria: Metadata criteria to filter by
+        :param custom_filter: Optional custom filter function
+        :return: List of matching Interval objects
+        """
+        result = []
+        
+        for interval in self.intervals:
+            # Check criteria
+            if criteria and not interval.matches_criteria(criteria):
+                continue
+            
+            # Check custom filter
+            if custom_filter and not custom_filter(interval):
+                continue
+            
+            result.append(interval)
+        
+        return result
+
+    def get_total_size(self, criteria: Dict[str, Any] = None) -> int:
+        """
+        Get total size of intervals matching criteria.
+        
+        :param criteria: Metadata criteria to filter by (None means all intervals)
+        :return: Total size in bytes
+        """
+        total = 0
+        for interval in self.intervals:
+            if criteria is None or interval.matches_criteria(criteria):
+                total += interval.size
+        return total
+
+    def get_intervals_as_tuples(self, criteria: Dict[str, Any] = None) -> List[Tuple[int, int]]:
+        """
+        Get intervals as (start, size) tuples for backward compatibility.
+        
+        :param criteria: Metadata criteria to filter by
+        :return: List of (start, size) tuples
+        """
+        return [interval.to_tuple() for interval in self.get_intervals(criteria)]
+
+    def update_metadata(self, start: int, size: int, metadata: Dict[str, Any]) -> bool:
+        """
+        Update metadata for intervals that overlap with the given region.
+        
+        :param start: Start address of the region
+        :param size: Size of the region
+        :param metadata: Metadata to update/add
+        :return: True if any intervals were updated
+        """
+        if size <= 0:
+            return False
+        
+        updated = False
+        for interval in self.intervals:
+            if interval.overlaps(start, size):
+                interval.metadata.update(metadata)
+                updated = True
+        
+        return updated
+
+    def clear(self):
+        """Clear all intervals."""
+        self.intervals.clear()
+
+    def is_empty(self) -> bool:
+        """Check if there are no intervals."""
+        return len(self.intervals) == 0
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get statistics about the intervals."""
+        if not self.intervals:
+            return {"count": 0, "total_size": 0, "metadata_types": {}}
+        
+        total_size = sum(interval.size for interval in self.intervals)
+        
+        # Count metadata types
+        metadata_counts = {}
+        for interval in self.intervals:
+            for key, value in interval.metadata.items():
+                if key not in metadata_counts:
+                    metadata_counts[key] = {}
+                if value not in metadata_counts[key]:
+                    metadata_counts[key][value] = 0
+                metadata_counts[key][value] += 1
+        
+        return {
+            "count": len(self.intervals),
+            "total_size": total_size,
+            "metadata_types": metadata_counts,
+            "size_range": (min(i.size for i in self.intervals), max(i.size for i in self.intervals))
+        }
+
+    # Private helper methods
+    
+    def _find_suitable_intervals(self, size: int, alignment: int = 1, 
+                               criteria: Dict[str, Any] = None,
+                               custom_filter: Callable[[Interval], bool] = None):
+        """
+        Find all intervals where the requested size will fit, considering alignment and criteria.
+        
+        :param size: Size of the memory block in bytes
+        :param alignment: Memory alignment requirement
+        :param criteria: Metadata criteria that the interval must match
+        :param custom_filter: Optional custom filter function
+        :return: List of (interval, aligned_start, max_start) tuples
+        """
+        if size <= 0:
+            return []
+            
+        suitable_intervals = []
+        
+        for interval in self.intervals:
+            # Check criteria compatibility
+            if criteria and not interval.matches_criteria(criteria):
+                continue
+            
+            # Check custom filter
+            if custom_filter and not custom_filter(interval):
+                continue
+            
+            if interval.size >= size:
+                # Handle alignment
+                if alignment > 1:
+                    # Calculate first aligned address in the interval
+                    first_aligned = (interval.start + alignment - 1) & ~(alignment - 1)
+                    
+                    # Calculate last possible aligned address that fits the block
+                    max_start = interval.start + interval.size - size
+                    last_aligned = max_start & ~(alignment - 1)
+                    
+                    if first_aligned <= last_aligned:
+                        suitable_intervals.append((interval, first_aligned, last_aligned))
+                else:
+                    # No alignment needed
+                    max_start = interval.start + interval.size - size
+                    suitable_intervals.append((interval, interval.start, max_start))
+                    
+        return suitable_intervals
+
+    def _merge_adjacent_intervals(self):
+        """Helper method to merge any adjacent intervals with compatible metadata."""
+        if not self.intervals or len(self.intervals) < 2:
+            return
+            
+        # Sort intervals by start address for easier merging
+        self.intervals.sort(key=lambda interval: interval.start)
+        
+        # Merge adjacent intervals
+        i = 0
+        while i < len(self.intervals) - 1:
+            current = self.intervals[i]
+            next_interval = self.intervals[i + 1]
+            
+            # If intervals can be merged
+            if current.can_merge_with(next_interval):
+                # Merge them
+                merged = current.merge_with(next_interval)
+                self.intervals[i] = merged
+                # Remove the next interval
+                del self.intervals[i + 1]
+            else:
+                i += 1
+
+    def find_and_remove(self, size: int, alignment_bits: int = None, 
+                       metadata_filter: Callable[[Dict[str, Any]], bool] = None) -> Tuple[int, int]:
+        """
+        Find a suitable region and immediately remove it from the intervals.
+        This is a convenience method that combines find_region() and remove_region().
+        
+        Args:
+            size: Required size in bytes
+            alignment_bits: Alignment requirement (power of 2)
+            metadata_filter: Optional function to filter intervals by metadata
+            
+        Returns:
+            Tuple of (start_address, actual_size) if found and removed
+            
+        Raises:
+            ValueError: If no suitable region is found
+        """
+        result = self.find_region(size, alignment_bits, metadata_filter)
+        if result is None:
+            alignment_str = f" with alignment {alignment_bits}" if alignment_bits else ""
+            raise ValueError(f"Could not find region of size {size}{alignment_str}")
+            
+        start_address, found_size = result
+        
+        # Remove the exact size requested, not the found_size
+        self.remove_region(start_address, size)
+        
+        return (start_address, size)

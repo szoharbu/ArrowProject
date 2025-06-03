@@ -143,7 +143,10 @@ class MemoryBlock:
             self._pa_address = self.memory_segment.pa_address + self.offset_from_segment_start
             self.base_reg = curr_state.base_register
             self.base_reg_value = curr_state.base_register_value
-            self.offset = self._address - curr_state.base_register_value
+            if Configuration.Architecture.x86:
+                self.offset = self._address - curr_state.base_register_value
+            else:
+                self.offset = None
         else:
             self._address = None
             self.offset_from_segment_start = None
