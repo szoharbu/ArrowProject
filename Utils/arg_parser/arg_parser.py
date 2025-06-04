@@ -116,7 +116,7 @@ def parse_arguments(input_args=None):
         logger.info(f"--------------- architecture: {args.arch}")
         config_manager.set_value('Architecture', args.arch)
     else:
-        arch = 'riscv'
+        arch = 'arm'
         logger.info(f"--------------- architecture: {arch} (default)")
         config_manager.set_value('Architecture', arch)
     setup_chosen_architecture()

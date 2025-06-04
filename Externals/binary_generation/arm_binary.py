@@ -223,6 +223,9 @@ class ArmBuildPipeline(BuildPipeline):
     def extract_linker_file(self):
 
 
+        state_manager = get_state_manager()
+        cores_states = state_manager.get_all_states()
+
         # Get configuration and output paths
         output_dir = get_config_manager().get_value('output_dir_path')
         pgt_sections = self.parse_pgt_scatter_file(output_dir)
@@ -235,7 +238,17 @@ class ArmBuildPipeline(BuildPipeline):
             # Write memory regions
             f.write("MEMORY\n{\n")
             f.write("  trickbox_mem : ORIGIN = 0x13000000, LENGTH = 0x200000\n")
-            f.write("  main_mem : ORIGIN = 0x80000000, LENGTH = 0x200200000\n")
+            f.write("  memory_region_utilities : ORIGIN = 0x80000000, LENGTH = 0x200000000\n")
+
+            # TODO:: need to separate the main_mem into multiple per PageTable VA sections
+            for state_name in cores_states:
+                state_manager.set_active_state(state_name)
+                curr_state = state_manager.get_active_state()
+                core_mmus = curr_state.enabled_mmus
+                for mmu in core_mmus:
+                    f.write(f"  memory_region_{mmu.mmu_name} : ORIGIN = {hex(mmu.va_memory_range.address)}, LENGTH = {hex(mmu.va_memory_range.byte_size)}\n")
+            state_manager.set_active_state("core_0")
+
             f.write("}\n\n")
             
             # Start sections
@@ -247,13 +260,11 @@ class ArmBuildPipeline(BuildPipeline):
             
 
             # Get all memory segments per state
-            state_manager = get_state_manager()
-            cores_states = state_manager.get_all_states()
             linked_data_segments_pa_addresses = []  # list of cross-core PA addresses that are already linked
-            for core_state in cores_states:
-                state_manager.set_active_state(core_state)
-                curr_state = state_manager.get_active_state()
 
+            for state_name in cores_states:
+                state_manager.set_active_state(state_name)
+                curr_state = state_manager.get_active_state()
                 segment_manager = curr_state.segment_manager
                 state_segments = segment_manager.get_segments(pool_type=[
                     Configuration.Memory_types.BSP_BOOT_CODE, 
@@ -285,7 +296,8 @@ class ArmBuildPipeline(BuildPipeline):
                             f.write(f"    *(.text.boot*)\n")  # Also include any boot-related sections
                             f.write(f"    *(.boot*)\n")
                         
-                        f.write("  } > main_mem\n\n")
+                        #f.write("  } > main_mem\n\n")
+                        f.write(f"  }} > memory_region_{segment.mmu.mmu_name}\n\n")
                     
                     elif segment.memory_type in [Configuration.Memory_types.DATA_SHARED, 
                                                 Configuration.Memory_types.DATA_PRESERVE]:
@@ -308,20 +320,22 @@ class ArmBuildPipeline(BuildPipeline):
                         f.write("  {\n")
                         # Use specific patterns for this data segment
                         f.write(f"    *({section_name})\n")  # Match this exact section name
-                        f.write("  } > main_mem\n\n")
+                        #f.write("  } > main_mem\n\n")
+                        f.write(f"  }} > memory_region_{segment.mmu.mmu_name}\n\n")
                 
                 # Add standard sections
                 stack_data_start_address = curr_state.segment_manager.get_stack_data_start_address()
                 f.write(f"  .stack {hex(stack_data_start_address)} : AT({hex(stack_data_start_address)})\n")
                 f.write("  {\n")
                 f.write("    *(.stack)\n")
-                f.write("  } > main_mem\n\n")
+                #f.write("  } > main_mem\n\n")
+                f.write(f"  }} > memory_region_{segment.mmu.mmu_name}\n\n")
             
             # Add PGT constants section
             f.write("  .data.pgt_constants 0x90080000 : AT(0x90080000)\n")
             f.write("  {\n")
             f.write("    *(.data.pgt_constants)\n")  # Match specific section, not all .data
-            f.write("  } > main_mem\n\n")
+            f.write("  } > memory_region_utilities\n\n")
 
             # Add PGT sections
             for section_name, address in pgt_sections:
@@ -331,7 +345,7 @@ class ArmBuildPipeline(BuildPipeline):
                 f.write("  {\n")
                 f.write(f"    *(.data.{section_name_clean})\n")
                 f.write(f"    *(.{section_name})\n")  # Original section name from PGT
-                f.write("  } > main_mem\n\n")
+                f.write("  } > memory_region_utilities\n\n")
             
             # Close sections
             f.write("}\n")
