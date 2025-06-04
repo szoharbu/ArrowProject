@@ -15,6 +15,7 @@ class State:
         self.state_name: str = state_name
         self.state_id: int = state_id
         self.privilege_level: int = privilege_level
+        self.current_el_level: int = privilege_level
         self.processor_mode: str = processor_mode
         self.register_manager: RegisterManager = register_manager
         self.execution_context: Configuration.Execution_context = execution_context         # ARM's exception level
