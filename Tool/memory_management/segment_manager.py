@@ -296,7 +296,7 @@ class SegmentManager:
                 )
                 mmu_manager.allocations.append(allocation)
 
-                memory_log(f"Created allocation: VA={hex(segment_va_start)}:{hex(segment_va_end)}, PA={hex(shared_pa_start)}:{hex(shared_pa_start+byte_size-1)}, size={byte_size}")
+                memory_log(f"Created allocation: VA={hex(segment_va_start)}:{hex(segment_va_end)}, PA={hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size={byte_size}")
                             
                 # Log allocation information
                 memory_log(f"Allocated memory segment at VA:{hex(segment_va_start)}:{hex(segment_va_end)}, PA:{hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size:{hex(segment_size)}, type:{page_type}, is_cross_core:True")
@@ -518,11 +518,24 @@ class SegmentManager:
                 '''
                 start_block = selected_segment.address
                 end_block = selected_segment.address + selected_segment.byte_size
-                offset_inside_block = random.randint(start_block, end_block - byte_size)
-                address = offset_inside_block
-                segment_offset = address - selected_segment.address
+                max_offset = end_block - start_block - byte_size
+                
+                # Ensure offset maintains alignment requirement
+                if alignment and alignment > 1:
+                    # Calculate max number of aligned positions within the offset range
+                    max_aligned_positions = max_offset // alignment
+                    if max_aligned_positions > 0:
+                        # Choose random aligned position
+                        aligned_position = random.randint(0, max_aligned_positions)
+                        segment_offset = aligned_position * alignment
+                    else:
+                        segment_offset = 0
+                else:
+                    segment_offset = random.randint(0, max_offset) if max_offset > 0 else 0
+                
+                address = start_block + segment_offset
                 pa_address = selected_segment.pa_address + segment_offset
-                memory_log(f"DATA_SHARED allocation {state_name} - Segment '{selected_segment.name}' at VA:{hex(address)}, PA:{hex(pa_address)}, size:{byte_size}, type:{page_type}")
+                memory_log(f"DATA_SHARED allocation {state_name} - Segment '{selected_segment.name}' at VA:{hex(address)}, PA:{hex(pa_address)}, size:{byte_size}, type:{page_type}, alignment:{alignment}")
             else: # pool_type is Configuration.Memory_types.DATA_PRESERVE:
                 '''
                 When DATA_PRESERVE is asked, the heuristic is as following:
@@ -610,16 +623,17 @@ class SegmentManager:
         return per_state_data_units
 
 
-    def get_used_memory_block(self, byte_size:int=8) -> [MemoryBlock|None]:
+    def get_used_memory_block(self, byte_size:int=8, alignment:int=None) -> [MemoryBlock|None]:
         """
         Retrieve data memory operand from the existing pools.
 
         Args:
             byte_size (int): size of the memory operand.
+            alignment (int): required alignment in bytes.
         Returns:
-            DataUnit: A memory operand from a random data block.
+            MemoryBlock: A memory operand from a random data block that can satisfy alignment.
         """
-        memory_log(f"==================== get_used_memory_block: requested size: {byte_size} bytes")
+        memory_log(f"==================== get_used_memory_block: requested size: {byte_size} bytes, alignment: {alignment}")
 
         # extract all shared memory-blocks with byte_size bigger than 'byte-size'
         valid_memory_blocks = []
@@ -632,12 +646,35 @@ class SegmentManager:
             for mem_block in segment.memory_block_list:
                 #print(f"mem_block: {mem_block}")
                 if mem_block.byte_size >= byte_size:
-                    memory_log(f"  Found valid memory block '{mem_block.name}' in segment '{segment.name}', "
-                               f"size: {mem_block.byte_size} bytes, address: {hex(mem_block.get_address() if mem_block.get_address() is not None else 0)}")
-                    valid_memory_blocks.append((segment, mem_block))
+                    # Check if this block can provide the required alignment
+                    block_address = mem_block.get_address()
+                    alignment_compatible = True
+                    
+                    if alignment and alignment > 1 and block_address is not None:
+                        # Check if we can find an aligned position within this block
+                        if (block_address % alignment) == 0:
+                            # Block itself is aligned, we can use it
+                            alignment_compatible = True
+                        else:
+                            # Block not aligned, find first aligned address within block
+                            first_aligned_addr = ((block_address + alignment - 1) // alignment) * alignment
+                            block_end = block_address + mem_block.byte_size
+                            
+                            # Check if aligned position + required size fits within block
+                            if first_aligned_addr + byte_size <= block_end:
+                                alignment_compatible = True
+                                memory_log(f"  Block '{mem_block.name}' can provide alignment: first_aligned=0x{first_aligned_addr:x}, block_end=0x{block_end:x}")
+                            else:
+                                alignment_compatible = False
+                                memory_log(f"  Block '{mem_block.name}' rejected: first_aligned=0x{first_aligned_addr:x} + size={byte_size} > block_end=0x{block_end:x}")
+                    
+                    if alignment_compatible:
+                        memory_log(f"  Found valid memory block '{mem_block.name}' in segment '{segment.name}', "
+                                   f"size: {mem_block.byte_size} bytes, address: {hex(block_address if block_address is not None else 0)}, alignment-compatible: {alignment_compatible}")
+                        valid_memory_blocks.append((segment, mem_block))
 
         if not valid_memory_blocks:
-            memory_log("No valid memory blocks found that meet the size requirement", level="warning")
+            memory_log(f"No valid memory blocks found that meet size ({byte_size}) and alignment ({alignment}) requirements", level="warning")
             return None
 
         # Select a random memory block

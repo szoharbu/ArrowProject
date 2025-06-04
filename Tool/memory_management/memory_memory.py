@@ -52,6 +52,7 @@ class Memory:
         self.unique_label = self.name if name is None else f"{self.name}_mem{Memory._memory_initial_seed_id}"
         self._address = address
         self.byte_size = byte_size
+        self.shared = shared
         self.memory_type = memory_type
         self.init_value = init_value
         self.memory_block = memory_block
@@ -124,7 +125,7 @@ class Memory:
 
                 if should_reuse and (name is None) and (self._address is None) and (self.init_value is None):
                     # reuse memory only applicable for DATA_SHARED memory, and when no explicit parameter were asked. Notice I'm checking name and not self.name for that usage
-                    self.memory_block = curr_state.segment_manager.get_used_memory_block(byte_size=byte_size)
+                    self.memory_block = curr_state.segment_manager.get_used_memory_block(byte_size=byte_size, alignment=self.alignment)
                     # check if such shared memory_block exist
                     if self.memory_block is not None:
                         self.reused_memory = True
@@ -132,7 +133,34 @@ class Memory:
                         if self.byte_size > self.memory_block.byte_size:
                             raise ValueError("Inner block size cannot exceed outer block size.")
                         max_offset = self.memory_block.byte_size - self.byte_size
-                        self.memory_block_offset = random.randint(0, max_offset)
+                        
+                        # Ensure offset maintains alignment requirement  
+                        if self.alignment > 1:
+                            # Calculate the first aligned address within this block
+                            block_base_addr = self.memory_block.get_address()
+                            first_aligned_addr = ((block_base_addr + self.alignment - 1) // self.alignment) * self.alignment
+                            
+                            # Calculate offset from block base to first aligned address
+                            min_offset = first_aligned_addr - block_base_addr
+                            
+                            # Check if we have space for the aligned allocation
+                            if min_offset + self.byte_size <= max_offset + self.byte_size:  # max_offset is available space
+                                # Calculate how many additional aligned positions are available
+                                remaining_space = (max_offset + self.byte_size) - (min_offset + self.byte_size)
+                                additional_positions = remaining_space // self.alignment
+                                
+                                if additional_positions > 0:
+                                    # Choose random position among available aligned positions
+                                    chosen_position = random.randint(0, additional_positions)
+                                    self.memory_block_offset = min_offset + (chosen_position * self.alignment)
+                                else:
+                                    # Only one aligned position available
+                                    self.memory_block_offset = min_offset
+                            else:
+                                # This shouldn't happen if filtering worked correctly
+                                self.memory_block_offset = 0
+                        else:
+                            self.memory_block_offset = random.randint(0, max_offset) if max_offset > 0 else 0
 
                 if not self.reused_memory: # Either because reuse_memory=False or wasn't to find valid option
 
@@ -143,7 +171,19 @@ class Memory:
                                                     memory_type=self.memory_type, shared=shared, alignment=self.alignment,
                                                     init_value=self.init_value, _use_name_as_unique_label=True)
                     max_offset = new_byte_size - self.byte_size
-                    self.memory_block_offset = random.randint(0, max_offset)
+                    
+                    # Ensure offset maintains alignment requirement
+                    if self.alignment > 1:
+                        # Calculate max number of aligned positions within the offset range
+                        max_aligned_positions = max_offset // self.alignment
+                        if max_aligned_positions > 0:
+                            # Choose random aligned position
+                            aligned_position = random.randint(0, max_aligned_positions)
+                            self.memory_block_offset = aligned_position * self.alignment
+                        else:
+                            self.memory_block_offset = 0
+                    else:
+                        self.memory_block_offset = random.randint(0, max_offset)
             else:
                 # creating a dedicated MemoryBlock
                 self.memory_block = MemoryBlock(name=self.unique_label, byte_size=self.byte_size, address=self._address,
@@ -169,7 +209,7 @@ class Memory:
 
         logger = get_logger()
 
-        self.memory_str = f"Memory access: [ name={self.name}, address={hex(self._address)}, pa_address={hex(self._pa_address)}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}, cross_core={self.cross_core} ]"
+        self.memory_str = f"Memory access: [ name={self.name}, address={hex(self._address)}, pa_address={hex(self._pa_address)}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, shared={self.shared}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}, cross_core={self.cross_core} ]"
   
         memory_log(self.memory_str)
         logger.debug(self.memory_str)
