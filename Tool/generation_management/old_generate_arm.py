@@ -28,6 +28,7 @@ def generate_arm(
     if isinstance(selected_instruction.operands, str):
         selected_instruction.operands = ast.literal_eval(selected_instruction.operands)
 
+    print(f"selected_instruction: {selected_instruction}")
     # set True or False if one of the operands has memory type
     memory_usage = any(operand['type'] == "mem" for operand in selected_instruction.operands)
     if memory_usage:
@@ -35,12 +36,14 @@ def generate_arm(
         For every memory usage, we will plant a dynamic_init instruction to place that memory address in a temp register
         this is done to avoid using memories offset due to their formatting requirements and my lack of knowledge.
         '''
+        print(f"memory_usage!!! selected_instruction: {selected_instruction.mnemonic}")
         if src is not None and isinstance(src, Memory):
             memory_operand = src
         elif dest is not None and isinstance(dest, Memory):
             memory_operand = dest
         else:
-            memory_operand = Memory(shared=True)
+            # TODO:: add logic to calculate alignment based on the instruction, operand size, etc.
+            memory_operand = Memory(shared=True, alignment=3)
 
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
         dynamic_init_memory_address_reg = RegisterManager.get_and_reserve()

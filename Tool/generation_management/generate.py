@@ -5,7 +5,7 @@ from Tool.generation_management.utils import get_operand_type
 from Tool.generation_management.generated_instruction import GeneratedInstruction
 from Tool.generation_management.generate_x86 import generate_x86
 from Tool.generation_management.generate_riscv import generate_riscv
-from Tool.generation_management.generate_arm import generate_arm
+#from Tool.generation_management.generate_arm import old_generate_arm
 from Tool.generation_management.generate_arm_asl import generate_arm_asl
 from Utils.configuration_management import Configuration, get_config_manager
 from Externals.db_manager.models import get_instruction_db
@@ -101,7 +101,7 @@ def generate(
         # Use database OFFSET to get a random instruction (including invalid ones)
         # Try up to 10 times to find a valid instruction (same retry logic as before)
         selected_instruction = None
-        for attempt in range(10):
+        for attempt in range(15):
             random_offset = random.randint(0, instruction_count_in_db - 1)
             candidate_instruction = query_filter.offset(random_offset).limit(1).first()
            

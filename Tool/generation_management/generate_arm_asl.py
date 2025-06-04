@@ -57,8 +57,22 @@ def generate_arm_asl(
         elif dest is not None and isinstance(dest, Memory):
             memory_operand = dest
         else:
-            # allocating a new memory operand ,
-            memory_operand = Memory(shared=True) # TODO:: need to set the memory size!!!.
+
+            # allocating a new memory operand
+            # TODO:: need to set the memory size!!!
+            # TODO:: refactor the below logic to calculate alignment based on the instruction, operand size, etc.
+            # Look for data operands (src/dest that aren't memory addressing)
+            data_operands = [op for op in selected_instruction.operands if op.role in ['src', 'dest', 'src_dest'] and not op.is_memory]
+            if data_operands: # Use the size of data operands
+                alignment = max(op.size for op in data_operands) // 8  # bits to bytes
+            else: # Fallback: some instructions might encode size differently
+                alignment = 2
+            memory_operand = Memory(shared=True, alignment=alignment)
+
+            int_address = memory_operand.get_address()
+            if (int_address % alignment) != 0:
+                raise ValueError(f"Alignment {alignment} is not met for memory operand {hex(memory_operand.get_address())}")
+
 
         # setting an address register to be used as part of the dynamic_init if a memory operand is used
         dynamic_init_memory_address_reg = RegisterManager.get_and_reserve()
