@@ -62,4 +62,5 @@ class MemoryManager_API:
         """
         from Tool.state_management import get_current_state
         current_state = get_current_state()
-        return current_state.segment_manager.allocate_memory_segment(name=name, byte_size=byte_size, memory_type=memory_type)
+        current_el_page_table = current_state.current_el_page_table
+        return current_el_page_table.segment_manager.allocate_memory_segment(name=name, byte_size=byte_size, memory_type=memory_type)

@@ -19,7 +19,7 @@ class SegmentManager:
         self.pool_type_mapping: Dict[Configuration.Memory_types, List[MemorySegment]] = {}  # To map pool types to blocks
 
 
-    def allocate_memory_segment(self, name: str, byte_size:int, memory_type:Configuration.Memory_types, alignment_bits:int=None, VA_eq_PA:bool=False)->MemorySegment:
+    def allocate_memory_segment(self, name: str, byte_size:int, memory_type:Configuration.Memory_types, alignment_bits:int=None, VA_eq_PA:bool=False, force_address:int=None)->MemorySegment:
         """
         Allocate a segment of memory for either code or data
         :param name:ste: name of the segment
@@ -32,6 +32,10 @@ class SegmentManager:
         logger = get_memory_logger()
         logger.info("")
         logger.info(f"==================== allocate_memory_segment: {name}, size: {byte_size}, type: {memory_type}")
+        if force_address:
+            logger.info(f"==================== allocate_memory_segment: using force_address: {hex(force_address)} for allocation")
+            if not VA_eq_PA or memory_type != Configuration.Memory_types.BSP_BOOT_CODE:
+                raise ValueError("force_address is only supported when VA_eq_PA is True and memory_type is BSP_BOOT_CODE")
 
         for segment in self.memory_segments:
             if segment.name == name:
@@ -64,10 +68,12 @@ class SegmentManager:
             raise ValueError(f"No available {pool_name} regions before allocation")
         
         try:
-            if VA_eq_PA:
+            if force_address:
+                logger.info(f"Requesting allocation with force_address constraint at {hex(force_address)}")
+            elif VA_eq_PA:
                 logger.info(f"Requesting allocation with VA=PA constraint")
             
-            allocation = self.page_table.allocate_segment(byte_size, page_type, alignment_bits, VA_eq_PA)
+            allocation = self.page_table.allocate_segment(size=byte_size, page_type=page_type, alignment_bits=alignment_bits, VA_eq_PA=VA_eq_PA, force_address=force_address)
             segment_start = allocation.va_start
             segment_size = allocation.size
             segment_pa_start = allocation.pa_start

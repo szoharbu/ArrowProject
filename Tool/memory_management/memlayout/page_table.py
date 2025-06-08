@@ -196,11 +196,16 @@ class PageTable:
         
         return va_start, pa_start, size_bytes
 
-    def allocate_page(self, size:Configuration.Page_sizes=None, alignment_bits:int=None, page_type:Configuration.Page_types=None, permissions:int=None, cacheable:str=None, shareable:str=None, custom_attributes:dict=None, sequential_page_count:int=1, VA_eq_PA:bool=False):
+    def allocate_page(self, size:Configuration.Page_sizes=None, alignment_bits:int=None, page_type:Configuration.Page_types=None, permissions:int=None, cacheable:str=None, shareable:str=None, custom_attributes:dict=None, sequential_page_count:int=1, VA_eq_PA:bool=False, force_address:int=None):
         logger = get_memory_logger()
         logger.info("")
         logger.info(f"======================== PageTableManager - allocate_page for '{self.page_table_name}' PageTable")
         logger.info(f"==== size: {size}, alignment_bits: {alignment_bits}, page_type: {page_type}, permissions: {permissions}, cacheable: {cacheable}, shareable: {shareable}, custom_attributes: {custom_attributes}, sequential_page_count: {sequential_page_count}, VA_eq_PA: {VA_eq_PA}")
+
+        if force_address is not None:
+            logger.info(f"==== allocate_page - force_address: {force_address}")
+            if not VA_eq_PA:
+                raise ValueError("force_address is only supported when VA_eq_PA is True")
 
         if size is None:
             size = random.choice([Configuration.Page_sizes.SIZE_4K, Configuration.Page_sizes.SIZE_2M])#, Configuration.Page_sizes.SIZE_1G])
@@ -262,7 +267,39 @@ class PageTable:
         
         # Step 1: Find and allocate regions from unmapped space
         try:
-            if VA_eq_PA:
+            if force_address:
+                logger.info(f"Allocating unmapped memory with force_address VA=PA={hex(force_address)}, size: {hex(full_size_bytes)}")
+                va_start = force_address
+                pa_start = force_address
+                size = full_size_bytes
+                
+                # Remove the region from unmapped space (similar to VA_eq_PA path)
+                va_removed = self.unmapped_va_intervals.remove_region(va_start, size)
+                pa_removed = page_table_manager.unmapped_pa_intervals.remove_region(pa_start, size)
+                
+                # Log the results of removal attempts
+                if not va_removed:
+                    logger.warning(f"VA region 0x{va_start:x}-0x{va_start + size - 1:x} was not found in unmapped VA intervals - may already be mapped or have overlaps")
+                else:
+                    logger.info(f"Successfully removed VA region 0x{va_start:x}-0x{va_start + size - 1:x} from unmapped intervals")
+                    
+                if not pa_removed:
+                    logger.warning(f"PA region 0x{pa_start:x}-0x{pa_start + size - 1:x} was not found in unmapped PA intervals - may already be mapped or have overlaps")
+                else:
+                    logger.info(f"Successfully removed PA region 0x{pa_start:x}-0x{pa_start + size - 1:x} from unmapped intervals")
+                
+                # Check if we should fail when regions can't be removed
+                if not va_removed or not pa_removed:
+                    logger.error(f"Force address allocation failed - requested regions are not available in unmapped space")
+                    raise ValueError(f"Cannot allocate at forced address 0x{force_address:x} - region is not available in unmapped space (VA removed: {va_removed}, PA removed: {pa_removed})")
+                
+                # Map the VA to PA with equal addresses
+                page_table_manager.map_va_to_pa(self, va_start, pa_start, size, page_type)
+                
+                va_size = size
+                logger.info(f"Successfully allocated and mapped force address memory at 0x{va_start:x}, size: {hex(size)}")
+                
+            elif VA_eq_PA:
                 logger.info(f"Allocating unmapped memory with VA=PA constraint, size: {full_size_bytes}, alignment: {alignment_bits}")
                 
                 # Find a region that is available at the same address in both VA and PA unmapped spaces
@@ -283,7 +320,7 @@ class PageTable:
                 page_table_manager.map_va_to_pa(self, va_start, pa_start, size, page_type)
                 
                 va_size = size
-                logger.info(f"Successfully allocated and mapped VA=PA memory at 0x{va_start:x}, size: {size}")
+                logger.info(f"Successfully allocated and mapped VA=PA memory at 0x{va_start:x}, size: {hex(size)}")
                 
             else:
                 # Original implementation for non-VA_eq_PA case
@@ -408,7 +445,7 @@ class PageTable:
         
     
 
-    def allocate_segment(self, size, page_type, alignment_bits=None, VA_eq_PA=False, page_size=4096):
+    def allocate_segment(self, size, page_type, alignment_bits=None, VA_eq_PA=False, page_size=4096, force_address=None):
         """
         Allocates memory from mapped but non-allocated regions
         - Can allocate cross-page regions if pages are sequential
@@ -419,30 +456,77 @@ class PageTable:
         :param alignment_bits: Alignment in bits (default: None)
         :param VA_eq_PA: If True, the virtual address must equal the physical address (default: False)
         :param page_size: Page size in bytes (default: 4096)
+        :param force_address: If provided, forces allocation at this specific address (VA=PA) (default: None)
         :return: MemoryAllocation object
         """
         logger = get_memory_logger()
-        logger.info(f"Allocating memory of size {size} for page_table '{self.page_table_name}' with page_type {page_type}, alignment_bits={alignment_bits}, VA_eq_PA={VA_eq_PA}")
         
+        # Input validation
+        if size is None:
+            raise ValueError("size parameter cannot be None")
+        if page_type is None:
+            raise ValueError("page_type parameter cannot be None")
+        if size <= 0:
+            raise ValueError(f"size must be positive, got: {size}")
+        if page_size is None or page_size <= 0:
+            raise ValueError(f"page_size must be positive, got: {page_size}")
+            
+        logger.info(f"Allocating memory of size {hex(size)} for page_table '{self.page_table_name}' with page_type {page_type}, alignment_bits={alignment_bits}, VA_eq_PA={VA_eq_PA}, force_address={hex(force_address) if force_address else None}")
+        
+        if force_address is not None:
+            logger.info(f"==== allocate_segment - force_address: {hex(force_address)}")
+            if not VA_eq_PA:
+                raise ValueError("force_address is only supported when VA_eq_PA is True")
         
         # Determine if we're allocating code or data
         is_code = True if page_type == Configuration.Page_types.TYPE_CODE else False
         
         # Find suitable VA and PA addresses based on allocation type
-        if VA_eq_PA:
+        if force_address is not None:
+            va_start = pa_start = force_address
+            
+            # Validate alignment if specified
+            if alignment_bits is not None:
+                alignment = 1 << alignment_bits
+                if va_start % alignment != 0:
+                    logger.error(f"Forced address 0x{va_start:x} is not aligned to {alignment_bits} bits!")
+                    raise ValueError(f"Forced address 0x{va_start:x} is not aligned to {alignment_bits} bits (required alignment: {alignment})")
+            
+            # Find overlapping pages (we still need this for the allocation object)
+            page_entries = self.get_pages()
+            overlapping_pages = []
+            va_end = va_start + size - 1
+            
+            for page in page_entries:
+                if (page.va <= va_end and page.end_va >= va_start):
+                    overlapping_pages.append(page)
+            
+            overlapping_pages.sort(key=lambda p: p.va)
+            logger.info(f"Found {len(overlapping_pages)} pages for forced address allocation")
+            
+        elif VA_eq_PA:
             va_start, pa_start, overlapping_pages = self._find_va_eq_pa_addresses(size, page_type, alignment_bits, page_size)
         else:
             va_start, pa_start, overlapping_pages = self._find_regular_addresses(size, page_type, alignment_bits, page_size)
             
-        # From here on, the logic is the same for both allocation types
+        # From here on, the logic is the same for all allocation types
         # Mark as allocated (add to allocated, remove from non-allocated)
         self.allocated_va_intervals.add_region(va_start, size, metadata={"page_type": page_type, "page_table": self.page_table_name})
-        self.non_allocated_va_intervals.remove_region(va_start, size)
+        va_removed = self.non_allocated_va_intervals.remove_region(va_start, size)
         
         from Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
         page_table_manager = get_page_table_manager()
         page_table_manager.allocated_pa_intervals.add_region(pa_start, size, metadata={"page_type": page_type, "page_table": self.page_table_name})
-        page_table_manager.non_allocated_pa_intervals.remove_region(pa_start, size)
+        pa_removed = page_table_manager.non_allocated_pa_intervals.remove_region(pa_start, size)
+        
+        # Check if removal failed (region not available) - this catches overlaps
+        if not va_removed:
+            logger.error(f"VA region 0x{va_start:x}-0x{va_start + size - 1:x} is not available in non-allocated intervals")
+            raise ValueError(f"Cannot allocate at address 0x{va_start:x} - VA region is not available in non-allocated space")
+        
+        if not pa_removed:
+            logger.error(f"PA region 0x{pa_start:x}-0x{pa_start + size - 1:x} is not available in non-allocated intervals")
+            raise ValueError(f"Cannot allocate at address 0x{pa_start:x} - PA region is not available in non-allocated space")
                 
         # Create page mappings list for cross-page allocations
         page_mappings = []

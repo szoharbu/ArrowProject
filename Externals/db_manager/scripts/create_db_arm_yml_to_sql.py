@@ -887,10 +887,14 @@ def populate_database(yaml_dict, force_reset=False):
 
             # TODO:: need to add that information to the DB, not to the script. 
             # for now I'm setting some unfriendly instructions as random_generate = False
-            branch_instructions = ["br", "bra", "braaz", "brab", "brabz", "blr", "blraa", "blraaz", "blrab", "blra",
-                                    "ret", "retaa", "retab", "eret", "eretaa", "eretab",
-                                    "cbnz", "cbz", "tbz", "tbnz"]
-            
+            branch_instructions = ["br", "bra", "braaz", "brab", "brabz", "blr", "blraa", "blraaz", "blrab", "blra",  # branch instructions
+                                    "ret", "retaa", "retab", "eret", "eretaa", "eretab", # return instructions
+                                    "cbnz", "cbz", "tbz", "tbnz", # conditional branch instructions
+                                    "dcps1", "dcps2", "dcps3", "drps", # debug state change,  These instructions trigger transitions to debug modes
+                                    "mrs", "msr", # system register access
+                                    "eret", "smc", "hvc", "svc", "brk"] # exception handling
+
+
             if instruction.mnemonic in branch_instructions:
                 instruction.random_generate = False
 
