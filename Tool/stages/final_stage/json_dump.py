@@ -2,15 +2,15 @@ import json
 import os
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_current_state
 
 def generation_json_dump():
     logger = get_logger()
     logger.info("---- generation.json dump")
 
-    state_manager = get_state_manager()
-    current_state = state_manager.get_active_state()
-    available_segments = current_state.segment_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
+    current_state = get_current_state()
+    current_page_table = current_state.current_el_page_table
+    available_segments = current_page_table.segment_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE, Configuration.Memory_types.CODE])
 
     # Prepare data for JSON
     data = []  # List to store all segments and their asm_units_list
@@ -40,14 +40,14 @@ def generation_json_dump():
 def memory_usage_json_dump():
     logger = get_logger()
     logger.info("---- memory_usage.json dump")
-    state_manager = get_state_manager()
-    current_state = state_manager.get_active_state()
+    current_state = get_current_state()
+    current_page_table = current_state.current_el_page_table
 
-    all_segments = current_state.segment_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE,
+    all_segments = current_page_table.segment_manager.get_segments(pool_type=[Configuration.Memory_types.BOOT_CODE,
                                                                       Configuration.Memory_types.CODE,
                                                                       Configuration.Memory_types.DATA_SHARED,
                                                                       Configuration.Memory_types.DATA_PRESERVE])
-    all_data_segments = current_state.segment_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED,
+    all_data_segments = current_page_table.segment_manager.get_segments(pool_type=[Configuration.Memory_types.DATA_SHARED,
                                                                            Configuration.Memory_types.DATA_PRESERVE])
 
     # Prepare JSON structure with two sections: summary and detailed data

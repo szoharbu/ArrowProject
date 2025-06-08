@@ -10,7 +10,7 @@ from Tool.generation_management.generate_arm_asl import generate_arm_asl
 from Utils.configuration_management import Configuration, get_config_manager
 from Externals.db_manager.models import get_instruction_db
 from Tool.register_management.register import Register
-from Tool.memory_management.memory_memory import Memory
+from Tool.memory_management.memory_operand import Memory
 
 from peewee import Expression, fn
 

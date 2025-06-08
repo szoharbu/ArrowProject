@@ -1,6 +1,6 @@
 from Tool.state_management.state_manager import State
 from Tool.state_management import get_state_manager
-from Tool.memory_management.memory_segments import CodeSegment
+from Tool.memory_management.memlayout.segment import CodeSegment
 from Utils.configuration_management import Configuration
 from Utils.logger_management import get_logger
 
@@ -82,8 +82,9 @@ def switch_code(new_code:CodeSegment):
         raise ValueError(f"Cannot switch to block '{new_code}', not of CodeBlock type.")
 
     curr_state = state_manager.get_active_state()
+    curr_page_table = curr_state.current_el_page_table
 
-    all_code_blocks = curr_state.segment_manager.get_segments(
+    all_code_blocks = curr_page_table.segment_manager.get_segments(
         pool_type=[Configuration.Memory_types.BOOT_CODE,
                    Configuration.Memory_types.BSP_BOOT_CODE,
                    Configuration.Memory_types.CODE])

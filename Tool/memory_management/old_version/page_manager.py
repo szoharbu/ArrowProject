@@ -8,7 +8,7 @@ from Tool.state_management import get_current_state, get_state_manager
 from Tool.memory_management.memory_segments import MemoryRange
 from Tool.memory_management.memory_page import Page
 from Tool.memory_management import interval_lib
-from Tool.memory_management.utils import memory_log
+from Tool.memory_management.memory_logger import get_memory_logger
 
 
 class MMU:

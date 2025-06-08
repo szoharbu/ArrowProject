@@ -8,7 +8,7 @@ from Tool.generation_management.generate import GeneratedInstruction
 from Tool.generation_management.utils import map_inputs_to_operands
 from Utils.APIs.choice import choice
 # from Tool.frontend.sources_API import Sources
-from Tool.memory_management.memory_memory import Memory
+from Tool.memory_management.memory_operand import Memory
 from Tool.state_management import get_current_state
 from Utils.configuration_management import get_config_manager
 

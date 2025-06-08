@@ -1,7 +1,9 @@
 from Utils.singleton_management import SingletonManager
 from Tool.register_management.register_manager import RegisterManager, Register
-from Tool.memory_management.segment_manager import SegmentManager, MemorySegment, MemoryRange
-from Tool.memory_management.page_manager import MMU
+#from Tool.memory_management.segment_manager import SegmentManager, MemorySegment, MemoryRange
+from Tool.memory_management.memlayout.segment import MemorySegment
+#from Tool.memory_management.page_manager import MMU
+from Tool.memory_management.memlayout.page_table import PageTable
 from Utils.configuration_management import Configuration
 
 class State:
@@ -11,7 +13,7 @@ class State:
     """
 
     def __init__(self, state_name: str, state_id: int, privilege_level: int, execution_context: Configuration.Execution_context, processor_mode: str, register_manager: RegisterManager,
-                 current_el_mmu: MMU, enabled_mmus: list[MMU], segment_manager: SegmentManager, current_code: MemorySegment, base_register: Register, base_register_value: int, memory_range: MemoryRange):
+                 current_el_page_table: PageTable, enabled_page_tables: list[PageTable], current_code: MemorySegment, base_register: Register, base_register_value: int):
         self.state_name: str = state_name
         self.state_id: int = state_id
         self.privilege_level: int = privilege_level
@@ -19,22 +21,20 @@ class State:
         self.processor_mode: str = processor_mode
         self.register_manager: RegisterManager = register_manager
         self.execution_context: Configuration.Execution_context = execution_context         # ARM's exception level
-        self.current_el_mmu: MMU = current_el_mmu           # ARM's MMU for the exception level. each state has per-el mmu, and the state_manager will track the current el_mmu
-        self.enabled_mmus: list[MMU] = enabled_mmus
-        self.segment_manager: SegmentManager = segment_manager
+        self.current_el_page_table: PageTable = current_el_page_table           # ARM's MMU for the exception level. each state has per-el mmu, and the state_manager will track the current el_mmu
+        self.enabled_page_tables: list[PageTable] = enabled_page_tables
+        #self.segment_manager: SegmentManager = segment_manager
         self.current_code_block:MemorySegment = current_code
         self.base_register: Register = base_register
         self.base_register_value:int = base_register_value
-        self.memory_range:MemoryRange = memory_range
 
     def __repr__(self):
         state_str = f"State(name={self.state_name}, "
         state_str += f"state_id={self.state_id}, "
         if Configuration.Architecture.arm:
-            state_str += f"exception_level={self.privilege_level}, "
+            state_str += f"exception_level={self.current_el_level}, "
             state_str += f"execution_context={self.execution_context}, "
-            state_str += f"current_el_mmu={self.current_el_mmu}, "
-            state_str += f"enabled_mmus={self.enabled_mmus}, "
+            state_str += f"current_el_page_table={self.current_el_page_table}, "
         else:
             state_str += f"privilege_level={self.privilege_level}, "
             state_str += f"processor_mode={self.processor_mode}, "
@@ -42,8 +42,6 @@ class State:
             state_str += f"base_register={self.base_register}, "
             state_str += f"base_register_value={self.base_register_value}, "
         state_str += f"register_manager={self.register_manager}, "
-        state_str += f"segment_manager={self.segment_manager}, "
-        state_str += f"memory_range={self.memory_range}"
 
         return state_str
 
@@ -75,7 +73,7 @@ class State_manager:
 
     # def remove_state(self, state_id: str, state: State):
 
-    def set_active_state(self, state_id: str) -> None:
+    def set_active_state(self, state_id: str) -> State:
         """
         Set a state as the active state.
         :param state_id: Unique identifier for the state to set as active
@@ -83,6 +81,7 @@ class State_manager:
         if state_id not in self.states_dict:
             raise ValueError(f"State with ID {state_id} does not exist.")
         self.active_state_id = state_id
+        return self.states_dict[state_id]
 
     def get_active_state(self) -> State:
         """

@@ -34,7 +34,7 @@ def main(args=None):
         logger.info("Test generated successful :)")
         dump_time(start_time, "Test generation")
 
-        final_stage.final_section()  # post flows?
+        final_stage.final_section()  # post flows, generate binary, upload to cloud, etc.
 
     except Exception as e:
         logger.warning("Test failed :(")

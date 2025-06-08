@@ -48,8 +48,11 @@ def nested_code_sequence2():
     max_depth = random.randint(3, 5)
     generate_nested_branch(0, max_depth, 0, max_iter)
 
+
 def generate_nested_branch2(depth, max_depth, iteration, max_iter):
+
     code = MemoryManager.MemorySegment(f"branch_{iteration}", 0x100, Configuration.Memory_types.CODE)
+    print(f"branching to code {code.address}")
     with AR.BranchToSegment(code_block=code):
         while True:
             if iteration >= max_iter:
@@ -67,7 +70,7 @@ def generate_nested_branch2(depth, max_depth, iteration, max_iter):
             if action == "generate":
                 AR.generate(instruction_count=random.randint(1, 3))
             elif action == "deeper":
-                depth, iteration = generate_nested_branch(depth + 1, max_depth, iteration + 1, max_iter)
+                depth, iteration = generate_nested_branch2(depth + 1, max_depth, iteration + 1, max_iter)
             else:
                 return depth - 1, iteration + 1
 
@@ -88,9 +91,7 @@ def generate_nested_branch(depth, max_depth, current_iteration, max_iteration):
     if current_iteration >= max_iteration:
         AR.comment("Max iteration reached. only generate instructions or exit")
 
-    code = MemoryManager.MemorySegment(
-        f"nested_code_sequence_{current_iteration}", byte_size=0x100, memory_type=Configuration.Memory_types.CODE
-    )
+    code = MemoryManager.MemorySegment( f"nested_code_sequence_{current_iteration}", byte_size=0x100, memory_type=Configuration.Memory_types.CODE )
 
     AR.comment(f'branching to code {code}')
     with AR.BranchToSegment(code_block=code):

@@ -18,8 +18,8 @@ def get_last_user_context():
     template_file = normalize_path(config_manager.get_value('template_path'))
 
     test_stage_path = normalize_path('Tool/stages/test_stage')
-    memory_segments_path = normalize_path(
-        'Tool/memory_management/memory_segments.py')  # initial code label is create there
+    #memory_segments_path = normalize_path('Tool/memory_management/memory_segments.py')  # initial code label is create there
+    memory_segments_path = normalize_path('Tool/memory_management/memlayout/segment_manager.py')  # initial code label is create there
 
     # Capture the stack once as the below code might go over it twice, and it has performance penalty
     stack_snapshot = inspect.stack()
@@ -30,6 +30,7 @@ def get_last_user_context():
 
     # Traverse the call stack and look for the first instance of user code
     for frame_info in stack_snapshot:
+
         filename_abs = normalize_path(frame_info.filename)
 
         # Check for matches in Internal Content directory first
