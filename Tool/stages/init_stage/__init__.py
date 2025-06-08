@@ -110,6 +110,9 @@ def init_page_tables():
     state_manager = get_state_manager()
     page_table_manager = get_page_table_manager()
 
+    # TODO:: make this configurable as a knob
+    bsp_boot_address = 0x82000000
+
     for state_name in state_manager.get_all_states():
         # NOTE: Must create the page tables first before allocating pages
         el3r = page_table_manager.create_page_table(page_table_name=f"{state_name}_el3_root", core_id=state_name, execution_context=Configuration.Execution_context.EL3)
@@ -126,10 +129,18 @@ def init_page_tables():
     page_table_i = page_tables[0]
     page_table_i.allocate_cross_core_page()
 
+    bsp_code_initiated = False
     for page_table in page_tables:
         memory_logger.info(f"Core: {page_table.core_id} Page Table: {page_table.page_table_name}")
         if page_table.execution_context == Configuration.Execution_context.EL3:
-            #Always allocate a code page table that has a VA=PA mapping, needed for BSP boot block
+
+            if not bsp_code_initiated:
+                # there is a single bsp_code 4k page, that act as the starting point of all cores before branching to thier specific boot code.
+                # this page and section should be located at 0x82000000 (TODO:: hardcoded, set as knob)
+                page_table.allocate_page(size=Configuration.Page_sizes.SIZE_4K, page_type=Configuration.Page_types.TYPE_CODE, sequential_page_count=1, VA_eq_PA=True, force_address=bsp_boot_address)
+                bsp_code_initiated = True
+            
+            #Always allocate a code page table that has a VA=PA mapping, needed for boot blocks and possibly for more
             page_table.allocate_page(size=Configuration.Page_sizes.SIZE_2M, page_type=Configuration.Page_types.TYPE_CODE, sequential_page_count=1, VA_eq_PA=True)
         
         for type in [Configuration.Page_types.TYPE_CODE, Configuration.Page_types.TYPE_DATA]:
@@ -155,6 +166,8 @@ def init_segments():
     page_table_manager = get_page_table_manager()
     page_tables = page_table_manager.get_all_page_tables()
 
+    # TODO:: make this configurable as a knob
+    bsp_boot_address = 0x82000000
 
     core_0_el3_page_table = next(page_table for page_table in page_tables if page_table.core_id == "core_0" and page_table.execution_context == Configuration.Execution_context.EL3)
     # Allocate BSP boot segment. a single segment that act as trampoline for all cores
@@ -162,8 +175,9 @@ def init_segments():
                                                                     byte_size=0x200,
                                                                     memory_type=Configuration.Memory_types.BSP_BOOT_CODE, 
                                                                     alignment_bits=4, 
-                                                                    VA_eq_PA=True)
-    memory_logger.info(f"============ init_segments: allocated BSP_boot_segment {bsp_boot_segment}")
+                                                                    VA_eq_PA=True,
+                                                                    force_address=bsp_boot_address)
+    memory_logger.info(f"============ init_segments: allocated BSP_boot_segment {bsp_boot_segment} at {hex(bsp_boot_address)}")
 
     # Allocating one cross-core segment, ensuring that all core and all MMUs will have one shared PA space
     # This allocation is done here, as it is needed for all cores, and should be done before any other allocation to avoid conflicts

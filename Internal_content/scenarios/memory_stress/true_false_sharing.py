@@ -47,10 +47,8 @@ def basic_false_sharing_scenario():
     for core in pre_core_mem_dict:
         if len(pre_core_mem_dict[core]) == 0:
             continue
-        print(f"   generating instructions for {core}")
         with AR.SwitchState(state_name=core):
             with AR.Loop(counter=10):
                 for _ in range(5):
                     random_mem = AR.choice(values=pre_core_mem_dict[core])
-                    print(f"     generating instruction using [{random_mem.name} - Address: {hex(random_mem.get_address())}, Size: {hex(random_mem.byte_size)}")
                     AR.generate(src=random_mem)
