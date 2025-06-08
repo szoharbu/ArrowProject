@@ -1,7 +1,7 @@
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.label import Label
 from Tool.state_management import get_current_state
-from Tool.memory_management.memory_memory import Memory
+from Tool.memory_management.memory_operand import Memory
 from Tool.asm_libraries.barrier.barrier_manager import get_barrier_manager
 
 def barrier_arm(barrier_name: str):

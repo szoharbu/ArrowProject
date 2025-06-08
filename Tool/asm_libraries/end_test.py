@@ -1,5 +1,5 @@
 from Utils.configuration_management import Configuration
-from Tool.memory_management.memory_memory import Memory
+from Tool.memory_management.memory_operand import Memory
 from Tool.state_management import get_current_state
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.label import Label
@@ -19,6 +19,7 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
     """
 
     current_state = get_current_state()
+    current_page_table = current_state.current_el_page_table
     register_manager = current_state.register_manager
 
     if test_pass:
@@ -69,7 +70,7 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
             register_manager.reserve(sp_reg)
 
             # load the stack pointer
-            stack_data_start_address = current_state.segment_manager.get_stack_data_start_address()
+            stack_data_start_address = current_page_table.segment_manager.get_stack_data_start_address()
             AsmLogger.comment("Load the stack pointer")
             #AsmLogger.asm(f"ldr {tmp_reg1}, =_stack_top")
             AsmLogger.asm(f"ldr {tmp_reg1}, ={hex(stack_data_start_address)}")

@@ -7,6 +7,7 @@ from Tool.state_management import get_state_manager
 from Utils.singleton_management import SingletonManager
 from Tool.memory_management.utils import convert_bytes_to_words
 from Tool.asm_libraries.barrier.barrier_manager import get_barrier_manager
+from Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
 
 
 x86_Assembler_syntax = "NASM"  ## other option is "GAS" (GNU Assembler) syntax but not for NASM
@@ -106,15 +107,10 @@ def generate_asm_from_AsmUnits(instruction_segments):
 
 
 def generate_data_from_DataUnits(data_segments):
-    state_manager = get_state_manager()
 
     data_code = ""
 
-    for segment, state in data_segments:
-
-        state_manager.set_active_state(state)
-        curr_state = state_manager.get_active_state()
-        segment_manager = curr_state.segment_manager
+    for segment in data_segments:
 
         segment_name = segment.name
         segment_address = hex(segment.address)
@@ -126,8 +122,7 @@ def generate_data_from_DataUnits(data_segments):
         # First, process initialized data (go to .data section)
         tmp_data_code += get_output(location="data_segment_header", segment_name=segment_name)
         
-        data_unit_list = segment_manager.get_segment_dataUnit_list(segment.name)
-
+        data_unit_list = segment.data_units_list
 
         if segment.memory_type == Configuration.Memory_types.DATA_SHARED:
             # Generate assembly code for a data section with random values and embedded labels.
@@ -316,22 +311,19 @@ def generate_assembly():
     all_code_segments = []
     all_data_segments = []
 
-    orig_state = state_manager.get_active_state()
-    cores_states = state_manager.get_all_states()
-    for core_state in cores_states:
-        state_manager.set_active_state(core_state)
-        curr_state = state_manager.get_active_state()
+    page_table_manager = get_page_table_manager()
 
-        all_code_segments.extend(curr_state.segment_manager.get_segments(
+    for page_table in page_table_manager.get_all_page_tables():
+
+        all_code_segments.extend(page_table.segment_manager.get_segments(
             pool_type=[Configuration.Memory_types.BSP_BOOT_CODE,
                        Configuration.Memory_types.BOOT_CODE,
                        Configuration.Memory_types.CODE]))
-
-        # Need to pass the data segments along with their state, as its needed for the data generation
-        current_state_data_segments = curr_state.segment_manager.get_segments(
-            pool_type=[Configuration.Memory_types.DATA_SHARED, Configuration.Memory_types.DATA_PRESERVE, Configuration.Memory_types.STACK])
-        current_state_data_segments_with_state = [(datasegment, core_state) for datasegment in current_state_data_segments]
-        all_data_segments.extend(current_state_data_segments_with_state)
+        
+        all_data_segments.extend(page_table.segment_manager.get_segments(
+            pool_type=[Configuration.Memory_types.DATA_SHARED, 
+                        Configuration.Memory_types.DATA_PRESERVE, 
+                        Configuration.Memory_types.STACK]))
 
     # Identify the BSP_BOOT_CODE in the all_code_segments list and move it to the start so it will be the first one in the asm file next to the _start label
     for i, code_segment in enumerate(all_code_segments):
@@ -344,8 +336,6 @@ def generate_assembly():
     asm_code = generate_asm_from_AsmUnits(all_code_segments)
     data_code = generate_data_from_DataUnits(all_data_segments)
 
-    curr_state = state_manager.get_active_state()
-    state_manager.set_active_state(state_id=orig_state.state_name)
 
     # Combine the instruction and data parts
     full_asm_code = asm_code + "\n" + data_code

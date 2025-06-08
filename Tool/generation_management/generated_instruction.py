@@ -1,4 +1,4 @@
-from Tool.memory_management.memory_memory import Memory
+from Tool.memory_management.memory_operand import Memory
 from Tool.asm_blocks import AsmUnit
 from Utils.configuration_management import Configuration, get_config_manager
 from Tool.state_management import get_current_state

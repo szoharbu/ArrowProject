@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from Tool.memory_management.memory_segments import CodeSegment
+from Tool.memory_management.memlayout.segment import CodeSegment
 from Tool.state_management import get_state_manager
 from Tool.asm_libraries.label import Label
 class BranchToSegmentBase(ABC):

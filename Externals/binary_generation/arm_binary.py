@@ -5,8 +5,8 @@ import shlex
 from Utils.configuration_management import get_config_manager, Configuration
 from Tool.state_management import get_state_manager, get_current_state
 from Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
-from Tool.memory_management.utils import memory_log
-
+from Tool.memory_management.memory_logger import get_memory_logger
+from Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
 
 class ArmBuildPipeline(BuildPipeline):
     def __init__(self):
@@ -66,7 +66,8 @@ class ArmBuildPipeline(BuildPipeline):
         current_section = None
         current_address = None
         
-        memory_log(f"Parsing PGT scatter file: {scatter_file}")
+        memory_logger = get_memory_logger()
+        memory_logger.log(f"Parsing PGT scatter file: {scatter_file}")
         
         try:
             with open(scatter_file, 'r') as f:
@@ -90,9 +91,9 @@ class ArmBuildPipeline(BuildPipeline):
                         if current_section and current_address:
                             # Use the exact section name from the scatter file
                             pgt_sections.append((section_name, current_address))
-                            memory_log(f"Found PGT section: {section_name} at address {current_address}")
+                            memory_logger.log(f"Found PGT section: {section_name} at address {current_address}")
         except Exception as e:
-            memory_log(f"Error parsing scatter file: {e}")
+            memory_logger.log(f"Error parsing scatter file: {e}")
             
         return pgt_sections
     
@@ -101,8 +102,8 @@ class ArmBuildPipeline(BuildPipeline):
         Link the object file into an executable ELF file using `ld`.
         Uses the memory segments from the state manager and PGT sections from scatter file.
         """
-        
-        memory_log("\nStarting automated linking process")
+        memory_logger = get_memory_logger()
+        memory_logger.log(f"Starting automated linking process")
         tool = f"{self.toolchain_prefix}-ld"
         check_tool_exists(tool)
 
@@ -134,12 +135,10 @@ class ArmBuildPipeline(BuildPipeline):
         with open(dump_file, "w") as f:
             run_command(dump_cmd, f"Generating objdump", output_file=dump_file)
             
-        memory_log("Automated linking completed successfully")
+        memory_logger.log("Automated linking completed successfully")
 
 
     def link(self, object_file, executable_file):
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz link - hard-coded - stop using it")
-        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz link - hard-coded - stop using it")
         raise Exception(" old link version - stop using it")
 
         """
@@ -225,13 +224,15 @@ class ArmBuildPipeline(BuildPipeline):
 
         state_manager = get_state_manager()
         cores_states = state_manager.get_all_states()
+        page_table_manager = get_page_table_manager()
 
         # Get configuration and output paths
         output_dir = get_config_manager().get_value('output_dir_path')
         pgt_sections = self.parse_pgt_scatter_file(output_dir)
         linker_file = os.path.join(output_dir, "automated_linker.ld")
 
-        memory_log(f"\n extract_linker_file - creating linker file {linker_file}")
+        memory_logger = get_memory_logger()
+        memory_logger.log(f"\n extract_linker_file - creating linker file {linker_file}")
 
         # Create linker script
         with open(linker_file, 'w') as f:
@@ -240,14 +241,14 @@ class ArmBuildPipeline(BuildPipeline):
             f.write("  trickbox_mem : ORIGIN = 0x0, LENGTH = 0x200000\n")
             f.write("  memory_region_utilities : ORIGIN = 0x80000000, LENGTH = 0x200000000\n")
 
-            # TODO:: need to separate the main_mem into multiple per PageTable VA sections
-            for state_name in cores_states:
-                state_manager.set_active_state(state_name)
-                curr_state = state_manager.get_active_state()
-                core_mmus = curr_state.enabled_mmus
-                for mmu in core_mmus:
-                    f.write(f"  memory_region_{mmu.mmu_name} : ORIGIN = {hex(mmu.va_memory_range.address)}, LENGTH = {hex(mmu.va_memory_range.byte_size)}\n")
-            state_manager.set_active_state("core_0")
+            for page_table in page_table_manager.get_all_page_tables():
+            ###for state_name in cores_states:
+            ###    state_manager.set_active_state(state_name)
+            ###    curr_state = state_manager.get_active_state()
+            ###    core_page_tables = curr_state.enabled_page_tables
+            ###    for page_table in core_page_tables:
+                f.write(f"  memory_region_{page_table.page_table_name} : ORIGIN = {hex(page_table.va_memory_range_start_address)}, LENGTH = {hex(page_table.va_memory_range_start_address+page_table.va_memory_range_size)}\n")
+            ###state_manager.set_active_state("core_0")
 
             f.write("}\n\n")
             
@@ -262,11 +263,12 @@ class ArmBuildPipeline(BuildPipeline):
             # Get all memory segments per state
             linked_data_segments_pa_addresses = []  # list of cross-core PA addresses that are already linked
 
-            for state_name in cores_states:
-                state_manager.set_active_state(state_name)
-                curr_state = state_manager.get_active_state()
-                segment_manager = curr_state.segment_manager
-                state_segments = segment_manager.get_segments(pool_type=[
+            for page_table in page_table_manager.get_all_page_tables():
+            ###for state_name in cores_states:
+            ###    state_manager.set_active_state(state_name)
+            ###    curr_state = state_manager.get_active_state()
+            ###    segment_manager = curr_state.segment_manager
+                state_segments = page_table.segment_manager.get_segments(pool_type=[
                     Configuration.Memory_types.BSP_BOOT_CODE, 
                     Configuration.Memory_types.BOOT_CODE, 
                     Configuration.Memory_types.CODE,
@@ -282,7 +284,7 @@ class ArmBuildPipeline(BuildPipeline):
                     if segment.memory_type in [Configuration.Memory_types.CODE, 
                                                 Configuration.Memory_types.BSP_BOOT_CODE, 
                                                 Configuration.Memory_types.BOOT_CODE]:
-                        memory_log(f"Adding code segment: {segment.name} at {hex(segment.address)}")
+                        memory_logger.log(f"Adding code segment: {segment.name} at {hex(segment.address)}")
                         segment_name = segment.name
                         section_name = f".text.{segment_name}"
                         
@@ -297,49 +299,50 @@ class ArmBuildPipeline(BuildPipeline):
                             f.write(f"    *(.boot*)\n")
                         
                         #f.write("  } > main_mem\n\n")
-                        f.write(f"  }} > memory_region_{segment.mmu.mmu_name}\n\n")
+                        f.write(f"  }} > memory_region_{page_table.page_table_name}\n\n")
                     
                     elif segment.memory_type in [Configuration.Memory_types.DATA_SHARED, 
                                                 Configuration.Memory_types.DATA_PRESERVE]:
-                        memory_log(f"Adding data segment: {segment.name} at VA:{hex(segment.address)} PA:{hex(segment.pa_address)}")
+                        memory_logger.log(f"Adding data segment: {segment.name} at VA:{hex(segment.address)} PA:{hex(segment.pa_address)}")
                         segment_name = segment.name
                         section_name = f".data.{segment_name}"
                         
                         if segment.is_cross_core and segment.pa_address in linked_data_segments_pa_addresses:
                             # This PA address has already been used, omit AT() clause and use NOLOAD
                             linked_data_str = f"  {section_name} {hex(segment.address)} (NOLOAD) :\n"
-                            memory_log(f"Cross-core segment {segment.name} shares PA {hex(segment.pa_address)} - using NOLOAD")
+                            memory_logger.log(f"Cross-core segment {segment.name} shares PA {hex(segment.pa_address)} - using NOLOAD")
                         else:
                             # First time seeing this PA address, include AT() clause
                             linked_data_str = f"  {section_name} {hex(segment.address)} : AT({hex(segment.pa_address)})\n"
                             if segment.is_cross_core:
                                 linked_data_segments_pa_addresses.append(segment.pa_address)
-                                memory_log(f"Cross-core segment {segment.name} first occurrence at PA {hex(segment.pa_address)} - including AT() clause")
+                                memory_logger.log(f"Cross-core segment {segment.name} first occurrence at PA {hex(segment.pa_address)} - including AT() clause")
 
                         f.write(linked_data_str)
                         f.write("  {\n")
                         # Use specific patterns for this data segment
                         f.write(f"    *({section_name})\n")  # Match this exact section name
                         #f.write("  } > main_mem\n\n")
-                        f.write(f"  }} > memory_region_{segment.mmu.mmu_name}\n\n")
+                        f.write(f"  }} > memory_region_{page_table.page_table_name}\n\n")
                 
                 # Add standard sections
-                stack_data_start_address = curr_state.segment_manager.get_stack_data_start_address()
+                stack_data_start_address = page_table.segment_manager.get_stack_data_start_address()
                 f.write(f"  .stack {hex(stack_data_start_address)} : AT({hex(stack_data_start_address)})\n")
                 f.write("  {\n")
                 f.write("    *(.stack)\n")
                 #f.write("  } > main_mem\n\n")
-                f.write(f"  }} > memory_region_{segment.mmu.mmu_name}\n\n")
+                f.write(f"  }} > memory_region_{page_table.page_table_name}\n\n")
             
-            # Add PGT constants section
-            f.write("  .data.pgt_constants 0x90080000 : AT(0x90080000)\n")
+            # Add PGT constants section - find the constants region from PGT mappings
+            constants_address = "0x801c0000"  # Default fallback
+            f.write(f"  .data.pgt_constants {constants_address} : AT({constants_address})\n")
             f.write("  {\n")
             f.write("    *(.data.pgt_constants)\n")  # Match specific section, not all .data
             f.write("  } > memory_region_utilities\n\n")
 
             # Add PGT sections
             for section_name, address in pgt_sections:
-                memory_log(f"Adding PGT section: {section_name} at {address}")
+                memory_logger.log(f"Adding PGT section: {section_name} at {address}")
                 section_name_clean = section_name.lower().replace("(", "_").replace(")", "_").replace(" ", "_")
                 f.write(f"  .data.{section_name_clean} {address} :\n")
                 f.write("  {\n")
@@ -353,23 +356,11 @@ class ArmBuildPipeline(BuildPipeline):
         return linker_file
 
     def get_bsp_boot_code_start_label(self):
-        state_manager = get_state_manager()
-        bsp_segments = []
-        for state in state_manager.get_all_states():
-            state_manager.set_active_state(state)
-            current_state = get_current_state()
-            segment_manager = current_state.segment_manager
-            try:
-                bsp_segments.extend(segment_manager.get_segments(pool_type=[Configuration.Memory_types.BSP_BOOT_CODE]))
-            except ValueError as e:
-                pass        
-        
-        if len(bsp_segments) != 1:
-            raise ValueError(f"Expected exactly one BSP boot code segment, got {len(bsp_segments)}")
-        bsp_segment = bsp_segments[0]
-        bsp_start_address = bsp_segment.address
-        #print(f"BSP segment: {bsp_segment}")
-        #print(f"BSP start address: {hex(bsp_start_address)}")
-        return hex(bsp_start_address)
-
-
+        page_table_manager = get_page_table_manager()
+        page_tables = page_table_manager.get_all_page_tables()
+        core_0_el3_page_table = next(page_table for page_table in page_tables if page_table.core_id == "core_0" and page_table.execution_context == Configuration.Execution_context.EL3)
+        bsp_segment = core_0_el3_page_table.segment_manager.get_segments(pool_type=[Configuration.Memory_types.BSP_BOOT_CODE])
+        if len(bsp_segment) != 1:
+            raise ValueError(f"Expected exactly one BSP boot code segment, got {len(bsp_segment)}")
+        bsp_segment = bsp_segment[0]
+        return hex(bsp_segment.address)

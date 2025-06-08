@@ -10,16 +10,17 @@ from Tool.memory_management.memory_block import MemoryBlock
 from Tool.memory_management.page_manager import MMU
 from Tool.memory_management import interval_lib
 from Tool.memory_management.memory_space_manager import get_mmu_manager, MemoryAllocation
-from Tool.memory_management.utils import memory_log, print_segments_by_type
+from Tool.memory_management.memory_logger import get_memory_logger, print_segments_by_type
 
 class SegmentManager:
     def __init__(self, memory_range:MemoryRange):
         """
         Memory manager class to manage a pool of memory segments.
         """
-        logger = get_logger()
-        memory_log("")
-        memory_log("==================== SegmentManager")
+        raise NotImplementedError("SegmentManager is deprecated, use memlayout version instead")
+        memory_logger = get_memory_logger()
+        memory_logger.info("")
+        memory_logger.info("==================== SegmentManager")
 
         self.memory_range = memory_range
         
@@ -38,8 +39,11 @@ class SegmentManager:
         :param VA_eq_PA:bool: If True, the virtual address must equal the physical address.
         :return: Allocated memory segment.
         """
-        memory_log("")
-        memory_log(f"==================== allocate_memory_segment: {name}, size: {byte_size}, type: {memory_type} from '{mmu.mmu_name}' MMU")
+        raise NotImplementedError("SegmentManager is deprecated, use memlayout version instead")
+
+        memory_logger = get_memory_logger()
+        memory_logger.info("")
+        memory_logger.info(f"==================== allocate_memory_segment: {name}, size: {byte_size}, type: {memory_type} from '{mmu.mmu_name}' MMU")
 
         for segment in self.memory_segments:
             if segment.name == name:
@@ -72,7 +76,7 @@ class SegmentManager:
             pool_name = "DATA"
 
         if len(pool) == 0:
-            memory_log(f"No available {pool_name} regions before allocation", level="error")
+            memory_logger.error(f"No available {pool_name} regions before allocation")
             raise ValueError(f"No available {pool_name} regions before allocation")
         
         # memory_log(f"Available {pool_name} regions before allocation:")
@@ -84,7 +88,7 @@ class SegmentManager:
         # No fallbacks - just throw errors if allocation fails
         try:
             if VA_eq_PA:
-                memory_log(f"Requesting allocation with VA=PA constraint")
+                memory_logger.info(f"Requesting allocation with VA=PA constraint")
             
             allocation = mmu_manager.allocate_segment(mmu, byte_size, page_type, alignment_bits, VA_eq_PA)
             segment_start = allocation.va_start
@@ -94,20 +98,20 @@ class SegmentManager:
             # Log detailed information about the allocation, including covered pages
             if hasattr(allocation, 'covered_pages') and allocation.covered_pages:
                 num_pages = len(allocation.covered_pages)
-                memory_log(f"Allocated memory segment at VA:{hex(segment_start)}:{hex(segment_start+segment_size-1)}, PA:{hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size:0x{segment_size:x}, type:{page_type}, " 
+                memory_logger.info(f"Allocated memory segment at VA:{hex(segment_start)}:{hex(segment_start+segment_size-1)}, PA:{hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size:0x{segment_size:x}, type:{page_type}, " 
                            f"spanning {num_pages} {'page' if num_pages == 1 else 'pages'}")
                 
                 # If VA_eq_PA, verify that the allocation satisfies this constraint
                 if VA_eq_PA:
                     for page in allocation.covered_pages:
-                        memory_log(f"  Page: VA:{hex(page.va)}:{hex(page.va+page.size-1)}, PA:{hex(page.pa)}:{hex(page.pa+page.size-1)}")
+                        memory_logger.info(f"  Page: VA:{hex(page.va)}:{hex(page.va+page.size-1)}, PA:{hex(page.pa)}:{hex(page.pa+page.size-1)}")
                         if page.va != page.pa:
-                            memory_log(f"Page does not satisfy VA=PA constraint (VA:0x{page.va:x} ≠ PA:0x{page.pa:x})", level="error")
+                            memory_logger.error(f"Page does not satisfy VA=PA constraint (VA:0x{page.va:x} ≠ PA:0x{page.pa:x})")
                             raise ValueError(f"Page does not satisfy VA=PA constraint (VA:0x{page.va:x} ≠ PA:0x{page.pa:x})")
             else:
-                memory_log(f"Allocated memory segment at VA:{hex(segment_start)}:{hex(segment_start+segment_size-1)}, PA:{hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size:0x{segment_size:x}, type:{page_type}")
+                memory_logger.info(f"Allocated memory segment at VA:{hex(segment_start)}:{hex(segment_start+segment_size-1)}, PA:{hex(segment_pa_start)}:{hex(segment_pa_start+segment_size-1)}, size:0x{segment_size:x}, type:{page_type}")
         except ValueError as e:
-            memory_log(f"Failed to allocate memory: {e}", level="error")
+            memory_logger.error(f"Failed to allocate memory: {e}")
             raise ValueError(f"Could not allocate memory segment '{name}' of size {byte_size} with type {page_type}. "
                              f"Make sure you have pre-allocated pages of the correct type.")
         ##########################################################################################
@@ -155,8 +159,8 @@ class SegmentManager:
         # First, find a suitable cross-core page with shared physical memory
         # NOTE: Different cores may map this physical memory to different virtual addresses
         first_MMU = mmu_manager.get_core_mmus(current_state.state_name)[0]
-        memory_log("")
-        memory_log(f"==================== {current_state.state_name}:{first_MMU.mmu_name} - Finding suitable cross-core memory interval")
+        memory_logger.info("")
+        memory_logger.info(f"==================== {current_state.state_name}:{first_MMU.mmu_name} - Finding suitable cross-core memory interval")
               
         # Find all cross-core data pages in the first state
         all_pages = first_MMU.get_pages_by_type(Configuration.Page_types.TYPE_DATA)
@@ -330,7 +334,7 @@ class SegmentManager:
         """Helper to determine if a page type is code"""
         return page_type == Configuration.Page_types.TYPE_CODE
 
-    def get_segments(self,pool_type:[Configuration.Memory_types | list[Configuration.Memory_types]]) -> List[MemorySegment]:
+    def get_segments(self,pool_type:[Configuration.Memory_types | list[Configuration.Memory_types]], mmu_name:str=None) -> List[MemorySegment]:
         """
         Retrieve memory segments based on specific attributes.
 
@@ -341,8 +345,11 @@ class SegmentManager:
         Returns:
             List[MemorySegment]: A list of memory segments that match the criteria.
         """
-        current_state = get_current_state()
-        mmu = current_state.current_el_mmu
+        if mmu_name is None:
+            current_state = get_current_state()
+            mmu = current_state.current_el_mmu
+        else:
+            mmu = get_mmu_manager().get_mmu(mmu_name)
         
         # If `pool_type` is not a list, wrap it in a single-element list
         if not isinstance(pool_type, list):

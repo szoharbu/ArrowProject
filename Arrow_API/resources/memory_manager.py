@@ -5,9 +5,9 @@ __all__ = ["MemoryManager_API"]  # Only export MemoryManager_API
 
 class MemoryManager_API:
 
-    from Tool.memory_management.memory_memory import Memory as _Memory
+    from Tool.memory_management.memory_operand import Memory as _Memory
     from Tool.memory_management.memory_block import MemoryBlock as _MemoryBlock
-    from Tool.memory_management.memory_segments import MemorySegment as _MemorySegment
+    from Tool.memory_management.memlayout.segment import MemorySegment as _MemorySegment
     from Utils.configuration_management import Configuration as _Configuration
 
     @staticmethod
@@ -26,7 +26,7 @@ class MemoryManager_API:
         """
         Allocate a Memory to be used as memory operand.
         """
-        from Tool.memory_management.memory_memory import Memory as _Memory
+        from Tool.memory_management.memory_operand import Memory as _Memory
 
         return _Memory(name=name, address=address, byte_size=byte_size, memory_type=memory_type, shared=shared,
                       init_value=init_value, memory_block=memory_block, memory_block_offset=memory_block_offset, cross_core=cross_core, alignment=alignment)

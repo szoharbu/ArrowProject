@@ -5,8 +5,8 @@ from Utils.logger_management import get_logger
 from Utils.APIs import choice
 from Tool.memory_management.memory_block import MemoryBlock
 from Tool.register_management.register import Register
-from Tool.state_management import get_state_manager
-from Tool.memory_management.utils import memory_log
+from Tool.state_management import get_state_manager, get_current_state
+from Tool.memory_management.memory_logger import get_memory_logger
 
 VALID_SIZES = [1, 2, 4, 8]  # Valid memory operand sizes
 
@@ -46,6 +46,7 @@ class Memory:
         config_manager = get_config_manager()
         state_manager = get_state_manager()
         curr_state = state_manager.get_active_state()
+        curr_page_table = curr_state.current_el_page_table
 
         Memory._memory_initial_seed_id += 1
         self.name = name if name is not None else f"mem{Memory._memory_initial_seed_id}"
@@ -125,7 +126,8 @@ class Memory:
 
                 if should_reuse and (name is None) and (self._address is None) and (self.init_value is None):
                     # reuse memory only applicable for DATA_SHARED memory, and when no explicit parameter were asked. Notice I'm checking name and not self.name for that usage
-                    self.memory_block = curr_state.segment_manager.get_used_memory_block(byte_size=byte_size, alignment=self.alignment)
+                    from Tool.memory_management.memory_usage import get_used_memory_block
+                    self.memory_block = get_used_memory_block(curr_page_table.segment_manager, byte_size=byte_size, alignment=self.alignment)
                     # check if such shared memory_block exist
                     if self.memory_block is not None:
                         self.reused_memory = True
@@ -207,18 +209,16 @@ class Memory:
         self._pa_address = self.memory_block.get_pa_address() + self.memory_block_offset
         self.cross_core = self.memory_block.cross_core
 
-        logger = get_logger()
+        memory_logger = get_memory_logger()
 
         self.memory_str = f"Memory access: [ name={self.name}, address={hex(self._address)}, pa_address={hex(self._pa_address)}, memory_block={self.memory_block.name}, memblock_offset={self.memory_block_offset}, shared={self.shared}, reused_memory={self.reused_memory}, bytesize={self.byte_size}, memory_type={self.memory_type}, init_value={self.init_value}, cross_core={self.cross_core} ]"
   
-        memory_log(self.memory_str)
-        logger.debug(self.memory_str)
+        memory_logger.log(self.memory_str)
         #print(self.memory_str)
 
     def get_address(self):
         if self.cross_core:
-            curr_state = get_state_manager().get_active_state()
-            return self.memory_block.cross_core_blocks[curr_state.state_name].get_address()+self.memory_block_offset
+            return self.memory_block.get_address()+self.memory_block_offset
         else:
             return self._address
 
@@ -227,8 +227,7 @@ class Memory:
 
     def get_label(self):
         if self.cross_core:
-            curr_state = get_state_manager().get_active_state()
-            return self.memory_block.cross_core_blocks[curr_state.state_name].unique_label
+            return self.memory_block.get_label()
         else:
             return self.unique_label
 

@@ -8,7 +8,7 @@ from Utils.singleton_management import SingletonManager
 from Tool.memory_management.memory_segments import MemoryRange
 from Tool.memory_management.page_manager import MMU
 from Tool.memory_management import interval_lib
-from Tool.memory_management.utils import memory_log
+from Tool.memory_management.memory_logger import get_memory_logger
 
 class MemoryAllocation:
     """Tracks information about a memory allocation"""

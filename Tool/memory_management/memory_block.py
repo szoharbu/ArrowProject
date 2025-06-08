@@ -4,8 +4,9 @@ from Tool.asm_blocks import DataUnit
 from Utils.configuration_management import Configuration, get_config_manager
 from Utils.logger_management import get_logger
 from Tool.state_management import get_state_manager, get_current_state
-from Tool.memory_management.utils import convert_int_value_to_bytes, memory_log
-
+from Tool.memory_management.utils import convert_int_value_to_bytes
+from Tool.memory_management.memory_logger import get_memory_logger
+#from Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
 '''
 #class MemoryBlock:
     Goal is to decouple Memory_block from memory operand, and allow requests of larger scope and at any side from memory requests that will be used as instructions operands
@@ -59,6 +60,7 @@ class MemoryBlock:
         config_manager = get_config_manager()
         state_manager = get_state_manager()
         curr_state = state_manager.get_active_state()
+        curr_page_table = curr_state.current_el_page_table
 
         MemoryBlock._memory_block_initial_seed_id += 1
         self.name = name if name is not None else f"mem{MemoryBlock._memory_block_initial_seed_id}"
@@ -126,16 +128,19 @@ class MemoryBlock:
             pool_type = Configuration.Memory_types.DATA_PRESERVE
         # allocate_data_memory will select a MemorySegment from a valid pool, and in 'baremetal' will select an available interval as start address
         # return a dict of state_name: data_unit, as in case of cross-core memory, the allocate_data_memory will allocate data_unit for all states.
-        per_state_data_units = curr_state.segment_manager.allocate_data_memory(name=self.name,
-                                                                        memory_block_id=self.unique_label,
-                                                                        pool_type=pool_type, byte_size=byte_size,
-                                                                        init_value_byte_representation=self.init_value_byte_representation,
-                                                                        alignment=self.alignment,
-                                                                        cross_core=self.cross_core)
 
-        self.data_unit = per_state_data_units[curr_state.state_name]
+        from Tool.memory_management.memory_usage import allocate_data_memory
+        per_page_table_data_units = allocate_data_memory(segment_manager=curr_page_table.segment_manager,
+                                                    name=self.name,
+                                                    memory_block_id=self.unique_label,
+                                                    pool_type=pool_type, byte_size=byte_size,
+                                                    init_value_byte_representation=self.init_value_byte_representation,
+                                                    alignment=self.alignment,
+                                                    cross_core=self.cross_core)
+
+        self.data_unit = per_page_table_data_units[curr_page_table.page_table_name]
         self.memory_segment_name = self.data_unit.memory_segment_id
-        self.memory_segment = curr_state.segment_manager.get_segment(self.memory_segment_name)
+        self.memory_segment = curr_page_table.segment_manager.get_segment(self.memory_segment_name)
 
         if execution_platform == 'baremetal':
             self._address = self.data_unit.address
@@ -172,45 +177,50 @@ class MemoryBlock:
                                  f"init_value:{formatted_bytes}, "
                                  f"cross_core={self.cross_core}]")
 
-        memory_log(self.memory_block_str)
+        memory_logger = get_memory_logger()
+        memory_logger.info("")
+        memory_logger.info(f" MemoryBlock created: {self.memory_block_str}")
         # print(self.memory_block_str)
 
         # add self to the memory_segment's memory_block_list
         self.memory_segment.memory_block_list.append(self)
 
         # creating cross-core "shallow" copies for all states.
-        per_state_cross_core_blocks = {curr_state.state_name: self}
+        per_page_table_cross_core_blocks = {curr_page_table.page_table_name: self}
 
         if cross_core:
-            current_state_name = curr_state.state_name            
-            for state_name, data_unit in per_state_data_units.items():
-                if state_name != current_state_name:
-                    state_manager.set_active_state(state_name)
+            from Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
+
+            for page_table_name, data_unit in per_page_table_data_units.items():
+                if page_table_name != curr_page_table.page_table_name:
+                    page_table_manager = get_page_table_manager()
+                    page_table = page_table_manager.get_page_table(page_table_name)
                     # Create a cross-core copy
-                    copy_block = MemoryBlock.create_cross_core_copy(self, state_name, data_unit)
-                    per_state_cross_core_blocks[state_name] = copy_block
+                    copy_block = MemoryBlock.create_cross_core_copy(self, page_table, data_unit)
+                    per_page_table_cross_core_blocks[page_table_name] = copy_block
 
-            state_manager.set_active_state(current_state_name)
 
-        self.cross_core_blocks = per_state_cross_core_blocks
+        self.cross_page_table_blocks = per_page_table_cross_core_blocks
         
         # map the cross_core_blocks across all blocks
-        for state_name, copied_block in per_state_cross_core_blocks.items():
-            copied_block.cross_core_blocks = per_state_cross_core_blocks
+        for page_table_name, copied_block in per_page_table_cross_core_blocks.items():
+            copied_block.cross_page_table_blocks = per_page_table_cross_core_blocks
 
 
     def __str__(self):
         if self.cross_core:
-            curr_state = get_state_manager().get_active_state()
-            return self.cross_core_blocks[curr_state.state_name].memory_block_str
+            curr_state = get_current_state()
+            curr_page_table = curr_state.current_el_page_table
+            return self.cross_page_table_blocks[curr_page_table.page_table_name].memory_block_str
         else:
             return self.memory_block_str
 
 
     def get_address(self):
         if self.cross_core:
-            curr_state = get_state_manager().get_active_state()
-            return self.cross_core_blocks[curr_state.state_name]._address
+            curr_state = get_current_state()
+            curr_page_table = curr_state.current_el_page_table
+            return self.cross_page_table_blocks[curr_page_table.page_table_name]._address
         else:
             return self._address
 
@@ -219,19 +229,20 @@ class MemoryBlock:
 
     def get_label(self):
         if self.cross_core:
-            curr_state = get_state_manager().get_active_state()
-            return self.cross_core_blocks[curr_state.state_name].unique_label
+            curr_state = get_current_state()
+            curr_page_table = curr_state.current_el_page_table
+            return self.cross_page_table_blocks[curr_page_table.page_table_name].unique_label
         else:
             return self.unique_label
 
     @classmethod
-    def create_cross_core_copy(cls, original_block, state_name, data_unit):
+    def create_cross_core_copy(cls, original_block, page_table, data_unit):
         """Create a shallow copy of a memory block for cross-core use"""
         copy = cls.__new__(cls)  # Create instance without calling __init__
         
         # Copy attributes from original
-        copy.name = f"{original_block.name}__{state_name}"
-        copy.unique_label = f"{original_block.unique_label}__{state_name}"
+        copy.name = f"{original_block.name}__{page_table.page_table_name}"
+        copy.unique_label = f"{original_block.unique_label}__{page_table.page_table_name}"
         copy.byte_size = original_block.byte_size
         copy.memory_type = original_block.memory_type
         copy.shared = False  # Copies can't be shared
@@ -245,7 +256,7 @@ class MemoryBlock:
 
         # Set up remaining properties based on the data unit
         copy.memory_segment_name = data_unit.memory_segment_id
-        copy.memory_segment = tmp_state.segment_manager.get_segment(copy.memory_segment_name)
+        copy.memory_segment = page_table.segment_manager.get_segment(copy.memory_segment_name)
         
         # Set up memory addresses based on execution platform
         copy._address = data_unit.address
@@ -253,7 +264,7 @@ class MemoryBlock:
         copy._pa_address = copy.memory_segment.pa_address + copy.offset_from_segment_start
         
         # Generate the string representation
-        copy.memory_block_str = (f"[MemoryBlock {state_name}: name={copy.name}, "
+        copy.memory_block_str = (f"[MemoryBlock {page_table.page_table_name}: name={copy.name}, "
                                 f"memory_segment_name={copy.memory_segment_name}, "
                                 f"address={hex(copy._address) if copy._address else 'None'}, "
                                 f"pa_address={hex(copy._pa_address) if copy._pa_address else 'None'}, "
@@ -266,7 +277,8 @@ class MemoryBlock:
                                 f"cross_core_original={original_block.name}]")
         
         # Log the new block
-        memory_log(copy.memory_block_str)
+        memory_logger = get_memory_logger()
+        memory_logger.info(f" MemoryBlock copy created: {copy.memory_block_str}")
         
         # Add to memory segment
         copy.memory_segment.memory_block_list.append(copy)

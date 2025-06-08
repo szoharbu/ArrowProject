@@ -5,7 +5,7 @@ import shutil
 from Tool.state_management import get_state_manager
 from Utils.configuration_management import get_config_manager
 from Utils.logger_management import get_logger
-from Tool.memory_management.utils import memory_log
+from Tool.memory_management.memory_logger import get_memory_logger
 
 
 def run_PGT_prototype():
@@ -42,9 +42,10 @@ def run_PGT_prototype():
         from helperFunctions import SIZE_4KB, SIZE_64KB, SIZE_2MB, SIZE_1GB, TG_4KB, TG_64KB, PGS_4KB, PA_48_BITS
 
 
-        memory_log(f"\n\n") 
-        memory_log(f"---- Creating Platform Memory Manager - Physical_Stage1_Mapping ::  EL3, ROOT, Stage1",print_both=True) 
-        memory_log(f"*****  Page Table Generation Started  *****") 
+        memory_logger = get_memory_logger()
+        memory_logger.info(f"\n\n") 
+        memory_logger.info(f"---- Creating Platform Memory Manager - Physical_Stage1_Mapping ::  EL3, ROOT, Stage1",print_both=True) 
+        memory_logger.info(f"*****  Page Table Generation Started  *****") 
 
 
         '''
@@ -101,7 +102,7 @@ def run_PGT_prototype():
         for core_state in cores_states:
             state_manager.set_active_state(core_state)
             curr_state = state_manager.get_active_state()
-            memory_log(f"================ enable_mmu - running GPT for {curr_state.state_name}")
+            memory_logger.info(f"================ enable_mmu - running GPT for {curr_state.state_name}")
 
             pgtSetTargetInfo(IS_RME_IMPLEMENTED, TRUE) # enable RME to allow ROOT and REALM memory regions support
 
@@ -111,14 +112,16 @@ def run_PGT_prototype():
             setTranslationSystemProp(EL3, TG0=TG_4KB)#, T0SZ=16)
             setMemoryManager(EL3, PMM)
 
-            EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1NS)
+            
+            #EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1NS)
+            EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1_RW)
             setTranslationSystemProp(EL1NS, TG0=TG_4KB, T0SZ=16)
             setMemoryManager(EL1NS, PMM)
 
             pages = create_automated_memory_mapping(PMM, EL3, EL1NS)
 
-            memory_log(f"Successfully processed {len(pages) if pages else 0} pages")
-            memory_log(f"================ enable_mmu - running GPT for {curr_state.state_name} - {len(pages) if pages else 0} pages were processed", print_both=True)
+            memory_logger.info(f"Successfully processed {len(pages) if pages else 0} pages")
+            memory_logger.info(f"================ enable_mmu - running GPT for {curr_state.state_name} - {len(pages) if pages else 0} pages were processed", print_both=True)
 
 
         setPgtOutputFileFormat(GENERIC) # GENERIC or ARM_ASSEMBLY
@@ -146,7 +149,7 @@ def run_PGT_prototype():
         # linker_script_path = generate_automated_linker_script(pages)
         # print(f"Generated automated linker script at: {linker_script_path}")
         
-        memory_log(f"*****  Page Table Generation Complete  *****\n\n")
+        memory_logger.info(f"*****  Page Table Generation Complete  *****\n\n")
 
 
     except ImportError as e:
@@ -241,7 +244,7 @@ def convert_generic_to_gnu():
     constants_file = os.path.join(pgt_output_dir, "pgt_constants.s")
     with open(constants_file, 'w') as f:
         f.write("// PGT Constants defined as global variables\n")
-        f.write(".section .data\n")
+        f.write(".section .data.pgt_constants\n")  # Use specific section name that matches linker script
         f.write(".align 3\n\n")
         
         # Define each constant as a global variable
@@ -250,8 +253,9 @@ def convert_generic_to_gnu():
             f.write(f"{label}:\n")
             f.write(f"    .quad {value}\n\n")
     
-    memory_log(f"Converting {input_file} to GNU format at {output_file}")
-    memory_log(f"Generated constants file at {constants_file}")
+    memory_logger = get_memory_logger()
+    memory_logger.info(f"Converting {input_file} to GNU format at {output_file}")
+    memory_logger.info(f"Generated constants file at {constants_file}")
     
     return output_file
 
@@ -260,7 +264,8 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
     """
     Create memory mappings using the automated approach by processing existing pages.
     """
-    memory_log("Using automated memory mapping approach")
+    memory_logger = get_memory_logger()
+    memory_logger.info("Using automated memory mapping approach")
     
     from Tool.state_management import get_current_state
     from Utils.configuration_management import Configuration
@@ -268,12 +273,12 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
     #import _pgt as pgt
     from _pgt import createAddress, PL3R, PL1_RW, createMmuAttributes, mapWithPA, XN_CLEAR, mapDevice, Dev, Dev_nGnRnE, ROOT, NON_SECURE
     from _pgt import blockMemory
-    from helperFunctions import setTranslationSystemProp, FillStage1BlockAttributes, ROOT, SIZE_2MB
+    from helperFunctions import setTranslationSystemProp, FillStage1BlockAttributes, ROOT, SIZE_2MB, SIZE_4KB
 
     
     # Get current state and page table manager
     current_state = get_current_state()
-    core_mmus = current_state.enabled_mmus
+    core_page_tables = current_state.enabled_page_tables
 
    
     # Trickbox device memory 
@@ -283,21 +288,30 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
     FillStage1BlockAttributes(trickbox_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Dev, MEM_ATTR_INNER=Dev_nGnRnE)
     mapDevice(EL3, "TRICKBOX", trickbox_va, trickbox_size, trickbox_attr)
 
-    for mmu in core_mmus:
-        all_pages = mmu.get_pages()
-        memory_log(f"Found {len(all_pages)} pages in page table at {mmu.mmu_name}")
+    # PGT Constants region mapping (VA=PA identity mapping for EL3) 
+    constants_size = SIZE_4KB * 4  # 16KB for constants  
+    constants_va = createAddress(0x801c0000) # hard-coded for now. 
+    constants_pa = createAddress(0x801c0000)
+    constants_attr = createMmuAttributes()
+    FillStage1BlockAttributes(constants_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
+    mapWithPA(EL3, constants_va, constants_pa, constants_size, constants_attr)
+    memory_logger.info(f"Mapped constants region at VA=PA=0x870c0000, size=0x{constants_size:x}")
+
+    for page_table in core_page_tables:
+        all_pages = page_table.get_pages()
+        memory_logger.info(f"Found {len(all_pages)} pages in page table at {page_table.page_table_name}")
     
         # Group pages by type for better handling
-        code_pages = mmu.get_pages_by_type(Configuration.Page_types.TYPE_CODE)
-        data_pages = mmu.get_pages_by_type(Configuration.Page_types.TYPE_DATA)
+        code_pages = page_table.get_pages_by_type(Configuration.Page_types.TYPE_CODE)
+        data_pages = page_table.get_pages_by_type(Configuration.Page_types.TYPE_DATA)
         
-        memory_log(f"Processing {len(code_pages)} code pages and {len(data_pages)} data pages")
+        memory_logger.info(f"Processing {len(code_pages)} code pages and {len(data_pages)} data pages")
      
         # Create PGT mappings for code pages
         for idx, page in enumerate(code_pages):
-            context = mmu.execution_context
+            context = page_table.execution_context
             # print(f"Processing {current_state.state_name}-{mmu.mmu_name} - code page {idx}: {page} in {context.value}")
-            memory_log(f"Processing {current_state.state_name} - {mmu.mmu_name} - code page {idx}: {page} in {context.value}")
+            memory_logger.info(f"Processing {current_state.state_name} - {page_table.page_table_name} - code page {idx}: {page} in {context.value}")
             code_size = page.size
             code_va = createAddress(page.va) 
             code_pa = createAddress(page.pa) 
@@ -307,14 +321,14 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
                 FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
                 mapWithPA(EL3, code_va, code_pa, code_size, code_attr)
             elif context == Configuration.Execution_context.EL1_NS:
-                FillStage1BlockAttributes(code_attr, NS=NON_SECURE)
+                FillStage1BlockAttributes(code_attr, NS=NON_SECURE, XN=XN_CLEAR, AP=PL1_RW)
                 mapWithPA(EL1NS, code_va, code_pa, code_size, code_attr)
 
         # Create PGT mappings for data pages
         for idx, page in enumerate(data_pages):
-            context = mmu.execution_context
+            context = page_table.execution_context
             # print(f"Processing {current_state.state_name}-{mmu.mmu_name} - data page {idx}: {page} in {context.value}")
-            memory_log(f"Processing {current_state.state_name}-{mmu.mmu_name} - data page {idx}: {page} in {context.value}")
+            memory_logger.info(f"Processing {current_state.state_name}-{page_table.page_table_name} - data page {idx}: {page} in {context.value}")
             data_size = page.size
             data_va = createAddress(page.va) 
             data_pa = createAddress(page.pa) 
@@ -324,11 +338,10 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
                 FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
                 mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
             elif context == Configuration.Execution_context.EL1_NS:
-                FillStage1BlockAttributes(data_attr, NS=NON_SECURE)
+                FillStage1BlockAttributes(data_attr, NS=NON_SECURE, AP=PL1_RW)
                 mapWithPA(EL1NS, data_va, data_pa, data_size, data_attr)
 
-    print(f"Completed memory mapping process for {current_state.state_name}")
-    memory_log(f"Completed memory mapping process")
+    memory_logger.info(f"Completed memory mapping process for {current_state.state_name}")
 
     return all_pages
 
