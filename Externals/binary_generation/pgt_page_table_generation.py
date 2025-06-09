@@ -113,8 +113,8 @@ def run_PGT_prototype():
             setMemoryManager(EL3, PMM)
 
             
-            #EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1NS)
-            EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1_RW)
+            EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1NS)
+            #EL1NS=createStg1TS(f"EL1NS_{curr_state.state_name}", VMSAv8_64, PL1_RW)
             setTranslationSystemProp(EL1NS, TG0=TG_4KB, T0SZ=16)
             setMemoryManager(EL1NS, PMM)
 
@@ -271,7 +271,7 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
     from Utils.configuration_management import Configuration
 
     #import _pgt as pgt
-    from _pgt import createAddress, PL3R, PL1_RW, createMmuAttributes, mapWithPA, XN_CLEAR, mapDevice, Dev, Dev_nGnRnE, ROOT, NON_SECURE
+    from _pgt import createAddress, PL3R, KERN_RW, PL1_RW, createMmuAttributes, mapWithPA, XN_CLEAR, mapDevice, Dev, Dev_nGnRnE, ROOT, NON_SECURE
     from _pgt import blockMemory
     from helperFunctions import setTranslationSystemProp, FillStage1BlockAttributes, ROOT, SIZE_2MB, SIZE_4KB, Normal_WB_TRW
     
@@ -293,8 +293,7 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
     constants_va = createAddress(0x801c0000) # 4KB aligned for 16KB constants region
     constants_pa = createAddress(0x801c0000)
     constants_attr = createMmuAttributes()
-    #FillStage1BlockAttributes(constants_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-    # Force Normal Write-Back memory for constants region to support exclusive access
+    # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0
     FillStage1BlockAttributes(constants_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
     # Map in 4KB chunks to avoid 2MB block alignment issues
     for i in range(4):  # Map 4 x 4KB = 16KB
@@ -324,14 +323,12 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
             blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
             code_attr = createMmuAttributes()
             if context == Configuration.Execution_context.EL3:
-                #FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-                # Force Normal Write-Back memory for code pages to support exclusive access
+                # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0
                 FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
                 mapWithPA(EL3, code_va, code_pa, code_size, code_attr)
             elif context == Configuration.Execution_context.EL1_NS:
-                #FillStage1BlockAttributes(code_attr, NS=NON_SECURE, XN=XN_CLEAR, AP=PL1_RW)
-                # Force Normal Write-Back memory for code pages to support exclusive access
-                FillStage1BlockAttributes(code_attr, NS=NON_SECURE, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
+                # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0 
+                FillStage1BlockAttributes(code_attr, NS=NON_SECURE, XN=XN_CLEAR, AP=KERN_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
                 mapWithPA(EL1NS, code_va, code_pa, code_size, code_attr)
 
         # Create PGT mappings for data pages
@@ -345,15 +342,12 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
             blockMemory(PMM, page.pa, page.pa + page.size) # block the memory region from the PA region. 
             data_attr = createMmuAttributes()
             if context == Configuration.Execution_context.EL3:
-                #FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW)
-                # Force Normal Write-Back memory for data pages to support exclusive access
+                # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0
                 FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
                 mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
             elif context == Configuration.Execution_context.EL1_NS:
-                #FillStage1BlockAttributes(data_attr, NS=NON_SECURE, AP=PL1_RW)
-                # Force Normal Write-Back memory for data pages to support exclusive access
-                FillStage1BlockAttributes(data_attr, NS=NON_SECURE, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
-
+                # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0  
+                FillStage1BlockAttributes(data_attr, NS=NON_SECURE, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
                 mapWithPA(EL1NS, data_va, data_pa, data_size, data_attr)
 
     memory_logger.info(f"Completed memory mapping process for {current_state.state_name}")
