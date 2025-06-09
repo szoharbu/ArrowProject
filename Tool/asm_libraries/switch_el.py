@@ -106,6 +106,7 @@ def switch_EL_to_lower(target_el_level: int):
         AsmLogger.comment("EL2 is bypassed for direct EL3→EL1 transition")
     
     AsmLogger.asm(f"msr scr_el3, {reg}", comment="Update SCR_EL3")
+    AsmLogger.asm(f"isb")
     AsmLogger.comment(f"Execute transition to EL{target_el_level}")
     AsmLogger.asm("eret")
     
