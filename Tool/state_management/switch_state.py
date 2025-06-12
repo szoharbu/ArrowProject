@@ -73,13 +73,13 @@ class SwitchState:
 
 def switch_code(new_code:CodeSegment):
     """
-    switch to a new code block.
+    switch to a new code segment.
     """
     state_manager = get_state_manager()
     logger = get_logger()
 
     if not isinstance(new_code, CodeSegment):
-        raise ValueError(f"Cannot switch to block '{new_code}', not of CodeBlock type.")
+        raise ValueError(f"Cannot switch to segment '{new_code}', not of CodeSegment type.")
 
     curr_state = state_manager.get_active_state()
     curr_page_table = curr_state.current_el_page_table

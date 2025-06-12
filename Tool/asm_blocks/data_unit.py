@@ -18,9 +18,8 @@ def get_last_user_context():
     template_file = normalize_path(config_manager.get_value('template_path'))
 
     test_stage_path = normalize_path('Tool/stages/test_stage')
-    #memory_segments_path = normalize_path('Tool/memory_management/memory_segments.py')  # initial code label is create there
     memory_segments_path = normalize_path('Tool/memory_management/memlayout/segment_manager.py')  # initial code label is create there
-
+    exception_tables_path = normalize_path('Tool/exception_management/__init__.py')
     # Capture the stack once as the below code might go over it twice, and it has performance penalty
     stack_snapshot = inspect.stack()
 
@@ -54,7 +53,7 @@ def get_last_user_context():
     # Fallback: check for first instance of Tool code like boot, scenario wrapper and such (e.g., test_stage)
     for frame_info in stack_snapshot:
         filename_abs = normalize_path(frame_info.filename)
-        if (test_stage_path in filename_abs) or (memory_segments_path in filename_abs):
+        if (test_stage_path in filename_abs) or (memory_segments_path in filename_abs) or (exception_tables_path in filename_abs):
             filename_abs = normalize_path(frame_info.filename)
             shortened_path = "/".join(filename_abs.split(os.sep)[-2:])
             return filename_abs, shortened_path, frame_info.lineno
