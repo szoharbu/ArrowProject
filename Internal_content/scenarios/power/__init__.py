@@ -120,12 +120,12 @@ def SPE_setup():
     #     AR.asm(f"MRS {reg}, {sysreg}", comment="Read the PMB pointer")
 
 
-@AR.scenario_decorator(random=True, )
+@AR.scenario_decorator(random=False, )
 def WFIT_CROSS_SPE_scenario():
     AR.comment("inside WFIT_CROSS_SPE_scenario")
 
-    with AR.SwitchState(state="core_0"):
+    with AR.SwitchState("core_0"):
         enter_sleep_state()
 
-    with AR.SwitchState(state="core_1"):
+    with AR.SwitchState("core_1"):
         SPE_setup()
