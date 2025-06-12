@@ -13,15 +13,18 @@ class EventTrigger_arm(EventTriggerBase):
         Called at the start of the 'with' block. Prepares for the loop logic.
         """
 
-        AsmLogger.comment(f"Setting event trigger flow with {self.frequency} frequency ")
+        current_state = get_current_state()
+        register_manager = current_state.register_manager
 
-        #if isinstance(self.operand, Register):
-        #    AsmLogger.print_asm_line(f"ldr {self.operand}, {self.memory_with_pattern} // Load the value from memory location into register {self.operand}")
-        AsmLogger.asm(f"ror {self.operand}, {self.operand}, #1") # Rotate bits to influence chance
-        AsmLogger.asm(f"cmp {self.operand}, #0")  # Rotate bits to influence chance
-        AsmLogger.asm(f"bne {self.label} // If {self.operand} is not zero, branch to 'skip_label'") # Skip inner code if mem is non-zero
-
+        address_reg = register_manager.get_and_reserve(reg_type = "gpr")
+        AsmLogger.asm(f"ldr {address_reg}, ={hex(self.memory_with_pattern.get_address())}") # Rotate bits to influence c
+        AsmLogger.asm(f"ldr {self.operand}, [{address_reg}]", comment=f"load the vector from mem {hex(self.memory_with_pattern.get_address())}")
+        AsmLogger.asm(f"ror {self.operand}, {self.operand}, #1", comment="rotate the vector") 
+        AsmLogger.asm(f"str {self.operand}, [{address_reg}]", comment="store back the vector into the memory location")
+        AsmLogger.asm(f"tbz {self.operand}, #63, {self.label}", comment="test bit 63 and branch if 0 (zero)")
+        register_manager.free(address_reg)
         return self  # Return self to be used in the 'with' block
+
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """

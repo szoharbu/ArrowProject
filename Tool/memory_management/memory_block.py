@@ -106,8 +106,13 @@ class MemoryBlock:
                 self.init_value_byte_representation = random_block
         elif init_value is not None:
             # Validate that init_value fits within the specified block size
-            if init_value.bit_length() // 8 + 1 > self.byte_size:
-                raise ValueError(f"init_value is too large for the specified block size ({self.byte_size} bytes).")
+            if init_value == 0:
+                required_bytes = 1
+            else:
+                required_bytes = (init_value.bit_length() + 7) // 8  # Round up to nearest byte
+            
+            if required_bytes > self.byte_size:
+                raise ValueError(f"init_value is too large for the specified block size ({self.byte_size} bytes). Value requires {required_bytes} bytes.")
             # Convert the large init_value into smaller byte chunks, padding if necessary
             self.init_value_byte_representation = convert_int_value_to_bytes(init_value, self.byte_size)
         else:  # init_value_byte_representation is not None

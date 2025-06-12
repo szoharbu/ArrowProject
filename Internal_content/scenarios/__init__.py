@@ -6,3 +6,4 @@ from Internal_content.scenarios import dispatch_is
 from Internal_content.scenarios import power
 from Internal_content.scenarios import cache
 from Internal_content.scenarios import multi_thread
+from Internal_content.scenarios import hro
