@@ -10,7 +10,6 @@ class EventTrigger_riscv(EventTriggerBase):
         """
         Called at the start of the 'with' block. Prepares for the loop logic.
         """
-        AsmLogger.comment(f"Setting event trigger flow with {self.frequency} frequency ")
 
         if isinstance(self.operand, Register):
             # TODO:: the memory operand here need to be replaced with two operands base_reg + offset

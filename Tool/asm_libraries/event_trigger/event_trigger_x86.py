@@ -12,8 +12,6 @@ class EventTrigger_x86(EventTriggerBase):
         Called at the start of the 'with' block. Prepares for the loop logic.
         """
 
-        AsmLogger.comment(f"Setting event trigger flow with {self.frequency} frequency ")
-
         if isinstance(self.operand, Register):
             AsmLogger.asm(f"mov {self.operand}, {self.memory_with_pattern}")  # loading the pattern from a memory operand
         AsmLogger.asm(f"ror {self.operand}, 1") # Rotate bits to influence chance

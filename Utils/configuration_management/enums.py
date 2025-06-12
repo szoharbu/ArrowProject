@@ -68,6 +68,7 @@ class Tag(Enum):
     CACHE = "cache"
     BRANCH = "branch"
     POWER = "power"
+    HRO = "hro"
 
 class Priority(Enum):
     HIGH = "high"
@@ -86,6 +87,6 @@ PRIORITY_WEIGHTS = {
 # Define the frequency enum with corresponding probability ranges
 class Frequency(Enum):
     RARE = (0.001, 0.001)
-    LOW = (0.05, 0.01)
-    MED = (0.2, 0.05)
-    HIGH = (0.4, 0.2)
+    LOW = (0.01, 0.05) 
+    MED = (0.05, 0.2) 
+    HIGH = (0.2, 0.4) 
