@@ -16,14 +16,14 @@ def final_section():
     generation_json_dump()
     memory_usage_json_dump()
 
+    create_binary = config_manager.get_value('Create_binary')
 
     enable_mmu = True # config_manager.get_value('Enable_MMU')
-    if enable_mmu:
+    if enable_mmu and create_binary:
         run_PGT_prototype()
 
     generate_assembly()
 
-    create_binary = config_manager.get_value('Create_binary')
     if create_binary:
         try:
             generate_binary()

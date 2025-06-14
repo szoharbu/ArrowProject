@@ -7,12 +7,8 @@ from Utils.logger_management import get_logger
 from Tool.state_management import get_state_manager, get_current_state
 from Tool.state_management.state_manager import State
 from Tool.register_management import register_manager
-#from Tool.memory_management import segment_manager, MemoryRange, page_manager
-#from Tool.memory_management.mmu_manager import get_mmu_manager
-#from Tool.memory_management.memory_space_manager import get_mmu_manager
 from Tool.memory_management.memlayout.interval_lib.interval_lib import IntervalLib
 from Utils.APIs.choice import choice
-#from Tool.memory_management.memory_logger import print_memory_state
 
 from Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
 from Tool.memory_management.memory_logger import get_memory_logger, print_memory_state
@@ -42,36 +38,48 @@ def init_state():
             core_memory_range = MemoryRange(core=state_id, address=core_memory_region_start,
                                             byte_size=core_memory_region_size)
             base_register_value = core_memory_range.address
-            privilege_level = 0
-            execution_context=None
+            
+            curr_state = State.create_state(
+                state_name=state_id,
+                state_id=i,
+                processor_mode=Configuration.Knobs.Config.processor_mode,
+                privilege_level=0,
+                register_manager=register_manager.RegisterManager(),
+                enabled_page_tables = [],
+                current_code_block=None,
+                base_register=None,
+                base_register_value=base_register_value,
+            )
+
         elif Configuration.Architecture.riscv:
-            # base_register_value = core_memory_range.address + (core_memory_range.byte_size // 2)
-            # base_register_value = base_register_value & ~0b11  # Round Down (to the nearest multiple of 4) to make it 4-byte aligned
-            base_register_value = None
-            privilege_level = 0
-            execution_context=None
+            base_register_value = core_memory_range.address + (core_memory_range.byte_size // 2)
+            base_register_value = base_register_value & ~0b11  # Round Down (to the nearest multiple of 4) to make it 4-byte aligned
+
+            curr_state = State.create_state(
+                state_name=state_id,
+                state_id=i,
+                processor_mode=Configuration.Knobs.Config.processor_mode,
+                privilege_level=0,
+                register_manager=register_manager.RegisterManager(),
+                enabled_page_tables = [],
+                current_code_block=None,
+                base_register=None,
+                base_register_value=base_register_value,
+            )
         elif Configuration.Architecture.arm:
-            base_register_value = None
-            privilege_level = 3
-            execution_context=Configuration.Execution_context.EL3
+            curr_state = State.create_state(
+                state_name=state_id,
+                state_id=i,
+                exception_level=3,
+                execution_context=Configuration.Execution_context.EL3,
+                register_manager=register_manager.RegisterManager(),
+                enabled_page_tables = [],
+                current_code_block=None,
+                current_el_page_table=None,
+            )
         else:
             raise ValueError(f"Unknown Architecture requested")
 
-        curr_state = State(
-            state_name=state_id,
-            state_id=i,
-            processor_mode=Configuration.Knobs.Config.processor_mode,
-            privilege_level=privilege_level,
-            register_manager=register_manager.RegisterManager(),
-            enabled_page_tables = [],
-            execution_context=execution_context,
-            current_el_page_table=None,
-            #memory_range=core_memory_range,
-            #segment_manager=segment_manager.SegmentManager(memory_range=core_memory_range),
-            current_code=None,
-            base_register=None,
-            base_register_value=base_register_value,
-        )
         state_manager.add_state(state_id, curr_state)
         #curr_state.page_table_manager = page_manager.PageTableManager()
 

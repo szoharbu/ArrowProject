@@ -125,8 +125,11 @@ class ExceptionManager:
                 return exception_table
         return None
     
-    def get_all_exception_tables(self):
-        return self.exception_table_dict
+    def get_all_exception_tables(self, state_name:str):
+        if state_name is None:
+            return self.exception_table_dict
+        else:
+            return [exception_table for exception_table in self.exception_table_dict if exception_table.state_name == state_name]
     
 
 # Factory function to retrieve the ExceptionManager instance

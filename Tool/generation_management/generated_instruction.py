@@ -46,7 +46,8 @@ class GeneratedInstruction:
         if Configuration.Architecture.arm and asl_extract:
             config_manager = get_config_manager()
             debug_mode = config_manager.get_value('Debug_mode')
-            if debug_mode:
+            create_binary = config_manager.get_value('Create_binary')
+            if debug_mode and create_binary:
                 success, error = test_asm_instruction(str(self.asm_unit))
                 if success:
                     instruction_debug_prints = config_manager.get_value('Instruction_debug_prints')

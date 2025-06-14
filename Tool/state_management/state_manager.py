@@ -5,46 +5,123 @@ from Tool.memory_management.memlayout.segment import MemorySegment
 #from Tool.memory_management.page_manager import MMU
 from Tool.memory_management.memlayout.page_table import PageTable
 from Utils.configuration_management import Configuration
+from abc import ABC, abstractmethod
+from typing import Optional, Union
 
-class State:
+
+class State(ABC):
     """
-    Represents the state for a logical unit (e.g., a core or VM context).
-    Each state contains attributes such as privilege level, processor mode, memory and register managers, and control knobs.
+    Abstract base class for processor state.
+    Each state contains common attributes and architecture-specific attributes.
     """
 
-    def __init__(self, state_name: str, state_id: int, privilege_level: int, execution_context: Configuration.Execution_context, processor_mode: str, register_manager: RegisterManager,
-                 current_el_page_table: PageTable, enabled_page_tables: list[PageTable], current_code: MemorySegment, base_register: Register, base_register_value: int):
+    def __init__(self, state_name: str, 
+                state_id: int,
+                register_manager: RegisterManager,
+                enabled_page_tables: list[PageTable],
+                current_code_block: MemorySegment):
         self.state_name: str = state_name
         self.state_id: int = state_id
-        self.privilege_level: int = privilege_level
-        self.current_el_level: int = privilege_level
-        self.processor_mode: str = processor_mode
         self.register_manager: RegisterManager = register_manager
-        self.execution_context: Configuration.Execution_context = execution_context         # ARM's exception level
-        self.current_el_page_table: PageTable = current_el_page_table           # ARM's MMU for the exception level. each state has per-el mmu, and the state_manager will track the current el_mmu
         self.enabled_page_tables: list[PageTable] = enabled_page_tables
-        #self.segment_manager: SegmentManager = segment_manager
-        self.current_code_block:MemorySegment = current_code
+        self.current_code_block: MemorySegment = current_code_block
+
+    @abstractmethod
+    def __repr__(self):
+        pass
+
+    @staticmethod
+    def create_state(state_name: str, state_id: int, register_manager: RegisterManager, **kwargs) -> 'State':
+        """
+        Factory method to create the appropriate State subclass based on configuration.
+        """
+        if Configuration.Architecture.arm:
+            return ARMState(state_name, state_id, register_manager, **kwargs)
+        elif Configuration.Architecture.riscv:
+            return RISCVState(state_name, state_id, register_manager, **kwargs)
+        elif Configuration.Architecture.x86:
+            return X86State(state_name, state_id, register_manager, **kwargs)
+        else:
+            raise ValueError(f"Unsupported architecture: {Configuration.Architecture}")
+
+
+class X86State(State):
+    """
+    State class for x86 architecture.
+    """
+
+    def __init__(self, state_name: str, state_id: int, register_manager: RegisterManager,
+                 privilege_level: int, processor_mode: str, enabled_page_tables: list[PageTable],
+                 current_code_block: MemorySegment, base_register: Register, base_register_value: int):
+        super().__init__(state_name, state_id, register_manager, enabled_page_tables, current_code_block)
+        self.privilege_level: int = privilege_level
+        self.processor_mode: str = processor_mode
         self.base_register: Register = base_register
-        self.base_register_value:int = base_register_value
+        self.base_register_value: int = base_register_value
 
     def __repr__(self):
-        state_str = f"State(name={self.state_name}, "
-        state_str += f"state_id={self.state_id}, "
-        if Configuration.Architecture.arm:
-            state_str += f"exception_level={self.current_el_level}, "
-            state_str += f"execution_context={self.execution_context}, "
-            state_str += f"current_el_page_table={self.current_el_page_table}, "
-        else:
-            state_str += f"privilege_level={self.privilege_level}, "
-            state_str += f"processor_mode={self.processor_mode}, "
-            state_str += f"current_code={self.current_code_block}, "
-            state_str += f"base_register={self.base_register}, "
-            state_str += f"base_register_value={self.base_register_value}, "
-        state_str += f"register_manager={self.register_manager}, "
+        return (f"X86 State(name={self.state_name}, "
+                f"state_id={self.state_id}, "
+                f"privilege_level={self.privilege_level}, "
+                f"processor_mode={self.processor_mode}, "
+                f"enabled_page_tables={self.enabled_page_tables}, "
+                f"current_code_block={self.current_code_block}, "
+                f"base_register={self.base_register}, "
+                f"base_register_value={self.base_register_value}, "
+                f"register_manager={self.register_manager})")
 
-        return state_str
+class RISCVState(State):
+    """
+    State class for RISCV architecture.
+    """
 
+    def __init__(self, state_name: str, state_id: int, register_manager: RegisterManager,
+                 privilege_level: int, processor_mode: str, enabled_page_tables: list[PageTable],
+                 current_code_block: MemorySegment, base_register: Register, base_register_value: int):
+        super().__init__(state_name, state_id, register_manager, enabled_page_tables, current_code_block)
+        self.privilege_level: int = privilege_level
+        self.processor_mode: str = processor_mode
+        self.base_register: Register = base_register
+        self.base_register_value: int = base_register_value
+
+    def __repr__(self):
+        return (f"RISCV State(name={self.state_name}, "
+                f"state_id={self.state_id}, "
+                f"privilege_level={self.privilege_level}, "
+                f"processor_mode={self.processor_mode}, "
+                f"enabled_page_tables={self.enabled_page_tables}, "
+                f"current_code_block={self.current_code_block}, "
+                f"base_register={self.base_register}, "
+                f"base_register_value={self.base_register_value}, "
+                f"register_manager={self.register_manager})")
+    
+class ARMState(State):
+    """
+    State class for ARM architecture.
+    """
+
+    def __init__(self, state_name: str, state_id: int, register_manager: RegisterManager,
+                 exception_level: int, execution_context: Configuration.Execution_context,
+                 current_el_page_table: PageTable, enabled_page_tables: list[PageTable],
+                 current_code_block: MemorySegment):
+        super().__init__(state_name, state_id, register_manager, enabled_page_tables, current_code_block)
+        self.current_el_level: int = exception_level
+        self.execution_context: Configuration.Execution_context = execution_context
+        self.current_el_page_table: PageTable = current_el_page_table
+
+        # Per EL code block, for cases we are switching code and later want to get back to the same code block
+        self.per_el_code_block: dict[int, MemorySegment] = {}
+        self.per_el_code_block[self.current_el_level] = current_code_block
+
+    def __repr__(self):
+        return (f"ARM State(name={self.state_name}, "
+                f"state_id={self.state_id}, "
+                f"exception_level={self.current_el_level}, "
+                f"execution_context={self.execution_context}, "
+                f"current_el_page_table={self.current_el_page_table}, "
+                f"current_code_block={self.current_code_block}, "
+                #f"enabled_page_tables={self.enabled_page_tables}, "
+                f"register_manager={self.register_manager})")
 
 
 class State_manager:
@@ -70,6 +147,19 @@ class State_manager:
         # from Tool.memory_management.memory_space_manager import get_memory_space_manager
         # memory_space_manager = get_memory_space_manager()
         # memory_space_manager.force_initialize_state(state_id)
+
+    def create_and_add_state(self, state_id: str, state_name: str, register_manager: RegisterManager, **kwargs) -> State:
+        """
+        Create and add a new state using the factory method.
+        :param state_id: Unique identifier for the state
+        :param state_name: Name of the state
+        :param register_manager: Register manager for the state
+        :param kwargs: Architecture-specific parameters
+        :return: The created state
+        """
+        state = State.create_state(state_name, len(self.states_dict), register_manager, **kwargs)
+        self.add_state(state_id, state)
+        return state
 
     # def remove_state(self, state_id: str, state: State):
 
