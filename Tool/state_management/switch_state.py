@@ -1,6 +1,7 @@
 from Tool.state_management.state_manager import State
 from Tool.state_management import get_state_manager
 from Tool.memory_management.memlayout.segment import CodeSegment
+from Tool.memory_management.memlayout.page_table import PageTable
 from Utils.configuration_management import Configuration
 from Utils.logger_management import get_logger
 
@@ -96,3 +97,27 @@ def switch_code(new_code:CodeSegment):
     logger = get_logger()
     logger.debug(f"Switched to code block: {new_code.name} (start address: {hex(new_code.address)}, byte_size: {hex(new_code.byte_size)})")
 
+
+def switch_exception_level(new_el:int, new_code:CodeSegment, new_page_table:PageTable):
+    """
+    switch to a new exception level.
+    """
+    logger = get_logger()
+    state_manager = get_state_manager()
+    current_state = state_manager.get_active_state()
+
+
+    logger.debug(f"Switching EL: from {current_state.current_el_level} to {new_el}")
+
+    logger.debug(f"zzzzz before state: {current_state}")
+
+    current_state.per_el_code_block[current_state.current_el_level] = current_state.current_code_block
+    current_state.per_el_code_block[new_el] = new_code
+    current_state.current_code_block = new_code
+    current_state.current_el_level = new_el
+    current_state.execution_context = new_page_table.execution_context
+    current_state.current_el_page_table = new_page_table
+
+    logger.debug(f"zzzzz after state: {current_state}")
+
+    logger.debug(f"Switched to code block: {new_code.name} (start address: {hex(new_code.address)}, byte_size: {hex(new_code.byte_size)})")

@@ -168,24 +168,20 @@ def enable_EL1_page_table():
 def enable_exception_tables():
     state_manager = get_state_manager()
     exception_manager = get_exception_manager()
-    exception_tables = exception_manager.get_all_exception_tables()
-    orig_state = state_manager.get_active_state()
+    current_state = state_manager.get_active_state()
+    exception_tables = exception_manager.get_all_exception_tables(state_name=current_state.state_name)
     for exception_table in exception_tables:
-        tmp_state = state_manager.set_active_state(exception_table.state_name)
         if exception_table.page_table.execution_context == Configuration.Execution_context.EL3:
             vbar_sysreg = f"vbar_el3"
         elif exception_table.page_table.execution_context == Configuration.Execution_context.EL1_NS:
             vbar_sysreg = f"vbar_el1"
         else:
             raise ValueError(f"Invalid execution context: {exception_table.page_table.execution_context}")
-        register_manager = tmp_state.register_manager
+        register_manager = current_state.register_manager
         address_reg = register_manager.get_and_reserve(reg_type="gpr")
         AsmLogger.asm(f"ldr {address_reg}, ={exception_table.vbar_label}", comment="load the address of the vbar label")
         AsmLogger.asm(f"msr {vbar_sysreg}, {address_reg}", comment=f"set the {vbar_sysreg} address")
         register_manager.free(address_reg)
-
-    state_manager.set_active_state(orig_state.state_name)
-
 
 
 

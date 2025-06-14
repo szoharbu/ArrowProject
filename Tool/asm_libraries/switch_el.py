@@ -5,7 +5,7 @@ from Tool.memory_management.memory_operand import Memory
 from Tool.asm_libraries.barrier.barrier_manager import get_barrier_manager
 from Utils.APIs import choice
 from Utils.configuration_management import Configuration
-from Tool.state_management.switch_state import switch_code
+from Tool.state_management.switch_state import switch_exception_level
 
 def switch_EL_to_higher(target_el_level: int):
     """
@@ -23,8 +23,9 @@ def switch_EL_to_higher(target_el_level: int):
     
 
     el3_page_table = [pt for pt in current_state.enabled_page_tables if pt.execution_context == Configuration.Execution_context.EL3][0]
-    available_blocks = el3_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
-    selected_target_block = choice.choice(values=available_blocks)
+    #available_blocks = el3_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
+    
+    selected_target_block = current_state.per_el_code_block[target_el_level]
 
     register_manager = current_state.register_manager
     reg = register_manager.get_and_reserve(reg_type="gpr")
@@ -36,10 +37,8 @@ def switch_EL_to_higher(target_el_level: int):
     AsmLogger.asm(f"mov {reg}, #0x0", comment="SMC function ID (customize as needed)")
     AsmLogger.asm(f"smc #0", comment="Secure Monitor Call - triggers exception to EL3")
     
-    current_state.current_code_block = selected_target_block
-    current_state.current_el_level = target_el_level
-    current_state.execution_context = Configuration.Execution_context.EL3
-    current_state.current_el_page_table = el3_page_table
+    switch_exception_level(new_el=target_el_level, new_code=selected_target_block, new_page_table=el3_page_table)
+
 
     # Note: Code after SMC will not execute immediately
     # Execution continues in EL3 exception handler, then returns here
@@ -99,17 +98,16 @@ def switch_EL_to_lower(target_el_level: int):
     
     if target_el_level == 1:
         AsmLogger.asm(f"orr {reg}, {reg}, #(1 << 8)", comment="Set HCE bit (bit 8) - HVC instruction enable")
-        AsmLogger.comment("EL2 is bypassed for direct EL3→EL1 transition")
+        AsmLogger.comment("EL2 is bypassed for direct EL3 to EL1 transition")
     
     AsmLogger.asm(f"msr scr_el3, {reg}", comment="Update SCR_EL3")
     AsmLogger.asm(f"isb")
     AsmLogger.comment(f"Execute transition to EL{target_el_level}")
     AsmLogger.asm("eret")
     
-    current_state.current_code_block = selected_target_block
-    current_state.current_el_level = target_el_level
-    current_state.execution_context = Configuration.Execution_context.EL1_NS
-    current_state.current_el_page_table = el1_page_table
+
+    switch_exception_level(new_el=target_el_level, new_code=selected_target_block, new_page_table=el1_page_table)
+
 
     AsmLogger.asm(f"{target_el_label}:")
     AsmLogger.comment(f"Now running at EL{target_el_level}")
@@ -135,4 +133,3 @@ def switch_EL(target_el_level:int):
     else:
         # Going from higher to lower EL  
         switch_EL_to_lower(target_el_level)
-
