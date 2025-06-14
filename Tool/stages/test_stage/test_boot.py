@@ -7,6 +7,7 @@ from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.branch_to_segment import branch_to_segment
 from Tool.asm_libraries.label import Label
 from Tool.asm_libraries.barrier.barrier import Barrier
+from Tool.exception_management import get_exception_manager
 #from Tool.generation_management.generate import generate
 
 from Utils.APIs import choice
@@ -51,7 +52,8 @@ def do_boot():
 
         skip_boot = Configuration.Knobs.Config.skip_boot
         if not skip_boot:
-            enable_pgt_page_table()
+            enable_page_tables()
+            enable_exception_tables()
             #generate(instruction_count=10)
             logger.debug("============ Boot end barrier")
             Barrier(end_boot_barrier_label)
@@ -73,7 +75,7 @@ def do_boot():
     all_code_blocks.extend(available_blocks)  # Finally regular code blocks
 
 
-def enable_pgt_page_table():
+def enable_page_tables():
     # TODO:: refactor this !!! 
     enable_EL3_page_table()
     enable_EL1_page_table()
@@ -162,6 +164,29 @@ def enable_EL1_page_table():
     AsmLogger.comment("Now both EL3 and EL1 page tables are configured")
     
     register_manager.free(tmp_reg)
+
+def enable_exception_tables():
+    state_manager = get_state_manager()
+    exception_manager = get_exception_manager()
+    exception_tables = exception_manager.get_all_exception_tables()
+    orig_state = state_manager.get_active_state()
+    for exception_table in exception_tables:
+        tmp_state = state_manager.set_active_state(exception_table.state_name)
+        if exception_table.page_table.execution_context == Configuration.Execution_context.EL3:
+            vbar_sysreg = f"vbar_el3"
+        elif exception_table.page_table.execution_context == Configuration.Execution_context.EL1_NS:
+            vbar_sysreg = f"vbar_el1"
+        else:
+            raise ValueError(f"Invalid execution context: {exception_table.page_table.execution_context}")
+        register_manager = tmp_state.register_manager
+        address_reg = register_manager.get_and_reserve(reg_type="gpr")
+        AsmLogger.asm(f"ldr {address_reg}, ={exception_table.vbar_label}", comment="load the address of the vbar label")
+        AsmLogger.asm(f"msr {vbar_sysreg}, {address_reg}", comment=f"set the {vbar_sysreg} address")
+        register_manager.free(address_reg)
+
+    state_manager.set_active_state(orig_state.state_name)
+
+
 
 
 def do_bsp_boot():

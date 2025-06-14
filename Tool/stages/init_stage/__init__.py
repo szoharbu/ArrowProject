@@ -16,7 +16,7 @@ from Utils.APIs.choice import choice
 
 from Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
 from Tool.memory_management.memory_logger import get_memory_logger, print_memory_state
-
+from Tool.exception_management import get_exception_manager
 
 
 def init_state():
@@ -230,6 +230,22 @@ def init_segments():
         memory_logger.info(f"init_memory: allocating stack_segment {stack_segment} for {page_table.core_id}:{page_table.page_table_name}")
 
             
+def init_exception_tables():
+    logger = get_logger()
+    logger.info("======== init_exception_tables")
+    page_table_manager = get_page_table_manager()
+    page_tables = page_table_manager.get_all_page_tables()
+    exception_manager = get_exception_manager()
+
+    from Tool.exception_management import Exception_type
+    for page_table in page_tables:
+        exception_table = exception_manager.add_exception_table(page_table.core_id, page_table.page_table_name)
+
+        #exception_table.add_exception(Exception_type.SVC, "zohar_label"
+        exception_table.populate_exception_table()
+
+        vbar_label = exception_table.get_vbar_label()
+        logger.info(f"============ init_exception_tables: {page_table.page_table_name} vbar_label: {vbar_label}")
 
 
 def init_scenarios():
@@ -278,6 +294,7 @@ def init_section():
     init_registers()
     init_page_tables()
     init_segments()
+    init_exception_tables()
     print_memory_state(print_both=True)
 
     init_scenarios()
