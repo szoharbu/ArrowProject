@@ -56,6 +56,9 @@ class CodeSegment(MemorySegment):
         asm_unit = AsmUnit(asm_string=f"{self.code_label}:", comment=f"starting label for {name} code Segment")
         self.asm_units_list.append(asm_unit)
 
+    def get_start_label(self):
+        return self.code_label
+
 # DataSegment inherits from MemorySegment and may add more data-specific attributes
 class DataSegment(MemorySegment):
     def __init__(self, name: str, page_table, address: int, pa_address: int, byte_size: int, memory_type:Configuration.Memory_types, init_value: str=None, is_cross_core:bool=False):

@@ -36,14 +36,10 @@ def switch_EL_to_higher(target_el_level: int):
     AsmLogger.asm(f"mov {reg}, #0x0", comment="SMC function ID (customize as needed)")
     AsmLogger.asm(f"smc #0", comment="Secure Monitor Call - triggers exception to EL3")
     
-    print("zzzzzzzzzzz before switch_code")
-    print(current_state)
     current_state.current_code_block = selected_target_block
     current_state.current_el_level = target_el_level
     current_state.execution_context = Configuration.Execution_context.EL3
     current_state.current_el_page_table = el3_page_table
-    print("zzzzzzzzzzz after switch_code")
-    print(current_state)
 
     # Note: Code after SMC will not execute immediately
     # Execution continues in EL3 exception handler, then returns here
@@ -110,133 +106,14 @@ def switch_EL_to_lower(target_el_level: int):
     AsmLogger.comment(f"Execute transition to EL{target_el_level}")
     AsmLogger.asm("eret")
     
-    print("zzzzzzzzzzz before switch_code")
-    print(current_state)
     current_state.current_code_block = selected_target_block
     current_state.current_el_level = target_el_level
     current_state.execution_context = Configuration.Execution_context.EL1_NS
     current_state.current_el_page_table = el1_page_table
-    print("zzzzzzzzzzz after switch_code")
-    print(current_state)
 
     AsmLogger.asm(f"{target_el_label}:")
     AsmLogger.comment(f"Now running at EL{target_el_level}")
 
-def setup_el3_smc_handler():
-    """
-    Sets up the SMC exception handler at EL3 to handle transitions from lower ELs
-    This should be called during EL3 initialization
-    """
-    current_state = get_current_state()
-    register_manager = current_state.register_manager
-    
-    smc_handler_label = Label(postfix="smc_handler_el3")
-    
-    AsmLogger.comment("SMC Exception Handler at EL3")
-    AsmLogger.asm(f"{smc_handler_label}:")
-    
-    # Save context (you might need to save more registers depending on your needs)
-    reg = register_manager.get_and_reserve(reg_type="gpr")
-    AsmLogger.asm(f"mrs {reg}, ELR_EL3", comment="Get return address")
-    AsmLogger.asm(f"mrs {reg}, SPSR_EL3", comment="Get saved program status")
-    
-    AsmLogger.comment("Handle SMC call - update system state")
-    # Update your system state here
-    current_state.current_el_level = 3
-    current_state.execution_context = Configuration.Execution_context.EL3
-    
-    AsmLogger.comment("Return from SMC handler")
-    AsmLogger.asm("eret", comment="Return to calling EL")
-    
-    return smc_handler_label
-
-def setup_el3_exception_vectors():
-    """
-    Sets up the EL3 exception vector table to handle SMC calls
-    This must be called during EL3 initialization before any EL transitions
-    """
-    current_state = get_current_state()
-    register_manager = current_state.register_manager
-    
-    # Create labels for exception vectors
-    vector_table_label = Label(postfix="el3_exception_vectors")
-    smc_handler_label = setup_el3_smc_handler()
-    
-    reg = register_manager.get_and_reserve(reg_type="gpr")
-    
-    AsmLogger.comment("Set up EL3 exception vector table")
-    AsmLogger.asm(f"adr {reg}, {vector_table_label}")
-    AsmLogger.asm(f"msr VBAR_EL3, {reg}", comment="Set Vector Base Address Register for EL3")
-    
-    # Exception vector table - ARM requires 16-byte alignment for each entry
-    AsmLogger.asm(f".align 11", comment="Vector table must be 2KB aligned")
-    AsmLogger.asm(f"{vector_table_label}:")
-    
-    # Current EL with SP0 - Synchronous
-    AsmLogger.asm("b .", comment="Current EL, SP0, Synchronous")
-    AsmLogger.asm(".align 7")
-    
-    # Current EL with SP0 - IRQ
-    AsmLogger.asm("b .", comment="Current EL, SP0, IRQ")
-    AsmLogger.asm(".align 7")
-    
-    # Current EL with SP0 - FIQ  
-    AsmLogger.asm("b .", comment="Current EL, SP0, FIQ")
-    AsmLogger.asm(".align 7")
-    
-    # Current EL with SP0 - SError
-    AsmLogger.asm("b .", comment="Current EL, SP0, SError")
-    AsmLogger.asm(".align 7")
-    
-    # Current EL with SPx - Synchronous
-    AsmLogger.asm("b .", comment="Current EL, SPx, Synchronous")
-    AsmLogger.asm(".align 7")
-    
-    # Current EL with SPx - IRQ
-    AsmLogger.asm("b .", comment="Current EL, SPx, IRQ")
-    AsmLogger.asm(".align 7")
-    
-    # Current EL with SPx - FIQ
-    AsmLogger.asm("b .", comment="Current EL, SPx, FIQ")
-    AsmLogger.asm(".align 7")
-    
-    # Current EL with SPx - SError
-    AsmLogger.asm("b .", comment="Current EL, SPx, SError")
-    AsmLogger.asm(".align 7")
-    
-    # Lower EL using AArch64 - Synchronous (This is where SMC calls are handled)
-    AsmLogger.asm(f"b {smc_handler_label}", comment="Lower EL, AArch64, Synchronous - SMC handler")
-    AsmLogger.asm(".align 7")
-    
-    # Lower EL using AArch64 - IRQ
-    AsmLogger.asm("b .", comment="Lower EL, AArch64, IRQ")
-    AsmLogger.asm(".align 7")
-    
-    # Lower EL using AArch64 - FIQ
-    AsmLogger.asm("b .", comment="Lower EL, AArch64, FIQ")
-    AsmLogger.asm(".align 7")
-    
-    # Lower EL using AArch64 - SError
-    AsmLogger.asm("b .", comment="Lower EL, AArch64, SError")
-    AsmLogger.asm(".align 7")
-    
-    # Lower EL using AArch32 - Synchronous
-    AsmLogger.asm("b .", comment="Lower EL, AArch32, Synchronous")
-    AsmLogger.asm(".align 7")
-    
-    # Lower EL using AArch32 - IRQ
-    AsmLogger.asm("b .", comment="Lower EL, AArch32, IRQ")
-    AsmLogger.asm(".align 7")
-    
-    # Lower EL using AArch32 - FIQ
-    AsmLogger.asm("b .", comment="Lower EL, AArch32, FIQ")
-    AsmLogger.asm(".align 7")
-    
-    # Lower EL using AArch32 - SError
-    AsmLogger.asm("b .", comment="Lower EL, AArch32, SError")
-    
-    AsmLogger.comment("EL3 exception vectors configured")
-    return vector_table_label
 
 def switch_EL(target_el_level:int):
     '''
@@ -258,26 +135,4 @@ def switch_EL(target_el_level:int):
     else:
         # Going from higher to lower EL  
         switch_EL_to_lower(target_el_level)
-
-# // At EL3
-# // Transition from EL3 to EL2
-# MSR ELR_EL3, el2_return_address  // Set return address for EL2
-# MSR SPSel, #1                    // Select SP_EL2
-# ERET                             // Return to EL2
-
-# // At EL2
-# el2_return_address:
-# MSR ELR_EL2, el1_return_address  // Set return address for EL1
-# MSR SPSel, #1                    // Select SP_EL1
-# ERET                             // Return to EL1
-
-# // At EL1
-# el1_return_address:
-# MSR ELR_EL1, el0_return_address  // Set return address for EL0
-# MSR SPSel, #0                    // Select SP_EL0
-# ERET                             // Return to EL0
-
-# // At EL0
-# el0_return_address:
-# MOV X0, X0                       // No-op instruction to indicate we are at EL0
 
