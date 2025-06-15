@@ -37,6 +37,8 @@ def switch_EL_to_higher(target_el_level: int):
     AsmLogger.asm(f"mov {reg}, #0x0", comment="SMC function ID (customize as needed)")
     AsmLogger.asm(f"smc #0", comment="Secure Monitor Call - triggers exception to EL3")
     
+    register_manager.free(reg)
+
     switch_exception_level(new_el=target_el_level, new_code=selected_target_block, new_page_table=el3_page_table)
 
 
@@ -102,6 +104,10 @@ def switch_EL_to_lower(target_el_level: int):
     
     AsmLogger.asm(f"msr scr_el3, {reg}", comment="Update SCR_EL3")
     AsmLogger.asm(f"isb")
+
+    register_manager.free(reg)
+    register_manager.free(reg2)
+
     AsmLogger.comment(f"Execute transition to EL{target_el_level}")
     AsmLogger.asm("eret")
     
