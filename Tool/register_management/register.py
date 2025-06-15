@@ -37,6 +37,16 @@ class Register:
     def __str__(self):
         return self.name
 
+    def __eq__(self, other):
+        if not isinstance(other, Register):
+            return False
+        return (self.name == other.name and 
+                self.type == other.type and 
+                self.default_size == other.default_size)
+
+    def __hash__(self):
+        return hash((self.name, self.type, self.default_size))
+
 
 '''
 In RISC-V, there are 32 general-purpose registers, each 32-bits wide in RV32 (32-bit mode) and 64-bits wide in RV64 (64-bit mode). 

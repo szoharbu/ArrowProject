@@ -1,7 +1,7 @@
 from typing import Optional
 from Utils.logger_management import get_logger
 from Utils.configuration_management import Configuration
-from Tool.state_management import get_state_manager
+from Tool.state_management import get_state_manager, get_current_state
 from Tool.state_management.switch_state import SwitchState
 from Tool.scenario_management import ScenarioWrapper, get_scenario_manager
 from Tool.asm_libraries.asm_logger import AsmLogger
@@ -20,7 +20,22 @@ def execute_scenario(scenario_instance):
     statistics_manager = get_statistics_manager()
     statistics_manager.increment("scenario_count")
 
+    current_state = get_current_state()
+    pre_scenario_reserved_registers = current_state.register_manager.get_used_registers()
+
     scenario_instance.func()  # Call the wrapped function
+
+    post_scenario_reserved_registers = current_state.register_manager.get_used_registers()
+        
+    if pre_scenario_reserved_registers != post_scenario_reserved_registers:
+        # find the difference between the two lists
+        pre_set = set(pre_scenario_reserved_registers)
+        post_set = set(post_scenario_reserved_registers)
+        # Changed to post_set - pre_set to find registers that were added but not freed
+        difference = post_set - pre_set
+                
+        raise ValueError(f"Error: Scenario {scenario_instance} has reserved registers that were not freed: {[str(reg) for reg in difference]}")
+
 
     AsmLogger.comment(f"========================== End scenario {scenario_instance} ====================")
 
