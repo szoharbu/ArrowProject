@@ -741,7 +741,7 @@ class PageTable:
             logger.info(f"  {page_type.value} region {i}: VA:0x{interval.start:x}-0x{interval.end:x}, size:0x{interval.size:x}")
             
         # Find available non-allocated VA region from the relevent pool only, with alignment
-        va_avail = self.non_allocated_va_intervals.find_region(size, alignment_bits)
+        va_avail = self.non_allocated_va_intervals.find_region(size, alignment_bits, criteria={"page_type": page_type})
         if not va_avail:
             raise ValueError(f"No available non-allocated {page_type.value} VA region of size {size} with alignment {alignment_bits} for {self.page_table_name}")
         

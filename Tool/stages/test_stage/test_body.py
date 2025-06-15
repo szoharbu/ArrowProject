@@ -82,6 +82,7 @@ def do_body():
         with SwitchState(core):
             AsmLogger.comment(f"========================= core {core} - TEST BODY - start =====================")
 
+    state_manager.set_active_state("core_0")
     available_cores = list(available_states.keys())
     while available_cores:
         # go over each of the cores, execute scenarios as long as there is what to execute
