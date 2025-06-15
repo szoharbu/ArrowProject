@@ -54,14 +54,19 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
         #Barrier("test_final")
 
         label = Label(postfix=f"{current_state.state_name}_end_of_test")
+        print_str_loop_label = Label(postfix=f"{current_state.state_name}_print_str_loop")
+        print_str_end_label = Label(postfix=f"{current_state.state_name}_print_str_end")
 
         if current_state.state_name != "core_0":
-            AsmLogger.comment(f"{current_state.state_name} reached end of test, waiting for `TEST PASSED OK`")
+            AsmLogger.comment(f"{current_state.state_name} reached end of test, waiting for Trickbox to be closed")
             AsmLogger.asm(f"{label}:")
             AsmLogger.asm(f"wfi")
             AsmLogger.asm(f"b {label}")
         else:
-            AsmLogger.comment(f"Core0 reached end of test, write '** TEST PASSED OK **' to Trickbox")
+            if test_pass:
+                AsmLogger.comment(f"Core0 reached end of test, write '** TEST PASSED OK **' to Trickbox")
+            else:
+                AsmLogger.comment(f"Core0 reached end of test, write '** TEST FAILED **' to Trickbox")
 
             tmp_reg1 = register_manager.get_and_reserve(reg_type="gpr")
             tmp_reg2 = register_manager.get_and_reserve(reg_type="gpr")
@@ -78,12 +83,15 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
 
             from Tool.memory_management.memory_block import MemoryBlock
             # Convert the string to a list of byte values
-            # the test_pass string has to be exactly that "** TEST PASSED OK **\n" including the '\n' null terminator!!! 
-            byte_list = list(b"** TEST PASSED OK **\n")  # Include null terminator
+            if test_pass:
+                # the test_pass string has to be exactly that "** TEST PASSED OK **\n" including the '\n' null terminator!!! 
+                byte_list = list(b"** TEST PASSED OK **\n")  # Include null terminator
+            else:
+                byte_list = list(b"** TEST FAILED **\n")  # Include null terminator
 
             # Create MemoryBlock with byte representation
-            test_pass_str_block = MemoryBlock(
-                name="test_pass_str_block", 
+            test_end_str_block = MemoryBlock(
+                name="test_end_str_block", 
                 byte_size=len(byte_list), 
                 init_value_byte_representation=byte_list,
                 alignment=4,
@@ -91,15 +99,15 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
             
             # Print a string to the trickbox tube
             AsmLogger.comment("Print a string to the trickbox tube")
-            AsmLogger.asm(f"ldr {tmp_reg1}, ={test_pass_str_block.get_address()}", comment="Load the address of the test pass string")
+            AsmLogger.asm(f"ldr {tmp_reg1}, ={test_end_str_block.get_address()}", comment="Load the address of the test_end string")
             AsmLogger.asm(f"stp {tmp_reg2}, {tmp_reg3}, [{sp_reg}, #-16]!", comment=f"Push {tmp_reg2}, {tmp_reg3} to stack to get some temps")
             AsmLogger.asm(f"ldr {tmp_reg2}, =0x13000000", comment="Load the address of the trickbox tube")
-            AsmLogger.asm(f"print_str_loop:", comment="Start of the loop")
+            AsmLogger.asm(f"{print_str_loop_label}:", comment="Start of the loop")
             AsmLogger.asm(f"ldrb {tmp_reg3.as_size(32)}, [{tmp_reg1}], #1", comment="Load the next character from the string")
-            AsmLogger.asm(f"cbz {tmp_reg3.as_size(32)}, print_str_end", comment="If the character is the null terminator, end the loop")
+            AsmLogger.asm(f"cbz {tmp_reg3.as_size(32)}, {print_str_end_label}", comment="If the character is the null terminator, end the loop")
             AsmLogger.asm(f"strb {tmp_reg3.as_size(32)}, [{tmp_reg2}]", comment="Store the character to the Tbox tube")
-            AsmLogger.asm(f"b print_str_loop", comment="Jump back to the start of the loop")
-            AsmLogger.asm(f"print_str_end:", comment="End of the loop")
+            AsmLogger.asm(f"b {print_str_loop_label}", comment="Jump back to the start of the loop")
+            AsmLogger.asm(f"{print_str_end_label}:", comment="End of the loop")
             AsmLogger.asm(f"ldp {tmp_reg2}, {tmp_reg3}, [sp], #16", comment=f"Pop {tmp_reg2}, {tmp_reg3} from stack")
 
             # Close the trickbox tube (end the test)
