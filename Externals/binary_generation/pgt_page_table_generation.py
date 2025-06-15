@@ -13,7 +13,7 @@ def run_PGT_prototype():
     Imports necessary modules from the PGT environment and calls the setProfile function.
     """
     os.environ["PGT_HOME"] = "/home/scratch.zbuchris_cpu/wa_pgt/hw/ext_ip/arm/V8/ack_oct24__r6p0-00eac0_olym/validation/fastpgt/Interface/Release"
-  
+ 
     logger = get_logger()
 
     pgt_home = os.environ.get("PGT_HOME")
@@ -315,7 +315,6 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
         for idx, page in enumerate(code_pages):
             context = page_table.execution_context
             # print(f"Processing {current_state.state_name}-{mmu.mmu_name} - code page {idx}: {page} in {context.value}")
-            memory_logger.info(f"Processing {current_state.state_name} - {page_table.page_table_name} - code page {idx}: {page} in {context.value}")
             code_size = page.size
             code_va = createAddress(page.va) 
             code_pa = createAddress(page.pa) 
@@ -325,12 +324,11 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
                 # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0
                 FillStage1BlockAttributes(code_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
                 mapWithPA(EL3, code_va, code_pa, code_size, code_attr)
-                print(f"Processing {current_state.state_name} - {page_table.page_table_name} - code page {idx}: {page} in {context.value} with AP=PL1_RW")
             elif context == Configuration.Execution_context.EL1_NS:
                 # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0 
                 FillStage1BlockAttributes(code_attr, NS=NON_SECURE, XN=XN_CLEAR, AP=KERN_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
                 mapWithPA(EL1NS, code_va, code_pa, code_size, code_attr)
-                print(f"Processing {current_state.state_name} - {page_table.page_table_name} - code page {idx}: {page} in {context.value} with AP=KERN_RW")
+            memory_logger.info(f"Processing {current_state.state_name} - {page_table.page_table_name} - code page {idx}: {page} in {context.value}")
 
         # Create PGT mappings for data pages
         for idx, page in enumerate(data_pages):
@@ -345,13 +343,10 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
                 # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0
                 FillStage1BlockAttributes(data_attr, NS=ROOT, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
                 mapWithPA(EL3, data_va, data_pa, data_size, data_attr)
-                print(f"Processing {current_state.state_name} - {page_table.page_table_name} - data page {idx}: {page} in {context.value} with AP=PL1_RW")
-
             elif context == Configuration.Execution_context.EL1_NS:
                 # Force ALL pages to use Normal memory - this will make PGT assign Normal to Attr0  
                 FillStage1BlockAttributes(data_attr, NS=NON_SECURE, XN=XN_CLEAR, AP=PL1_RW, MEM_ATTR_OUTER=Normal_WB_TRW, MEM_ATTR_INNER=Normal_WB_TRW)
                 mapWithPA(EL1NS, data_va, data_pa, data_size, data_attr)
-                print(f"Processing {current_state.state_name} - {page_table.page_table_name} - data page {idx}: {page} in {context.value} with AP=PL1_RW")
                 
             memory_logger.info(f"Processing {current_state.state_name} - {page_table.page_table_name} - data page {idx}: {page} in {context.value}")
 
