@@ -97,6 +97,8 @@ class ExceptionTable:
         AsmLogger.comment(f"default target to halting_label")
         AsmLogger.asm(f"{halting_label}:")
         AsmLogger.asm(f"nop")
+        from Tool.asm_libraries import end_test
+        end_test.end_test_asm_convention(test_pass=False)
 
         AsmLogger.comment(f"================ end of exception table for {self.state_name} {self.page_table_name} ===============")
 
