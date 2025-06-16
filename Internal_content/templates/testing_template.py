@@ -5,31 +5,14 @@ from Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManage
 from Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 
 
-# TODO:: PGT
-    # refactor memory manager to support paging, and add a new memory manager that will be used for paging.
-    # integrate the PGT with the new memory manager
-    # solve PGT ISS issue with section
-    # add a logic that auto-generate section-start
-    # replace ARM_ASSEMBLY with GENERIC - should be more simlar to GNU AS
-
-# Done:: debug code branching issue with WFIT (thread0 is waking after sleep state to threa1 code)
-# Done:: Add ability to use "with core" that will allow same scenario to address multiple cores
-# Done:: Need to add ability for Memblock to me aligned, using .align(4) or .align(8), and set some default
-# TODO:: add logic to check that every get_and_reserve is freed at the end of the scenario scope.
+# TODO:: refactor SwitchState to have with scope, and the ability to switch to any EL level.
+   # TODO:: rename "State" into "PE"
+# TODO:: repalce Memory.cross_core with Memory.cross_page_table 
 # TODO:: create an lst like file, that shows both lips from the objdump and the asm+comment+file+line from the asm file
-# TODO:: Barrier
-    # Done:: Work on barrier , add barrier manager to take care of uniuq names and mem addresses
-    # Done:: currently the barrier vector is hardcoded for 2 cores. need to make it dynamic
-    # Done:: Need to think how to handle the barrier vector synamic init? probably gives it a special naming convention, like barrier_vector_memory, and at asm creation look for it and modify the value accordingly.
-    # TODO:: End post_init, and end_test barrier, make sure the TBOX setting has barrier so only the last thread should write test pass. Or else it will create overlapping!
-# TODO:: Memory
-    # TODO:: continue working on Memory at generate.py
-    # TODO:: Enable memory instrutions, currently disabled
-    # TODO:: Memory block setting in asm file
 # TODO:: Asm_template parser
 # TODO:: Stack, handle it properly with code allocation and stack pointer, possibly a stack manager
-# Done:: each core should have a unique number, that be used for the barrier and BSP logic. at the moment I'm using core.name
 # TODO:: LOR manager and basic usage.
+
 
 
 Configuration.Knobs.Config.core_count.set_value(1)
