@@ -143,6 +143,7 @@ def switch_EL(target_el_level:int):
         return  # Already at target EL
     
     AsmLogger.comment(f"Switch_EL:: Switching from EL{current_el_level} to EL{target_el_level}")
+    print(f"zzzzzzzzzzz Switch_EL:: Switching from EL{current_el_level} to EL{target_el_level}")
     if current_el_level < target_el_level:
         # Going from lower to higher EL
         switch_EL_to_higher(target_el_level)
