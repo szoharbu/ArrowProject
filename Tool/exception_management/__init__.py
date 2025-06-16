@@ -13,31 +13,40 @@ from Tool.asm_libraries.label import Label
 configure exception manager , per each of the page_table contexts 
 '''
 
-class Exception_type(Enum):
-    SVC = "SVC"
-    BRANCH = "BRANCH"
-    DATA_ABORT = "DATA_ABORT"
-    INSTRUCTION_ABORT = "INSTRUCTION_ABORT"
-    UNDEFINED = "UNDEFINED"
-    SYNC = "SYNC"
-    IRQ = "IRQ"
-    FIQ = "FIQ"
+class AArch64ExceptionVector(Enum):
+    # Current EL using SP0
+    CURRENT_SP0_SYNCHRONOUS     = 0x000  # Synchronous
+    CURRENT_SP0_IRQ             = 0x080  # IRQ/vIRQ
+    CURRENT_SP0_FIQ             = 0x100  # FIQ/vFIQ
+    CURRENT_SP0_SERROR          = 0x180  # SError/vSError
 
-# def get_exception_offset(exception:Exception_type):
-#     if exception == Exception_type.SVC:
-#         return 0
-#     elif exception == Exception_type.BRANCH:
-#         return 1
-#     elif exception == Exception_type.DATA_ABORT:
-#         return 2
-#     elif exception == Exception_type.INSTRUCTION_ABORT:
-#         return 3
+    # Current EL using SPx (not SP0)
+    CURRENT_SPX_SYNCHRONOUS     = 0x200  # Synchronous
+    CURRENT_SPX_IRQ             = 0x280  # IRQ/vIRQ
+    CURRENT_SPX_FIQ             = 0x300  # FIQ/vFIQ
+    CURRENT_SPX_SERROR          = 0x380  # SError/vSError
+
+    # Lower EL using AArch64
+    LOWER_A64_SYNCHRONOUS       = 0x400  # Synchronous
+    LOWER_A64_IRQ               = 0x480  # IRQ/vIRQ
+    LOWER_A64_FIQ               = 0x500  # FIQ/vFIQ
+    LOWER_A64_SERROR            = 0x580  # SError/vSError
+
+    # Lower EL using AArch32
+    LOWER_A32_SYNCHRONOUS       = 0x600  # Synchronous
+    LOWER_A32_IRQ               = 0x680  # IRQ/vIRQ
+    LOWER_A32_FIQ               = 0x700  # FIQ/vFIQ
+    LOWER_A32_SERROR            = 0x780  # SError/vSError
+
+
+
 
 class ExceptionTable:
     def __init__(self, state_name:str, page_table_name:str):
         self.state_name = state_name
         self.page_table_name = page_table_name
-        self.exception_entries:Dict[Exception_type, Label] = {}
+        self.exception_entries:Dict[AArch64ExceptionVector, Label] = {}
+        self.exception_callback_target:Dict[AArch64ExceptionVector, Label] = {}
         self.exception_table_segment: CodeSegment = None
         self.vbar_label = None
 
@@ -45,14 +54,21 @@ class ExceptionTable:
         self.page_table = page_table_manager.get_page_table(self.page_table_name)
         logger = get_logger()
 
-    def get_exception(self, exception:Exception_type):
+        # Create the halting label once and use it consistently
+        self.halting_label = Label(postfix="halting_label")
+        self.callback_label = Label(postfix="callback_label")
+
+
+    def get_exception(self, exception:AArch64ExceptionVector):
         return self.exception_entries.get(exception)
     
-    def add_exception(self, exception:Exception_type, target_label:str):
+    def add_exception_callback(self, exception:AArch64ExceptionVector, target_label:str):
         #check if the exception already exists
         if self.get_exception(exception) is not None:
             raise Exception(f"Exception already exists for {exception}")
-        self.exception_entries[exception] = target_label
+        
+        if target_label is "callback_label":
+            self.exception_entries[exception] = self.callback_label
 
         # if already populated, use assembly mode to add the exception
         #     use assembly mode to add the exception
@@ -75,30 +91,69 @@ class ExceptionTable:
 
         self.vbar_label = self.exception_table_segment.get_start_label()
 
-        # Create the halting label once and use it consistently
-        halting_label = Label(postfix="halting_label")
-        
+
         # set default target to each of the exceptions that don't have a target
-        for exception in Exception_type:
+        for exception in AArch64ExceptionVector:
             if exception not in self.exception_entries:
-                self.exception_entries[exception] = halting_label
+                self.exception_entries[exception] = self.halting_label
+            if exception not in self.exception_callback_target:
+                self.exception_callback_target[exception] = None
 
         orig_code_block = orig_state.current_code_block
         tmp_state.current_code_block = self.exception_table_segment
 
         AsmLogger.comment(f"================ exception table for {self.state_name} {self.page_table_name} =====================")
-        offset = 0x80
-        for exception in Exception_type:
+        for exception in AArch64ExceptionVector:
             target_label = self.exception_entries[exception]
+            AsmLogger.asm(f".org {hex(exception.value)}")
             AsmLogger.comment(f" exception {exception} - target label {target_label} ")
             AsmLogger.asm(f"b {target_label}")
-            AsmLogger.asm(f".org {hex(offset)}")
-            offset += 0x80
-        AsmLogger.comment(f"default target to halting_label")
-        AsmLogger.asm(f"{halting_label}:")
+
+
+        AsmLogger.asm(f"{self.halting_label}:")
+        AsmLogger.comment(f"default halting hander")
         AsmLogger.asm(f"nop")
         from Tool.asm_libraries import end_test
         end_test.end_test_asm_convention(test_pass=False)
+
+        AsmLogger.asm(f"{self.callback_label}:")
+        AsmLogger.comment(f"default callback handler ")
+        AsmLogger.asm(f"nop")
+
+        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        # register_manager = tmp_state.register_manager
+        # sp = register_manager.get_register("sp")
+        # AsmLogger.asm(f"sub {sp}, {sp}, #32", comment="Allocate space for 4 x 64-bit values (keep 16-byte alignment)")
+        # AsmLogger.asm(f"stp x30, x31, [{sp}]", comment="Save original x16 and x17")
+
+        print(f"WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
+        print(f"WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
+        print(f"WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
+
+
+        #from Tool.exception_management import get_exception_manager, AArch64ExceptionVector
+        from Tool.memory_management.memory_operand import Memory
+
+        mem = Memory(name=f"{self.page_table_name}__exception_callback_LOWER_A64_SYNC", byte_size=8)
+        self.exception_callback_target[AArch64ExceptionVector.LOWER_A64_SYNCHRONOUS] = mem.get_label()
+
+
+
+
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz {self}")
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz {self.state_name}")
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz {self.page_table_name}")
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz {self.exception_callback_target[AArch64ExceptionVector.LOWER_A64_SYNCHRONOUS]}")
+        print(f"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz {mem.memory_block.memory_segment_name}")
+        
+
+        AsmLogger.asm(f"ldr x0, ={self.exception_callback_target[AArch64ExceptionVector.LOWER_A64_SYNCHRONOUS]}")
+        AsmLogger.asm(f"ldr x1, [x0]")
+        AsmLogger.asm(f"br x1")
+       
+
 
         AsmLogger.comment(f"================ end of exception table for {self.state_name} {self.page_table_name} ===============")
 
