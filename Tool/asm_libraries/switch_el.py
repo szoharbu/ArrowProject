@@ -1,11 +1,10 @@
 from Tool.asm_libraries.asm_logger import AsmLogger
 from Tool.asm_libraries.label import Label
 from Tool.state_management import get_current_state
-from Tool.memory_management.memory_operand import Memory
-from Tool.asm_libraries.barrier.barrier_manager import get_barrier_manager
 from Utils.APIs import choice
 from Utils.configuration_management import Configuration
 from Tool.state_management.switch_state import switch_exception_level
+from Tool.exception_management import get_exception_manager, AArch64ExceptionVector
 
 def switch_EL_to_higher(target_el_level: int):
     """
@@ -21,9 +20,7 @@ def switch_EL_to_higher(target_el_level: int):
     if target_el_level != 3:
         raise ValueError(f"Can only switch to EL3 from lower levels, not EL{target_el_level}")
     
-
     el3_page_table = [pt for pt in current_state.enabled_page_tables if pt.execution_context == Configuration.Execution_context.EL3][0]
-    #available_blocks = el3_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
     
     selected_target_block = current_state.per_el_code_block[target_el_level]
 
@@ -31,7 +28,7 @@ def switch_EL_to_higher(target_el_level: int):
     reg = register_manager.get_and_reserve(reg_type="gpr")
     
     AsmLogger.comment(f"Transition from EL{current_el_level} to EL{target_el_level} using SMC")
-    
+
     # Set up parameters for the SMC call (function ID, etc.)
     # You might want to pass specific values to identify the call
     AsmLogger.asm(f"mov {reg}, #0x0", comment="SMC function ID (customize as needed)")
@@ -40,7 +37,6 @@ def switch_EL_to_higher(target_el_level: int):
     register_manager.free(reg)
 
     switch_exception_level(new_el=target_el_level, new_code=selected_target_block, new_page_table=el3_page_table)
-
 
     # Note: Code after SMC will not execute immediately
     # Execution continues in EL3 exception handler, then returns here
@@ -54,6 +50,8 @@ def switch_EL_to_lower(target_el_level: int):
     current_state = get_current_state()
     current_el_level = current_state.current_el_level
     current_el_page_table = current_state.current_el_page_table
+    back_to_el3_label = Label(postfix=f"back_to_el3_label")
+
     current_segment_manager = current_el_page_table.segment_manager
 
     if current_el_level <= target_el_level:
@@ -70,6 +68,16 @@ def switch_EL_to_lower(target_el_level: int):
     reg = register_manager.get_and_reserve(reg_type="gpr")
     reg2 = register_manager.get_and_reserve(reg_type="gpr")
 
+    # set the back_to_el3 target address
+    exception_manager = get_exception_manager()
+    exception_table = exception_manager.get_exception_table(current_state.state_name, current_el_page_table.page_table_name)
+
+    # write the target of label "back_to_el3_label" to x0
+    AsmLogger.asm(f"ldr {reg2}, ={exception_table.exception_callback_target[AArch64ExceptionVector.LOWER_A64_SYNCHRONOUS]}")  
+    AsmLogger.asm(f"ldr {reg}, ={back_to_el3_label}")
+    AsmLogger.asm(f"str {reg}, [{reg2}]", comment=f"storing the address of 'back_to_el3_label' into a memory to later be used by the handler")
+
+    # set the target address in ELR_EL3
     target_el_label = Label(postfix=f"el{target_el_level}_target_address")
     AsmLogger.comment(f"Transition from EL{current_el_level} to EL{target_el_level}")
 
@@ -110,6 +118,8 @@ def switch_EL_to_lower(target_el_level: int):
 
     AsmLogger.comment(f"Execute transition to EL{target_el_level}")
     AsmLogger.asm("eret")
+
+    AsmLogger.asm(f"{back_to_el3_label}:")
     
 
     switch_exception_level(new_el=target_el_level, new_code=selected_target_block, new_page_table=el1_page_table)

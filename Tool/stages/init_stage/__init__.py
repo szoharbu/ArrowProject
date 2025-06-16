@@ -245,11 +245,11 @@ def init_exception_tables():
     page_tables = page_table_manager.get_all_page_tables()
     exception_manager = get_exception_manager()
 
-    from Tool.exception_management import Exception_type
+    from Tool.exception_management import AArch64ExceptionVector
     for page_table in page_tables:
         exception_table = exception_manager.add_exception_table(page_table.core_id, page_table.page_table_name)
 
-        #exception_table.add_exception(Exception_type.SVC, "zohar_label"
+        exception_table.add_exception_callback(exception=AArch64ExceptionVector.LOWER_A64_SYNCHRONOUS, target_label="callback_label")
         exception_table.populate_exception_table()
 
         vbar_label = exception_table.get_vbar_label()

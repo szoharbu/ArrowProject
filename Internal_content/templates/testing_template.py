@@ -32,87 +32,95 @@ from Arrow_API.resources.register_manager import RegisterManager_API as Register
 # TODO:: LOR manager and basic usage.
 
 
-Configuration.Knobs.Config.core_count.set_value(2)
-Configuration.Knobs.Template.scenario_count.set_value(2)
+Configuration.Knobs.Config.core_count.set_value(1)
+Configuration.Knobs.Template.scenario_count.set_value(1)
 
 
 #Configuration.Knobs.Template.scenario_query.set_value({"simple_cache_scenario":100, "WFIT_CROSS_SPE_scenario": 0, Configuration.Tag.REST: 1})
-#Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, "bypass_bursts": 1, Configuration.Tag.REST: 1})
-Configuration.Knobs.Template.scenario_query.set_value({"basic_false_sharing_scenario": 50, "ldstcc_release_rar_check": 50, Configuration.Tag.REST: 1})
+Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 100, Configuration.Tag.REST: 1})
+#Configuration.Knobs.Template.scenario_query.set_value({"basic_false_sharing_scenario": 50, "ldstcc_release_rar_check": 50, Configuration.Tag.REST: 1})
 
 
 @AR.scenario_decorator(random=True, )
 def random_instructions():
     AR.comment("inside random_instructions")
 
-    for _ in range(10):
-        AR.asm("nop")
-#        AR.generate(instruction_count=5)
-    AR.generate(instruction_count=50)
-
-    # from Tool.asm_libraries.switch_el import switch_EL
-    # switch_EL(target_el_level=1)
-
-    mem = MemoryManager.Memory(init_value=0x456)
-    print("Im at EL1" )
-    print(f" I'musing mem {mem}")
-
+    AR.comment("Im at EL3 for the first time")
     for _ in range(10):
         AR.asm("nop")
 
-    # switch_EL(target_el_level=3)
+    AR.comment("Switching to EL1")
+    from Tool.asm_libraries.switch_el import switch_EL
+    switch_EL(target_el_level=1)
 
+    AR.comment("Im at EL1 for the first time")
+    for _ in range(10):
+        AR.asm("nop")
+
+    AR.comment("Switching to EL3")
+    switch_EL(target_el_level=3)
+
+    AR.comment("Im at EL3 for the second time")
+    for _ in range(10):
+        AR.asm("nop")
+
+    AR.comment("Switching to EL1")
+    switch_EL(target_el_level=1)
+
+    AR.comment("Im at EL1 for the second time")
+    for _ in range(10):
+        AR.asm("nop")
+
+    AR.comment("Switching to EL3")
+    switch_EL(target_el_level=3)
+
+    AR.comment("Im at EL3 for the third time")
     for _ in range(10):
         AR.asm("nop")
 
 
-    return
-    AR.asm("nop")
-    
-    for _ in range(10):
-        AR.asm("nop")
-    
-    return 
 
-    with AR.Loop(counter=10):
-        for _ in range(10):
-            AR.asm("nop")
-            AR.generate(instruction_count=10)
-#       AR.generate(instruction_count=10)
+#     return
+
+#     with AR.Loop(counter=10):
+#         for _ in range(10):
+#             AR.asm("nop")
+#             AR.generate(instruction_count=10)
+# #       AR.generate(instruction_count=10)
 
 
-    for _ in range(10):
+#     for _ in range(10):
 
-        AR.asm("nop")
-        AR.generate()
-        reg = RegisterManager.get(reg_type="gpr")
-        AR.generate(src=reg)
-        AR.generate(dest=reg, comment=f"use reg as {reg} as dest")
-        RegisterManager.free(reg)
+#         AR.asm("nop")
+#         AR.generate()
+#         reg = RegisterManager.get(reg_type="gpr")
+#         AR.generate(src=reg)
+#         AR.generate(dest=reg, comment=f"use reg as {reg} as dest")
+#         RegisterManager.free(reg)
 
-    return
+#     return
 
-    for _ in range(10):
-        mem = MemoryManager.Memory(init_value=random.randint(0, 0xffff))
-        AR.generate(query=(AR.Instruction.mnemonic=="ldr"), src=mem, comment="load mem")
-        AR.generate(query=(AR.Instruction.mnemonic.contains("str")), dest=mem, comment="store mem")
+#     for _ in range(10):
+#         mem = MemoryManager.Memory(init_value=random.randint(0, 0xffff))
+#         AR.generate(query=(AR.Instruction.mnemonic=="ldr"), src=mem, comment="load mem")
+#         AR.generate(query=(AR.Instruction.mnemonic.contains("str")), dest=mem, comment="store mem")
 
-    AR.generate(instruction_count=5)
-    AR.generate(query=(AR.Instruction.steering_class.contains("mx")))
-    AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")))
+#     AR.generate(instruction_count=5)
+#     AR.generate(query=(AR.Instruction.steering_class.contains("mx")))
+#     AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")))
 
-    return 
+    # return 
 
-    reg = RegisterManager.get(reg_type="gpr")
-    reg2 = RegisterManager.get(reg_type="gpr")
-    AR.asm(f"add {reg}, {reg}, {reg2}", comment=f"adding {reg} = {reg} + {reg2}")
+    # reg = RegisterManager.get(reg_type="gpr")
+    # reg2 = RegisterManager.get(reg_type="gpr")
+    # AR.asm(f"add {reg}, {reg}, {reg2}", comment=f"adding {reg} = {reg} + {reg2}")
 
-    AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), src=reg, comment=f"ADC with register {reg} as src")
-    # AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), dest=reg, comment=f"ADC with register {reg} as dest")
+    # AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), src=reg, comment=f"ADC with register {reg} as src")
+    # # AR.generate(query=(AR.Instruction.mnemonic.contains("ADC")), dest=reg, comment=f"ADC with register {reg} as dest")
 
-    for _ in range(10):
-        reg = RegisterManager.get()
-        AR.generate(src=reg)
+    # for _ in range(10):
+    #     reg = RegisterManager.get()
+    #     AR.generate(src=reg)
 
 
     # AR.Barrier("barrier_1")
