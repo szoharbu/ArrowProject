@@ -16,6 +16,7 @@ from Tool.asm_libraries.event_trigger.event_trigger_base import EventTriggerBase
 from Tool.asm_libraries.event_trigger.event_trigger import EventTrigger as EventTrigger_wrapper
 from Tool.asm_libraries.barrier.barrier import Barrier as Barrier_wrapper
 from Tool.state_management.switch_state import SwitchState as SwitchState_wrapper
+from Tool.asm_libraries.switch_el import switch_EL as switch_EL_wrapper
 
 class AR:
     logger = get_logger()
@@ -84,6 +85,10 @@ class AR:
             state_name: str,
     ):
         return SwitchState_wrapper(state_name)
+
+    @staticmethod
+    def switch_EL(target_el_level: int):
+        return switch_EL_wrapper(target_el_level)
 
     @staticmethod
     def Loop(

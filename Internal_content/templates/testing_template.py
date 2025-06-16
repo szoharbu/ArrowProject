@@ -50,29 +50,41 @@ def random_instructions():
         AR.asm("nop")
 
     AR.comment("Switching to EL1")
-    from Tool.asm_libraries.switch_el import switch_EL
-    switch_EL(target_el_level=1)
+    #from Tool.asm_libraries.switch_el import switch_EL
+    AR.switch_EL(target_el_level=1)
 
     AR.comment("Im at EL1 for the first time")
     for _ in range(10):
         AR.asm("nop")
 
     AR.comment("Switching to EL3")
-    switch_EL(target_el_level=3)
+    AR.switch_EL(target_el_level=3)
 
     AR.comment("Im at EL3 for the second time")
     for _ in range(10):
         AR.asm("nop")
 
     AR.comment("Switching to EL1")
-    switch_EL(target_el_level=1)
+    AR.switch_EL(target_el_level=1)
 
     AR.comment("Im at EL1 for the second time")
     for _ in range(10):
         AR.asm("nop")
 
+    AR.comment("Triggering undefined exception")
+
+
+    from Tool.asm_libraries.exception.exception import Exception
+    from Tool.exception_management import AArch64ExceptionVector
+
+    with Exception(exception_type=AArch64ExceptionVector.CURRENT_SPX_SYNCHRONOUS, exception_syndrome="undefined_instruction", handler="skipping_handler"):
+        AR.asm(".word 0xFFFFFFFF", comment="Invalid instruction that will trigger undefined exception")
+
+    for _ in range(10):
+        AR.asm("nop")
+
     AR.comment("Switching to EL3")
-    switch_EL(target_el_level=3)
+    AR.switch_EL(target_el_level=3)
 
     AR.comment("Im at EL3 for the third time")
     for _ in range(10):

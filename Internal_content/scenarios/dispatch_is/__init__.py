@@ -14,7 +14,7 @@ def is_mx_v2g_cross_scenario():
     AR.comment("inside is_mx_v2g_cross_scenario")
     with AR.Loop(counter=10):
         for _ in range(10):
-            steering_class = AR.choice(values={"mx": 10, "mx_pred": 40, "vx_v2g": 40})
+            steering_class = AR.choice(values={"mx": 20, "mx_pred": 40, "vx_v2g": 40})
             AR.generate(query=(AR.Instruction.steering_class.contains(steering_class)))
 
 
