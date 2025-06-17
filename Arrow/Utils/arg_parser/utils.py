@@ -114,6 +114,26 @@ def setup_output_directory():
 
     logger.debug("============================ setup_output_directory")
 
+    # SAFETY CHECKS - only allow deletion of output directories
+    if os.path.exists(output_dir):
+        dir_name = os.path.basename(os.path.abspath(output_dir)).lower()
+        has_summary_log = os.path.exists(os.path.join(output_dir, "summary.log"))
+        
+        # Allow deletion only if:
+        # 1. Directory name suggests it's an output directory, OR
+        # 2. Directory contains summary.log (indicating previous output)
+        is_output_dir = (
+            dir_name in ["output", "outputs", "out", "results", "build", "dist"] or
+            has_summary_log
+        )
+        
+        if not is_output_dir:
+            raise ValueError(
+                f"Refusing to delete directory: {output_dir}\n"
+                f"Directory name '{dir_name}' doesn't appear to be an output directory.\n"
+                f"Please use a directory named 'Output' or ensure the directory contains summary.log from previous runs."
+            )
+
     # Clean up the output directory if it exists
     try:
         if os.path.exists(output_dir):

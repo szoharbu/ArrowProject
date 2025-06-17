@@ -29,9 +29,9 @@ class AR:
     # Instruction query
     asl_extract = True # TODO:: remove this after testing!!!!
     if Configuration.Architecture.arm and asl_extract:
-        from Externals.db_manager.asl_testing.asl_models import Instruction
+        from Arrow.Externals.db_manager.asl_testing.asl_models import Instruction
     else:
-        from Externals.db_manager.models import Instruction
+        from Arrow.Externals.db_manager.models import Instruction
 
     @staticmethod
     def asm(asm_code:str, comment:str=None):

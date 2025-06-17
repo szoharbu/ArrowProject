@@ -4,7 +4,7 @@ from Arrow.Arrow_API import AR
 from Arrow.Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
 from Arrow.Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
 
-from Internal_content.ingredients.fibonacci.fibonacci_caller import fibonacci_caller
+from Arrow.Internal_content.ingredients.fibonacci.fibonacci_caller import fibonacci_caller
 
 _fibonacci_recursive_code_block = None
 @AR.ingredient_decorator(random=True, priority=Configuration.Priority.HIGH, precondition=Configuration.Architecture.arm )

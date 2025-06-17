@@ -8,7 +8,7 @@ from Arrow.Tool.generation_management.generate_riscv import generate_riscv
 #from Arrow.Tool.generation_management.generate_arm import old_generate_arm
 from Arrow.Tool.generation_management.generate_arm_asl import generate_arm_asl
 from Arrow.Utils.configuration_management import Configuration, get_config_manager
-from Externals.db_manager.models import get_instruction_db
+from Arrow.Externals.db_manager.models import get_instruction_db
 from Arrow.Tool.register_management.register import Register
 from Arrow.Tool.memory_management.memory_operand import Memory
 

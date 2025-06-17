@@ -1,6 +1,6 @@
 import random
 from typing import Optional, Any, List
-from Externals.db_manager.models import Instruction
+from Arrow.Externals.db_manager.models import Instruction
 from Arrow.Tool.asm_libraries.label import Label
 from Arrow.Tool.generation_management.generate import GeneratedInstruction
 from Arrow.Tool.generation_management.utils import map_inputs_to_operands
