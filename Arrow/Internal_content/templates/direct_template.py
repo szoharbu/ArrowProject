@@ -17,8 +17,8 @@ Configuration.Knobs.Template.scenario_query.set_value({"random_instructions": 10
 def random_instructions():
     AR.comment("inside random_instructions")
 
-    # case 1: generate 10 random instructions
-    AR.generate(instruction_count=10)
+    # case 1: generate 3 random instructions
+    AR.generate(instruction_count=3)
 
     # Case 2: generate an assembly loop of 50 iteration, inside the loop generate 3 times the following: one ADC instruciton and 2 instructions from steering class mx
     with AR.Loop(counter=50):

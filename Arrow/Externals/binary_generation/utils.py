@@ -43,7 +43,10 @@ def check_tool_exists(tool):
     """
     from Arrow.Utils.configuration_management import Configuration
     logger = get_logger()
-    if shutil.which(tool) is None:
+    
+    # Check using Arrow tool paths if available
+    path_to_check = os.environ.get('ARROW_TOOL_PATH', os.environ.get('PATH', ''))
+    if shutil.which(tool, path=path_to_check) is None:
         error_str = (f"Missing required tool {tool} in PATH\n"
                      f"Ensure you have {Configuration.Architecture.arch_str} toolchain installed.\n")
 
@@ -65,11 +68,18 @@ def run_command(command, description, fail_on_error=True, output_file=None):
     logger = get_logger()
     try:
         logger.info(f"---- Running: '{" ".join(command)}'")
+        
+        # Create local environment with Arrow tool paths
+        env = os.environ.copy()
+        if 'ARROW_TOOL_PATH' in os.environ:
+            env['PATH'] = os.environ['ARROW_TOOL_PATH']
+        
         result = subprocess.run(command,
                                 check=True,
                                 text=True,
                                 capture_output=True,
                                 timeout=5,  # ⏱ timeout in seconds
+                                env=env,  # Use local environment
                                 )
         if output_file:
             with open(output_file, "w") as f:
