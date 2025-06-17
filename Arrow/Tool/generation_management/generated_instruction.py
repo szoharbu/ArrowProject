@@ -98,7 +98,12 @@ def test_asm_instruction(instruction):
 
         cmd = [assembler] + flags.split() + ["-o", obj_path, asm_path]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            # Create local environment with Arrow tool paths
+            env = os.environ.copy()
+            if 'ARROW_TOOL_PATH' in os.environ:
+                env['PATH'] = os.environ['ARROW_TOOL_PATH']
+                
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
             return True, ""
         except subprocess.CalledProcessError as e:
             return False, e.stderr

@@ -7,7 +7,12 @@ def run_tool(template_path, output_dir, command_line, run_str):
     """
 
     # Run the tool and capture output
-    result = subprocess.run(command_line, capture_output=True, text=True)
+    # Create local environment with Arrow tool paths
+    env = os.environ.copy()
+    if 'ARROW_TOOL_PATH' in os.environ:
+        env['PATH'] = os.environ['ARROW_TOOL_PATH']
+    
+    result = subprocess.run(command_line, capture_output=True, text=True, env=env)
 
     # Save the result to the specified directory
     result_file = os.path.join(output_dir, "result.txt")

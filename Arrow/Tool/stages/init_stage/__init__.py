@@ -325,12 +325,18 @@ def ensure_submodule_initialized():
         logger.info(f"Submodule directory '{submodule_path}' not found. Initializing submodule...")
 
         try:
+            # Create local environment with Arrow tool paths
+            env = os.environ.copy()
+            if 'ARROW_TOOL_PATH' in os.environ:
+                env['PATH'] = os.environ['ARROW_TOOL_PATH']
+                
             # Run the git submodule command
             subprocess.run(
                 ["git", "submodule", "update", "--init", "--recursive"],
                 check=True,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                env=env
             )
             logger.info(f"Submodule at '{submodule_path}' has been initialized and updated.")
         except subprocess.CalledProcessError as e:
