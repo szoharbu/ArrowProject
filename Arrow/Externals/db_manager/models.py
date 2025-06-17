@@ -103,7 +103,7 @@ def get_instruction_db(architecture:str=None):
     if architecture not in model_cache_instance:
         if architecture == 'arm':
             # ARM ASL case with optimized pragmas
-            from Externals.db_manager.asl_testing import asl_models
+            from Arrow.Externals.db_manager.asl_testing import asl_models
             
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             db_path = os.path.join(base_dir, 'db_manager', 'db', 'arm_instructions_isalib.db')

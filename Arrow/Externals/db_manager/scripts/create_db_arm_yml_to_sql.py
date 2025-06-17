@@ -2,11 +2,11 @@ import os
 import re
 import yaml
 from typing import List
-from Externals.db_manager.asl_testing.asl_models import Instruction, Operand, db, initialize_db
+from Arrow.Externals.db_manager.asl_testing.asl_models import Instruction, Operand, db, initialize_db
 
 import logging
 
-#from Externals.db_manager.scripts.arm_islib_parser.asmtemplate_parser import parse_asm_template
+#from Arrow.Externals.db_manager.scripts.arm_islib_parser.asmtemplate_parser import parse_asm_template
 
 
 logger = logging.getLogger(__name__)

@@ -260,7 +260,7 @@ def init_scenarios():
     logger = get_logger()
     logger.info("============ init_scenarios")
     logger.info("================ import Internal_content")
-    import Internal_content
+    import Arrow.Internal_content
 
     config_manager = get_config_manager()
     external_content_dir_path = config_manager.get_value('external_content_dir_path')

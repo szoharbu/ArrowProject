@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 from Arrow.Utils.configuration_management import get_config_manager
-from Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
+from Arrow.Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
 
 
 class RiscvBuildPipeline(BuildPipeline):

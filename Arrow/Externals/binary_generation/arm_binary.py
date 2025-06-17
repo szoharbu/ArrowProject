@@ -4,7 +4,7 @@ import sys
 import shlex
 from Arrow.Utils.configuration_management import get_config_manager, Configuration
 from Arrow.Tool.state_management import get_state_manager, get_current_state
-from Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
+from Arrow.Externals.binary_generation.utils import run_command, check_file_exists, check_tool_exists, trim_path, BuildPipeline
 from Arrow.Tool.memory_management.memory_logger import get_memory_logger
 from Arrow.Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
 

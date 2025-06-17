@@ -1,6 +1,6 @@
 import random
 
-from Internal_content.ingredients.feature_a import ing_A
+from Arrow.Internal_content.ingredients.feature_a import ing_A
 from Arrow.Utils.configuration_management import Configuration
 from Arrow.Arrow_API import AR
 from Arrow.Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager

@@ -1,6 +1,6 @@
 import random
 
-from Internal_content.ingredients.feature_a import ing_A
+from Arrow.Internal_content.ingredients.feature_a import ing_A
 from Arrow.Tool.register_management.register_manager import RegisterManager
 from Arrow.Utils.configuration_management import Configuration
 from Arrow.Arrow_API import AR

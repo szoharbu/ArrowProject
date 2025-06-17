@@ -1,4 +1,4 @@
-from Externals.db_manager.scripts.create_db import create_db
+from Arrow.Externals.db_manager.scripts.create_db import create_db
 
 """
 Script: create_db_arm.py
