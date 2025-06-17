@@ -1,0 +1,624 @@
+EL3_core_0_0_l0_0_load 0x80000000
+{
+	EL3_core_0_0_l0_0_exec 0x80000000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_0_load 0x80010000
+{
+	EL3_core_0_0_l0_0_l1_0_exec 0x80010000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_0_l2_0_load 0x80020000
+{
+	EL3_core_0_0_l0_0_l1_0_l2_0_exec 0x80020000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_0_l2_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_2_l2_0_load 0x80030000
+{
+	EL3_core_0_0_l0_0_l1_2_l2_0_exec 0x80030000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_2_l2_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_2_l2_0_l3_0_load 0x801d0000
+{
+	EL3_core_0_0_l0_0_l1_2_l2_0_l3_0_exec 0x801d0000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_2_l2_0_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_2_l2_12_l3_0_load 0x801f0000
+{
+	EL3_core_0_0_l0_0_l1_2_l2_12_l3_0_exec 0x801f0000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_2_l2_12_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_2_l2_14_l3_0_load 0x82030000
+{
+	EL3_core_0_0_l0_0_l1_2_l2_14_l3_0_exec 0x82030000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_2_l2_14_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_2_l2_16_l3_0_load 0x82010000
+{
+	EL3_core_0_0_l0_0_l1_2_l2_16_l3_0_exec 0x82010000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_2_l2_16_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_2_l2_30_l3_0_load 0x80040000
+{
+	EL3_core_0_0_l0_0_l1_2_l2_30_l3_0_exec 0x80040000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_2_l2_30_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_2_l2_86_l3_0_load 0x82020000
+{
+	EL3_core_0_0_l0_0_l1_2_l2_86_l3_0_exec 0x82020000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_2_l2_86_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_2_l2_359_l3_0_load 0xd5e70000
+{
+	EL3_core_0_0_l0_0_l1_2_l2_359_l3_0_exec 0xd5e70000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_2_l2_359_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_3_l2_0_load 0xd5e40000
+{
+	EL3_core_0_0_l0_0_l1_3_l2_0_exec 0xd5e40000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_3_l2_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_4_l2_0_load 0x801e0000
+{
+	EL3_core_0_0_l0_0_l1_4_l2_0_exec 0x801e0000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_4_l2_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_4_l2_117_l3_0_load 0x80050000
+{
+	EL3_core_0_0_l0_0_l1_4_l2_117_l3_0_exec 0x80050000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_4_l2_117_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_5_l2_0_load 0xa86e0000
+{
+	EL3_core_0_0_l0_0_l1_5_l2_0_exec 0xa86e0000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_5_l2_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_5_l2_39_l3_0_load 0x80060000
+{
+	EL3_core_0_0_l0_0_l1_5_l2_39_l3_0_exec 0x80060000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_5_l2_39_l3_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_6_l2_0_load 0xd5e50000
+{
+	EL3_core_0_0_l0_0_l1_6_l2_0_exec 0xd5e50000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_6_l2_0)
+	}
+}
+
+EL3_core_0_0_l0_0_l1_9_l2_0_load 0x80070000
+{
+	EL3_core_0_0_l0_0_l1_9_l2_0_exec 0x80070000 OVERLAY
+	{
+		pg.o (EL3_core_0_0_l0_0_l1_9_l2_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_load 0xd5f20000
+{
+	EL1NS_core_0_0_l0_0_exec 0xd5f20000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_0_load 0xa86c0000
+{
+	EL1NS_core_0_0_l0_0_l1_0_exec 0xa86c0000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_5_l2_0_load 0xd5f60000
+{
+	EL1NS_core_0_0_l0_0_l1_5_l2_0_exec 0xd5f60000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_5_l2_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_7_l2_0_load 0xd5f10000
+{
+	EL1NS_core_0_0_l0_0_l1_7_l2_0_exec 0xd5f10000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_7_l2_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_7_l2_328_l3_0_load 0x80180000
+{
+	EL1NS_core_0_0_l0_0_l1_7_l2_328_l3_0_exec 0x80180000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_7_l2_328_l3_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_7_l2_336_l3_0_load 0x801b0000
+{
+	EL1NS_core_0_0_l0_0_l1_7_l2_336_l3_0_exec 0x801b0000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_7_l2_336_l3_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_7_l2_338_l3_0_load 0xd5f50000
+{
+	EL1NS_core_0_0_l0_0_l1_7_l2_338_l3_0_exec 0xd5f50000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_7_l2_338_l3_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_7_l2_339_l3_0_load 0xbd420000
+{
+	EL1NS_core_0_0_l0_0_l1_7_l2_339_l3_0_exec 0xbd420000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_7_l2_339_l3_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_7_l2_341_l3_0_load 0xd5f70000
+{
+	EL1NS_core_0_0_l0_0_l1_7_l2_341_l3_0_exec 0xd5f70000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_7_l2_341_l3_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_8_l2_0_load 0xa86d0000
+{
+	EL1NS_core_0_0_l0_0_l1_8_l2_0_exec 0xa86d0000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_8_l2_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_8_l2_230_l3_0_load 0x80190000
+{
+	EL1NS_core_0_0_l0_0_l1_8_l2_230_l3_0_exec 0x80190000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_8_l2_230_l3_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_8_l2_248_l3_0_load 0xd5f00000
+{
+	EL1NS_core_0_0_l0_0_l1_8_l2_248_l3_0_exec 0xd5f00000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_8_l2_248_l3_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_9_l2_0_load 0xbd410000
+{
+	EL1NS_core_0_0_l0_0_l1_9_l2_0_exec 0xbd410000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_9_l2_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_9_l2_200_l3_0_load 0xbd430000
+{
+	EL1NS_core_0_0_l0_0_l1_9_l2_200_l3_0_exec 0xbd430000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_9_l2_200_l3_0)
+	}
+}
+
+EL1NS_core_0_0_l0_0_l1_9_l2_295_l3_0_load 0x801a0000
+{
+	EL1NS_core_0_0_l0_0_l1_9_l2_295_l3_0_exec 0x801a0000 OVERLAY
+	{
+		pg.o (EL1NS_core_0_0_l0_0_l1_9_l2_295_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_load 0x82040000
+{
+	EL3_core_1_0_l0_0_exec 0x82040000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_0_load 0x82050000
+{
+	EL3_core_1_0_l0_0_l1_0_exec 0x82050000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_0_l2_0_load 0x82060000
+{
+	EL3_core_1_0_l0_0_l1_0_l2_0_exec 0x82060000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_0_l2_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_2_l2_0_load 0x82070000
+{
+	EL3_core_1_0_l0_0_l1_2_l2_0_exec 0x82070000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_2_l2_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_2_l2_0_l3_0_load 0xa8680000
+{
+	EL3_core_1_0_l0_0_l1_2_l2_0_l3_0_exec 0xa8680000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_2_l2_0_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_2_l2_378_l3_0_load 0xb2340000
+{
+	EL3_core_1_0_l0_0_l1_2_l2_378_l3_0_exec 0xb2340000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_2_l2_378_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_3_l2_0_load 0xa3230000
+{
+	EL3_core_1_0_l0_0_l1_3_l2_0_exec 0xa3230000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_3_l2_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_3_l2_253_l3_0_load 0xb2370000
+{
+	EL3_core_1_0_l0_0_l1_3_l2_253_l3_0_exec 0xb2370000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_3_l2_253_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_3_l2_273_l3_0_load 0xbd450000
+{
+	EL3_core_1_0_l0_0_l1_3_l2_273_l3_0_exec 0xbd450000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_3_l2_273_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_3_l2_297_l3_0_load 0xa3200000
+{
+	EL3_core_1_0_l0_0_l1_3_l2_297_l3_0_exec 0xa3200000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_3_l2_297_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_4_l2_0_load 0xa3210000
+{
+	EL3_core_1_0_l0_0_l1_4_l2_0_exec 0xa3210000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_4_l2_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_4_l2_58_l3_0_load 0xbd440000
+{
+	EL3_core_1_0_l0_0_l1_4_l2_58_l3_0_exec 0xbd440000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_4_l2_58_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_4_l2_253_l3_0_load 0xd5fc0000
+{
+	EL3_core_1_0_l0_0_l1_4_l2_253_l3_0_exec 0xd5fc0000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_4_l2_253_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_4_l2_272_l3_0_load 0xb2360000
+{
+	EL3_core_1_0_l0_0_l1_4_l2_272_l3_0_exec 0xb2360000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_4_l2_272_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_4_l2_274_l3_0_load 0xa3260000
+{
+	EL3_core_1_0_l0_0_l1_4_l2_274_l3_0_exec 0xa3260000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_4_l2_274_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_4_l2_332_l3_0_load 0xb2310000
+{
+	EL3_core_1_0_l0_0_l1_4_l2_332_l3_0_exec 0xb2310000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_4_l2_332_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_4_l2_426_l3_0_load 0xa3240000
+{
+	EL3_core_1_0_l0_0_l1_4_l2_426_l3_0_exec 0xa3240000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_4_l2_426_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_5_l2_0_load 0xd5ff0000
+{
+	EL3_core_1_0_l0_0_l1_5_l2_0_exec 0xd5ff0000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_5_l2_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_7_l2_0_load 0xa3250000
+{
+	EL3_core_1_0_l0_0_l1_7_l2_0_exec 0xa3250000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_7_l2_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_7_l2_361_l3_0_load 0xb2350000
+{
+	EL3_core_1_0_l0_0_l1_7_l2_361_l3_0_exec 0xb2350000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_7_l2_361_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_7_l2_436_l3_0_load 0xb2320000
+{
+	EL3_core_1_0_l0_0_l1_7_l2_436_l3_0_exec 0xb2320000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_7_l2_436_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_8_l2_0_load 0xa86a0000
+{
+	EL3_core_1_0_l0_0_l1_8_l2_0_exec 0xa86a0000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_8_l2_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_8_l2_392_l3_0_load 0xa86b0000
+{
+	EL3_core_1_0_l0_0_l1_8_l2_392_l3_0_exec 0xa86b0000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_8_l2_392_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_8_l2_458_l3_0_load 0xd5fe0000
+{
+	EL3_core_1_0_l0_0_l1_8_l2_458_l3_0_exec 0xd5fe0000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_8_l2_458_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_8_l2_462_l3_0_load 0xa3270000
+{
+	EL3_core_1_0_l0_0_l1_8_l2_462_l3_0_exec 0xa3270000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_8_l2_462_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_9_l2_0_load 0xa8690000
+{
+	EL3_core_1_0_l0_0_l1_9_l2_0_exec 0xa8690000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_9_l2_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_9_l2_511_l3_0_load 0xb2300000
+{
+	EL3_core_1_0_l0_0_l1_9_l2_511_l3_0_exec 0xb2300000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_9_l2_511_l3_0)
+	}
+}
+
+EL3_core_1_0_l0_0_l1_10_l2_0_load 0xbd460000
+{
+	EL3_core_1_0_l0_0_l1_10_l2_0_exec 0xbd460000 OVERLAY
+	{
+		pg.o (EL3_core_1_0_l0_0_l1_10_l2_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_load 0xbd470000
+{
+	EL1NS_core_1_0_l0_0_exec 0xbd470000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_0_load 0xd5e00000
+{
+	EL1NS_core_1_0_l0_0_l1_0_exec 0xd5e00000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_2_l2_0_load 0xd5f80000
+{
+	EL1NS_core_1_0_l0_0_l1_2_l2_0_exec 0xd5f80000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_2_l2_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_3_l2_0_load 0xd5e30000
+{
+	EL1NS_core_1_0_l0_0_l1_3_l2_0_exec 0xd5e30000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_3_l2_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_4_l2_0_load 0xd5f90000
+{
+	EL1NS_core_1_0_l0_0_l1_4_l2_0_exec 0xd5f90000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_4_l2_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_4_l2_187_l3_0_load 0x80080000
+{
+	EL1NS_core_1_0_l0_0_l1_4_l2_187_l3_0_exec 0x80080000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_4_l2_187_l3_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_6_l2_0_load 0xd5e10000
+{
+	EL1NS_core_1_0_l0_0_l1_6_l2_0_exec 0xd5e10000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_6_l2_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_6_l2_101_l3_0_load 0xd5fa0000
+{
+	EL1NS_core_1_0_l0_0_l1_6_l2_101_l3_0_exec 0xd5fa0000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_6_l2_101_l3_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_6_l2_130_l3_0_load 0xa5180000
+{
+	EL1NS_core_1_0_l0_0_l1_6_l2_130_l3_0_exec 0xa5180000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_6_l2_130_l3_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_7_l2_0_load 0x800b0000
+{
+	EL1NS_core_1_0_l0_0_l1_7_l2_0_exec 0x800b0000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_7_l2_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_7_l2_384_l3_0_load 0xa3980000
+{
+	EL1NS_core_1_0_l0_0_l1_7_l2_384_l3_0_exec 0xa3980000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_7_l2_384_l3_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_9_l2_0_load 0xd5e20000
+{
+	EL1NS_core_1_0_l0_0_l1_9_l2_0_exec 0xd5e20000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_9_l2_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_9_l2_419_l3_0_load 0x800a0000
+{
+	EL1NS_core_1_0_l0_0_l1_9_l2_419_l3_0_exec 0x800a0000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_9_l2_419_l3_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_9_l2_431_l3_0_load 0xd5fb0000
+{
+	EL1NS_core_1_0_l0_0_l1_9_l2_431_l3_0_exec 0xd5fb0000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_9_l2_431_l3_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_9_l2_440_l3_0_load 0xa39a0000
+{
+	EL1NS_core_1_0_l0_0_l1_9_l2_440_l3_0_exec 0xa39a0000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_9_l2_440_l3_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_9_l2_444_l3_0_load 0x80090000
+{
+	EL1NS_core_1_0_l0_0_l1_9_l2_444_l3_0_exec 0x80090000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_9_l2_444_l3_0)
+	}
+}
+
+EL1NS_core_1_0_l0_0_l1_10_l2_0_load 0xa39b0000
+{
+	EL1NS_core_1_0_l0_0_l1_10_l2_0_exec 0xa39b0000 OVERLAY
+	{
+		pg.o (EL1NS_core_1_0_l0_0_l1_10_l2_0)
+	}
+}
+

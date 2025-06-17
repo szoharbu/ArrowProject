@@ -1,0 +1,974 @@
+[
+    {
+        "segment_name": "core_1_el3_root__boot_segment_1324",
+        "segment_address": "0x27e5c3ad0",
+        "asm_units": [
+            {
+                "asm_string": " label_4858_core_1_el3_root__boot_segment_code_segment: // starting label for core_1_el3_root__boot_segment code Segment// ( From memlayout/segment_manager.py, line 105)"
+            },
+            {
+                "comment": " // ========================= CORE_1 BOOT CODE - start =====================                                            // ( From test_stage/test_boot.py, line 42)"
+            },
+            {
+                "comment": " // First disable the MMU                                                                                               // ( From test_stage/test_boot.py, line 87)"
+            },
+            {
+                "asm_string": " mrs x0, sctlr_el3                                                                                                      // ( From test_stage/test_boot.py, line 88)"
+            },
+            {
+                "asm_string": " bic x0, x0, #1 // Clear bit 0 (MMU enable)                                                                             // ( From test_stage/test_boot.py, line 89)"
+            },
+            {
+                "asm_string": " msr sctlr_el3, x0                                                                                                      // ( From test_stage/test_boot.py, line 90)"
+            },
+            {
+                "comment": " // Load translation table base register with the address of our L0 table                                               // ( From test_stage/test_boot.py, line 92)"
+            },
+            {
+                "asm_string": " ldr x0, =LABEL_TTBR0_EL3_core_1 // read value of LABEL_TTBR0_EL3 from memory                                           // ( From test_stage/test_boot.py, line 93)"
+            },
+            {
+                "asm_string": " ldr x0, [x0] // load the value of LABEL_TTBR0_EL3                                                                      // ( From test_stage/test_boot.py, line 94)"
+            },
+            {
+                "asm_string": " msr ttbr0_el3, x0                                                                                                      // ( From test_stage/test_boot.py, line 95)"
+            },
+            {
+                "comment": " // Set up TCR_EL3 (Translation Control Register)                                                                       // ( From test_stage/test_boot.py, line 97)"
+            },
+            {
+                "asm_string": " ldr x0, =LABEL_TCR_EL3_core_1 // read value of LABEL_TCR_EL3 from memory                                               // ( From test_stage/test_boot.py, line 98)"
+            },
+            {
+                "asm_string": " ldr x0, [x0] // load the value of LABEL_TCR_EL3                                                                        // ( From test_stage/test_boot.py, line 99)"
+            },
+            {
+                "asm_string": " msr tcr_el3, x0                                                                                                        // ( From test_stage/test_boot.py, line 100)"
+            },
+            {
+                "comment": " // Set up MAIR_EL1 (Memory Attribute Indirection Register)                                                             // ( From test_stage/test_boot.py, line 102)"
+            },
+            {
+                "asm_string": " ldr x0, =LABEL_MAIR_EL3_core_1 // read value of LABEL_MAIR_EL3 from memory                                             // ( From test_stage/test_boot.py, line 103)"
+            },
+            {
+                "asm_string": " ldr x0, [x0] // load the value of LABEL_MAIR_EL3                                                                       // ( From test_stage/test_boot.py, line 104)"
+            },
+            {
+                "asm_string": " msr mair_el3, x0                                                                                                       // ( From test_stage/test_boot.py, line 105)"
+            },
+            {
+                "comment": " // Enable MMU                                                                                                          // ( From test_stage/test_boot.py, line 107)"
+            },
+            {
+                "asm_string": " mrs x0, sctlr_el3                                                                                                      // ( From test_stage/test_boot.py, line 108)"
+            },
+            {
+                "asm_string": " orr x0, x0, #1 // Set bit 0 (MMU enable)                                                                               // ( From test_stage/test_boot.py, line 109)"
+            },
+            {
+                "asm_string": " orr x0, x0, #(1 << 2) // Set bit 2 (Data cache enable)                                                                 // ( From test_stage/test_boot.py, line 110)"
+            },
+            {
+                "asm_string": " bic x0, x0, #(1 << 20) // Clear bit 20 (WXN)                                                                           // ( From test_stage/test_boot.py, line 111)"
+            },
+            {
+                "asm_string": " msr sctlr_el3, x0                                                                                                      // ( From test_stage/test_boot.py, line 112)"
+            },
+            {
+                "asm_string": " isb // Instruction Synchronization Barrier, must to ensure context-syncronization after enabling MMU                   // ( From test_stage/test_boot.py, line 113)"
+            },
+            {
+                "comment": " // Now the MMU is enabled with your page tables                                                                        // ( From test_stage/test_boot.py, line 115)"
+            },
+            {
+                "comment": " // Code can now access virtual addresses defined in your page tables                                                   // ( From test_stage/test_boot.py, line 116)"
+            },
+            {
+                "comment": " // Set up EL1 Non-Secure Translation Tables                                                                            // ( From test_stage/test_boot.py, line 126)"
+            },
+            {
+                "comment": " // First disable the EL1 MMU                                                                                           // ( From test_stage/test_boot.py, line 129)"
+            },
+            {
+                "asm_string": " mrs x13, sctlr_el1                                                                                                     // ( From test_stage/test_boot.py, line 130)"
+            },
+            {
+                "asm_string": " bic x13, x13, #1 // Clear bit 0 (MMU enable)                                                                           // ( From test_stage/test_boot.py, line 131)"
+            },
+            {
+                "asm_string": " msr sctlr_el1, x13                                                                                                     // ( From test_stage/test_boot.py, line 132)"
+            },
+            {
+                "comment": " // Set up TTBR0_EL1 (EL1 Translation Table Base Register 0)                                                            // ( From test_stage/test_boot.py, line 134)"
+            },
+            {
+                "asm_string": " ldr x13, =LABEL_TTBR0_EL1NS_core_1 // read value of LABEL_TTBR0_EL1NS from memory                                      // ( From test_stage/test_boot.py, line 135)"
+            },
+            {
+                "asm_string": " ldr x13, [x13] // load the value of LABEL_TTBR0_EL1NS                                                                  // ( From test_stage/test_boot.py, line 136)"
+            },
+            {
+                "asm_string": " msr ttbr0_el1, x13                                                                                                     // ( From test_stage/test_boot.py, line 137)"
+            },
+            {
+                "comment": " // Set up TTBR1_EL1 (EL1 Translation Table Base Register 1)                                                            // ( From test_stage/test_boot.py, line 139)"
+            },
+            {
+                "asm_string": " ldr x13, =LABEL_TTBR1_EL1NS_core_1 // read value of LABEL_TTBR1_EL1NS from memory                                      // ( From test_stage/test_boot.py, line 140)"
+            },
+            {
+                "asm_string": " ldr x13, [x13] // load the value of LABEL_TTBR1_EL1NS                                                                  // ( From test_stage/test_boot.py, line 141)"
+            },
+            {
+                "asm_string": " msr ttbr1_el1, x13                                                                                                     // ( From test_stage/test_boot.py, line 142)"
+            },
+            {
+                "comment": " // Set up TCR_EL1 (EL1 Translation Control Register)                                                                   // ( From test_stage/test_boot.py, line 144)"
+            },
+            {
+                "asm_string": " ldr x13, =LABEL_TCR_EL1NS_core_1 // read value of LABEL_TCR_EL1NS from memory                                          // ( From test_stage/test_boot.py, line 145)"
+            },
+            {
+                "asm_string": " ldr x13, [x13] // load the value of LABEL_TCR_EL1NS                                                                    // ( From test_stage/test_boot.py, line 146)"
+            },
+            {
+                "asm_string": " msr tcr_el1, x13                                                                                                       // ( From test_stage/test_boot.py, line 147)"
+            },
+            {
+                "comment": " // Set up MAIR_EL1 (EL1 Memory Attribute Indirection Register)                                                         // ( From test_stage/test_boot.py, line 149)"
+            },
+            {
+                "asm_string": " ldr x13, =LABEL_MAIR_EL1NS_core_1 // read value of LABEL_MAIR_EL1NS from memory                                        // ( From test_stage/test_boot.py, line 150)"
+            },
+            {
+                "asm_string": " ldr x13, [x13] // load the value of LABEL_MAIR_EL1NS                                                                   // ( From test_stage/test_boot.py, line 151)"
+            },
+            {
+                "asm_string": " msr mair_el1, x13                                                                                                      // ( From test_stage/test_boot.py, line 152)"
+            },
+            {
+                "comment": " // Enable EL1 MMU                                                                                                      // ( From test_stage/test_boot.py, line 155)"
+            },
+            {
+                "asm_string": " mrs x13, sctlr_el1 // read EL1 system control register                                                                 // ( From test_stage/test_boot.py, line 156)"
+            },
+            {
+                "asm_string": " orr x13, x13, #1 // set MMU enable bit (M bit)                                                                         // ( From test_stage/test_boot.py, line 157)"
+            },
+            {
+                "asm_string": " orr x13, x13, #(1 << 2) // Set bit 2 (Data cache enable)                                                               // ( From test_stage/test_boot.py, line 158)"
+            },
+            {
+                "asm_string": " bic x13, x13, #(1 << 20) // Clear bit 20 (WXN)                                                                         // ( From test_stage/test_boot.py, line 159)"
+            },
+            {
+                "asm_string": " msr sctlr_el1, x13 // enable EL1 MMU                                                                                   // ( From test_stage/test_boot.py, line 160)"
+            },
+            {
+                "asm_string": " isb // Instruction Synchronization Barrier, ensure MMU changes take effect                                             // ( From test_stage/test_boot.py, line 161)"
+            },
+            {
+                "comment": " // EL1 MMU configuration complete                                                                                      // ( From test_stage/test_boot.py, line 163)"
+            },
+            {
+                "comment": " // Now both EL3 and EL1 page tables are configured                                                                     // ( From test_stage/test_boot.py, line 164)"
+            },
+            {
+                "asm_string": " ldr x5, =label_4887_exception_table_core_1_el3_root_code_segment // load the address of the vbar label                 // ( From test_stage/test_boot.py, line 182)"
+            },
+            {
+                "asm_string": " msr vbar_el3, x5 // set the vbar_el3 address                                                                           // ( From test_stage/test_boot.py, line 183)"
+            },
+            {
+                "asm_string": " ldr x13, =label_4894_exception_table_core_1_el1_ns_code_segment // load the address of the vbar label                  // ( From test_stage/test_boot.py, line 182)"
+            },
+            {
+                "asm_string": " msr vbar_el1, x13 // set the vbar_el1 address                                                                          // ( From test_stage/test_boot.py, line 183)"
+            },
+            {
+                "comment": " // ==== starting barrier sequence - label_4901_end_boot_barrier ====                                                   // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " mrs x21, mpidr_el1                                                                                                     // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " and w10, w21, #0xff // Extract Aff0 (core within cluster)                                                              // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " lsr x23, x21, #16 // Shift right by 16 to get Aff2 in lower bits                                                       // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " and w23, w23, #0xff // Extract Aff2 (cluster ID)                                                                       // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " lsl w23, w23, #1 // cluster_id * 2 (2 cores per cluster)                                                               // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " add w21, w10, w23 // sequential_core_id = core_in_cluster + (cluster_id * 2)                                           // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "comment": " // Calculate the bit position for this core                                                                            // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " mov w10, #1                                                                                                            // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " lsl w10, w10, w21 // w1 = 1 << unique_core_id                                                                          // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "comment": " // Set this core's bit in the barrier vector (active low)                                                              // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " ldr x21, =label_4901_end_boot_barrier_barrier_vector_mem1985__core_1_el3_root                                          // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " stclr w10, [x21]                                                                                                       // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "comment": " // Spin until all bits are clear (active low)                                                                          // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " label_4904_spin_label:                                                                                                 // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " ldr w23, [x21]                                                                                                         // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "asm_string": " cbnz w23, label_4904_spin_label // Continue spinning if any bit is set                                                 // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "comment": " // Barrier reached - all cores have arrived                                                                            // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "comment": " // ==== finished barrier sequence - label_4901_end_boot_barrier ====                                                   // ( From test_stage/test_boot.py, line 59)"
+            },
+            {
+                "comment": " // using 'B' (branch) for unconditional 'one-way' branch (similar to jmp) to code segment core_1_el3_root__code_segment_2_1327// ( From test_stage/test_boot.py, line 64)"
+            },
+            {
+                "asm_string": " B label_4905_core_1_el3_root__code_segment_2_1327_branchToSegment_target // Jump to code_label                         // ( From test_stage/test_boot.py, line 64)"
+            },
+            {
+                "comment": " // ========================= CORE_1 BOOT CODE - end =====================                                              // ( From test_stage/test_boot.py, line 68)"
+            }
+        ]
+    },
+    {
+        "segment_name": "core_1_el3_root__code_segment_0_1325",
+        "segment_address": "0x1299a5000",
+        "asm_units": [
+            {
+                "asm_string": " label_4859_core_1_el3_root__code_segment_0_code_segment: // starting label for core_1_el3_root__code_segment_0 code Segment// ( From memlayout/segment_manager.py, line 105)"
+            }
+        ]
+    },
+    {
+        "segment_name": "core_1_el3_root__code_segment_1_1326",
+        "segment_address": "0x1dfdaf8d0",
+        "asm_units": [
+            {
+                "asm_string": " label_4860_core_1_el3_root__code_segment_1_code_segment: // starting label for core_1_el3_root__code_segment_1 code Segment// ( From memlayout/segment_manager.py, line 105)"
+            },
+            {
+                "asm_string": " label_4918_core_1_el3_root__code_segment_1_1326_branchToSegment_target:                                                // ( From test_stage/test_body.py, line 64)"
+            },
+            {
+                "comment": " // ========================== Start scenario random_instructions ====================                                  // ( From test_stage/test_body.py, line 14)"
+            },
+            {
+                "comment": " // inside random_instructions                                                                                          // ( From templates/direct_template.py, line 18)"
+            },
+            {
+                "generation": " frintp d25, d24                                                                                                        // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " esb                                                                                                                    // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldr x2, =mem1993+4 // dynamic init: loading x2 with reused memory mem2007 (0xaf557c68:0x1c0412c68) for next instruction// ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldsmaxl x1, x8, [x2]                                                                                                   // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldr x16, =mem2008+0 // dynamic init: loading x16 for next instruction (0xaf557ef0:0x1c0412ef0)                         // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ld1rh z22.H, p5/Z, [x16, #0]                                                                                           // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldr x23, =mem2009+0 // dynamic init: loading x23 for next instruction (0xaf557fd9:0x1c0412fd9)                         // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldr b19, [x23, #0]!                                                                                                    // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldr x20, =mem1993+4 // dynamic init: loading x20 with reused memory mem2010 (0xaf557c68:0x1c0412c68) for next instruction// ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " swpah w14, w2, [x20]                                                                                                   // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " fcvtas h25, h16                                                                                                        // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " frintp v12.8H, v19.8H                                                                                                  // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldr x28, =mem2008+0 // dynamic init: loading x28 with reused memory mem2011 (0xaf557ef0:0x1c0412ef0) for next instruction// ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "comment": " // Starting loop with 50 iterations. using a x3 operand and a label_4919_loop_label label                              // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " mov x3, #0                                                                                                             // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " label_4919_loop_label:                                                                                                 // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "generation": " adclb z28.D, z11.D, z28.D                                                                                              // ( From templates/direct_template.py, line 26)"
+            },
+            {
+                "generation": " decp z26.D, p1.D                                                                                                       // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " nand p11.B, p1/Z, p9.B, p4.B                                                                                           // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " adcs w23, w24, w21                                                                                                     // ( From templates/direct_template.py, line 26)"
+            },
+            {
+                "generation": " fmov h15, w6                                                                                                           // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " ucvtf s26, w7                                                                                                          // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " adcs w19, w1, w13                                                                                                      // ( From templates/direct_template.py, line 26)"
+            },
+            {
+                "generation": " fmov d27, x11                                                                                                          // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " fmov d27, x20                                                                                                          // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "asm_string": " add x3, x3, #1 // Increment the loop counter (x3 += 1)                                                                 // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " cmp x3, #50 //  Compare x3 with 50                                                                                     // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " bne label_4919_loop_label                                                                                              // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "comment": " // Ending loop                                                                                                         // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " add x25, x25, x8 // adding x25 = x25 + x8                                                                              // ( From templates/direct_template.py, line 32)"
+            },
+            {
+                "generation": " ldr x15, =mem2012+0 // dynamic init: loading x15 for next instruction (0x14455d810:0x1d0d5d810)                        // ( From templates/direct_template.py, line 33)"
+            },
+            {
+                "generation": " lduminal x20, x25, [x15] // store reg                                                                                  // ( From templates/direct_template.py, line 33)"
+            },
+            {
+                "generation": " ldr x13, =mem2013+0 // dynamic init: loading x13 for next instruction (0x233ed8d94:0x1d7ed8d94)                        // ( From templates/direct_template.py, line 42)"
+            },
+            {
+                "generation": " stllr w1, [x13, #0] // load mem                                                                                        // ( From templates/direct_template.py, line 42)"
+            },
+            {
+                "generation": " ldr x17, =mem2013+0 // dynamic init: loading x17 for next instruction (0x233ed8d94:0x1d7ed8d94)                        // ( From templates/direct_template.py, line 43)"
+            },
+            {
+                "generation": " strb w26, [x17], #0 // store mem                                                                                       // ( From templates/direct_template.py, line 43)"
+            },
+            {
+                "comment": " // Starting loop with 100 iterations. using a x28 operand and a label_4920_loop_label label                            // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " mov x28, #100                                                                                                          // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " label_4920_loop_label:                                                                                                 // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " ldr x5, =10711041904                                                                                                   // ( From templates/direct_template.py, line 51)"
+            },
+            {
+                "comment": " // EventTrigger:: Setting event trigger flow with Frequency.LOW frequency                                              // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "comment": " // EventTrigger:: Using mem at 0x27e6d8423 with the following 64bit pattern: 0000000000000000000000000000000000000000000100000000000000000000// ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ldr x21, =0x27e6d8423                                                                                                  // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ldr x13, [x21] // load the vector from mem 0x27e6d8423                                                                 // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ror x13, x13, #1 // rotate the vector                                                                                  // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " str x13, [x21] // store back the vector into the memory location                                                       // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " tbz x13, #63, label_4921_skip_label // test bit 63 and branch if 0 (zero)                                              // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ldr x5, =10711041620                                                                                                   // ( From templates/direct_template.py, line 54)"
+            },
+            {
+                "asm_string": " label_4921_skip_label:                                                                                                 // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ldr x17, [x5]                                                                                                          // ( From templates/direct_template.py, line 57)"
+            },
+            {
+                "asm_string": " sub x28, x28, #1 // Decrement the loop counter (x28 -= 1)                                                              // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " cmp x28, #0 //  Compare x28 with 0                                                                                     // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " bne label_4920_loop_label                                                                                              // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "comment": " // Ending loop                                                                                                         // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "comment": " // ========================== End scenario random_instructions ====================                                    // ( From test_stage/test_body.py, line 40)"
+            },
+            {
+                "comment": " // Return to the previous code segment core_1_el3_root__code_segment_3_1328 using the address in `LR` (similar to `ret stack` in x86)// ( From test_stage/test_body.py, line 64)"
+            },
+            {
+                "asm_string": " RET // Returns from a function using the LR (x30) register.                                                            // ( From test_stage/test_body.py, line 64)"
+            }
+        ]
+    },
+    {
+        "segment_name": "core_1_el3_root__code_segment_2_1327",
+        "segment_address": "0x27fec0080",
+        "asm_units": [
+            {
+                "asm_string": " label_4861_core_1_el3_root__code_segment_2_code_segment: // starting label for core_1_el3_root__code_segment_2 code Segment// ( From memlayout/segment_manager.py, line 105)"
+            },
+            {
+                "asm_string": " label_4905_core_1_el3_root__code_segment_2_1327_branchToSegment_target:                                                // ( From test_stage/test_boot.py, line 64)"
+            },
+            {
+                "comment": " // ========================= core core_1 - TEST BODY - start =====================                                     // ( From test_stage/test_body.py, line 83)"
+            },
+            {
+                "comment": " // BODY:: Running core_1, scenario 1(:2), scenario random_instructions                                                 // ( From test_stage/test_body.py, line 60)"
+            },
+            {
+                "comment": " // using 'B' (branch) for unconditional 'one-way' branch (similar to jmp) to code segment core_1_el3_root__code_segment_3_1328// ( From test_stage/test_body.py, line 67)"
+            },
+            {
+                "asm_string": " B label_4910_core_1_el3_root__code_segment_3_1328_branchToSegment_target // Jump to code_label                         // ( From test_stage/test_body.py, line 67)"
+            }
+        ]
+    },
+    {
+        "segment_name": "core_1_el3_root__code_segment_3_1328",
+        "segment_address": "0xafbc1220",
+        "asm_units": [
+            {
+                "asm_string": " label_4862_core_1_el3_root__code_segment_3_code_segment: // starting label for core_1_el3_root__code_segment_3 code Segment// ( From memlayout/segment_manager.py, line 105)"
+            },
+            {
+                "asm_string": " label_4910_core_1_el3_root__code_segment_3_1328_branchToSegment_target:                                                // ( From test_stage/test_body.py, line 67)"
+            },
+            {
+                "comment": " // ========================== Start scenario random_instructions ====================                                  // ( From test_stage/test_body.py, line 14)"
+            },
+            {
+                "comment": " // inside random_instructions                                                                                          // ( From templates/direct_template.py, line 18)"
+            },
+            {
+                "generation": " fcvtmu w21, s23                                                                                                        // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " fminnm v23.8H, v5.8H, v12.8H                                                                                           // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " fadd z5.D, p7/M, z5.D, z15.D                                                                                           // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " clasta z1.S, p3, z1.S, z4.S                                                                                            // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldr x1, =mem1993+4 // dynamic init: loading x1 for next instruction (0xaf557c68:0x1c0412c68)                           // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " ldaprh w8, [x1, #0]                                                                                                    // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " fmaxnm d19, d27, d1                                                                                                    // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " fcvt z3.D, p2/M, z4.S                                                                                                  // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "generation": " fcvtmu x15, d11                                                                                                        // ( From templates/direct_template.py, line 21)"
+            },
+            {
+                "comment": " // Starting loop with 50 iterations. using a x17 operand and a label_4911_loop_label label                             // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " mov x17, #50                                                                                                           // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " label_4911_loop_label:                                                                                                 // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "generation": " adc w2, w27, w6                                                                                                        // ( From templates/direct_template.py, line 26)"
+            },
+            {
+                "generation": " fmov h14, x7                                                                                                           // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " adc w10, w1, w6                                                                                                        // ( From templates/direct_template.py, line 26)"
+            },
+            {
+                "generation": " decp x23, p11.D                                                                                                        // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " sqincp z16.S, p11.S                                                                                                    // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " adclb z8.S, z5.S, z10.S                                                                                                // ( From templates/direct_template.py, line 26)"
+            },
+            {
+                "generation": " fmov x27, d16                                                                                                          // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "generation": " fmov h14, x27                                                                                                          // ( From templates/direct_template.py, line 27)"
+            },
+            {
+                "asm_string": " sub x17, x17, #1 // Decrement the loop counter (x17 -= 1)                                                              // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " cmp x17, #0 //  Compare x17 with 0                                                                                     // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " bne label_4911_loop_label                                                                                              // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "comment": " // Ending loop                                                                                                         // ( From templates/direct_template.py, line 24)"
+            },
+            {
+                "asm_string": " add x3, x3, x14 // adding x3 = x3 + x14                                                                                // ( From templates/direct_template.py, line 32)"
+            },
+            {
+                "generation": " sbc x3, x23, x14 // store reg                                                                                          // ( From templates/direct_template.py, line 33)"
+            },
+            {
+                "generation": " ldr x4, =mem1994+0 // dynamic init: loading x4 for next instruction (0x233ed8f3c:0x1d7ed8f3c)                          // ( From templates/direct_template.py, line 42)"
+            },
+            {
+                "generation": " ldp s8, s15, [x4, #0]! // load mem                                                                                     // ( From templates/direct_template.py, line 42)"
+            },
+            {
+                "generation": " ldr x12, =mem1994+0 // dynamic init: loading x12 for next instruction (0x233ed8f3c:0x1d7ed8f3c)                        // ( From templates/direct_template.py, line 43)"
+            },
+            {
+                "comment": " // Starting loop with 100 iterations. using a x0 operand and a label_4912_loop_label label                             // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " mov x0, #0                                                                                                             // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " label_4912_loop_label:                                                                                                 // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " ldr x1, =9461140524                                                                                                    // ( From templates/direct_template.py, line 51)"
+            },
+            {
+                "comment": " // EventTrigger:: Setting event trigger flow with Frequency.LOW frequency                                              // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "comment": " // EventTrigger:: Using mem at 0x27e6d8d38 with the following 64bit pattern: 0000000000000000000000010000000000000000000000100000000100000000// ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ldr x17, =0x27e6d8d38                                                                                                  // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ldr x9, [x17] // load the vector from mem 0x27e6d8d38                                                                  // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ror x9, x9, #1 // rotate the vector                                                                                    // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " str x9, [x17] // store back the vector into the memory location                                                        // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " tbz x9, #63, label_4913_skip_label // test bit 63 and branch if 0 (zero)                                               // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ldr x1, =10711040992                                                                                                   // ( From templates/direct_template.py, line 54)"
+            },
+            {
+                "asm_string": " label_4913_skip_label:                                                                                                 // ( From templates/direct_template.py, line 53)"
+            },
+            {
+                "asm_string": " ldr x21, [x1]                                                                                                          // ( From templates/direct_template.py, line 57)"
+            },
+            {
+                "asm_string": " add x0, x0, #1 // Increment the loop counter (x0 += 1)                                                                 // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " cmp x0, #100 //  Compare x0 with 100                                                                                   // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "asm_string": " bne label_4912_loop_label                                                                                              // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "comment": " // Ending loop                                                                                                         // ( From templates/direct_template.py, line 50)"
+            },
+            {
+                "comment": " // ========================== End scenario random_instructions ====================                                    // ( From test_stage/test_body.py, line 40)"
+            },
+            {
+                "comment": " // BODY:: Running core_1, scenario 2(:2), scenario random_instructions                                                 // ( From test_stage/test_body.py, line 60)"
+            },
+            {
+                "comment": " // branch with link `label` by jumping to code segment core_1_el3_root__code_segment_1_1326 and storing the return address in `LR` (Link Register) register// ( From test_stage/test_body.py, line 64)"
+            },
+            {
+                "asm_string": " bl label_4918_core_1_el3_root__code_segment_1_1326_branchToSegment_target // Branch with Link to target address        // ( From test_stage/test_body.py, line 64)"
+            },
+            {
+                "comment": " // ========================= core core_1 - TEST BODY - end =====================                                       // ( From test_stage/test_body.py, line 103)"
+            },
+            {
+                "comment": " // ==== starting barrier sequence - label_4922_end_test_barrier ====                                                   // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " mrs x5, mpidr_el1                                                                                                      // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " and w1, w5, #0xff // Extract Aff0 (core within cluster)                                                                // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " lsr x14, x5, #16 // Shift right by 16 to get Aff2 in lower bits                                                        // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " and w14, w14, #0xff // Extract Aff2 (cluster ID)                                                                       // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " lsl w14, w14, #1 // cluster_id * 2 (2 cores per cluster)                                                               // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " add w5, w1, w14 // sequential_core_id = core_in_cluster + (cluster_id * 2)                                             // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "comment": " // Calculate the bit position for this core                                                                            // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " mov w1, #1                                                                                                             // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " lsl w1, w1, w5 // w1 = 1 << unique_core_id                                                                             // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "comment": " // Set this core's bit in the barrier vector (active low)                                                              // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " ldr x5, =label_4922_end_test_barrier_barrier_vector_mem2017__core_1_el3_root                                           // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " stclr w1, [x5]                                                                                                         // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "comment": " // Spin until all bits are clear (active low)                                                                          // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " label_4927_spin_label:                                                                                                 // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " ldr w14, [x5]                                                                                                          // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "asm_string": " cbnz w14, label_4927_spin_label // Continue spinning if any bit is set                                                 // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "comment": " // Barrier reached - all cores have arrived                                                                            // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "comment": " // ==== finished barrier sequence - label_4922_end_test_barrier ====                                                   // ( From test_stage/test_final.py, line 22)"
+            },
+            {
+                "comment": " // Test ended successfully                                                                                             // ( From test_stage/test_final.py, line 25)"
+            },
+            {
+                "comment": " // End test logic:                                                                                                     // ( From test_stage/test_final.py, line 25)"
+            },
+            {
+                "comment": " // core_1 reached end of test, waiting for Trickbox to be closed                                                       // ( From test_stage/test_final.py, line 25)"
+            },
+            {
+                "asm_string": " label_4928_core_1_end_of_test:                                                                                         // ( From test_stage/test_final.py, line 25)"
+            },
+            {
+                "asm_string": " wfi                                                                                                                    // ( From test_stage/test_final.py, line 25)"
+            },
+            {
+                "asm_string": " b label_4928_core_1_end_of_test                                                                                        // ( From test_stage/test_final.py, line 25)"
+            }
+        ]
+    },
+    {
+        "segment_name": "core_1_el3_root__code_segment_4_1329",
+        "segment_address": "0x204ba2210",
+        "asm_units": [
+            {
+                "asm_string": " label_4863_core_1_el3_root__code_segment_4_code_segment: // starting label for core_1_el3_root__code_segment_4 code Segment// ( From memlayout/segment_manager.py, line 105)"
+            }
+        ]
+    },
+    {
+        "segment_name": "core_1_el3_root__code_segment_5_1330",
+        "segment_address": "0x2395d5000",
+        "asm_units": [
+            {
+                "asm_string": " label_4864_core_1_el3_root__code_segment_5_code_segment: // starting label for core_1_el3_root__code_segment_5 code Segment// ( From memlayout/segment_manager.py, line 105)"
+            }
+        ]
+    },
+    {
+        "segment_name": "exception_table_core_1_el3_root_1349",
+        "segment_address": "0x11fa01800",
+        "asm_units": [
+            {
+                "asm_string": " label_4887_exception_table_core_1_el3_root_code_segment: // starting label for exception_table_core_1_el3_root code Segment// ( From memlayout/segment_manager.py, line 105)"
+            },
+            {
+                "comment": " // ================ exception table for core_1 core_1_el3_root =====================                                   // ( From exception_management/__init__.py, line 110)"
+            },
+            {
+                "asm_string": " .org 0x0                                                                                                               // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.CURRENT_SP0_SYNCHRONOUS - target label label_4885_halting_label                   // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x80                                                                                                              // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.CURRENT_SP0_IRQ - target label label_4885_halting_label                           // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x100                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.CURRENT_SP0_FIQ - target label label_4885_halting_label                           // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x180                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.CURRENT_SP0_SERROR - target label label_4885_halting_label                        // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x200                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.CURRENT_SPX_SYNCHRONOUS - target label label_4885_halting_label                   // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x280                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.CURRENT_SPX_IRQ - target label label_4885_halting_label                           // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x300                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.CURRENT_SPX_FIQ - target label label_4885_halting_label                           // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x380                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.CURRENT_SPX_SERROR - target label label_4885_halting_label                        // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x400                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.LOWER_A64_SYNCHRONOUS - target label label_4886_callback_label                    // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4886_callback_label                                                                                            // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x480                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.LOWER_A64_IRQ - target label label_4885_halting_label                             // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x500                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.LOWER_A64_FIQ - target label label_4885_halting_label                             // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x580                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.LOWER_A64_SERROR - target label label_4885_halting_label                          // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x600                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.LOWER_A32_SYNCHRONOUS - target label label_4885_halting_label                     // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x680                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.LOWER_A32_IRQ - target label label_4885_halting_label                             // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x700                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.LOWER_A32_FIQ - target label label_4885_halting_label                             // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " .org 0x780                                                                                                             // ( From exception_management/__init__.py, line 113)"
+            },
+            {
+                "comment": " //  exception AArch64ExceptionVector.LOWER_A32_SERROR - target label label_4885_halting_label                          // ( From exception_management/__init__.py, line 114)"
+            },
+            {
+                "asm_string": " b label_4885_halting_label                                                                                             // ( From exception_management/__init__.py, line 115)"
+            },
+            {
+                "asm_string": " label_4885_halting_label:                                                                                              // ( From exception_management/__init__.py, line 118)"
+            },
+            {
+                "comment": " // default halting hander                                                                                              // ( From exception_management/__init__.py, line 119)"
+            },
+            {
+                "asm_string": " nop                                                                                                                    // ( From exception_management/__init__.py, line 120)"
+            },
+            {
+                "asm_string": " mrs x0, esr_el1 // Read cause of exception                                                                             // ( From exception_management/__init__.py, line 136)"
+            },
+            {
+                "asm_string": " ubfx x1, x0, #26, #6 // Extract EC (bits[31:26])                                                                       // ( From exception_management/__init__.py, line 137)"
+            },
+            {
+                "asm_string": " cmp x1, #0x00 // EC = 0b000000 = undefined instruction                                                                 // ( From exception_management/__init__.py, line 138)"
+            },
+            {
+                "asm_string": " b.ne label_4888_halting_handler_test_fail_label // handle undefined instruction                                        // ( From exception_management/__init__.py, line 139)"
+            },
+            {
+                "asm_string": " ldr x0, =core_1_el3_root__exception_callback_LOWER_A64_SYNC_mem1981                                                    // ( From exception_management/__init__.py, line 141)"
+            },
+            {
+                "asm_string": " ldr x1, [x0]                                                                                                           // ( From exception_management/__init__.py, line 142)"
+            },
+            {
+                "asm_string": " br x1                                                                                                                  // ( From exception_management/__init__.py, line 143)"
+            },
+            {
+                "asm_string": " label_4888_halting_handler_test_fail_label:                                                                            // ( From exception_management/__init__.py, line 145)"
+            },
+            {
+                "comment": " // Test failed with error code of 0x0                                                                                  // ( From exception_management/__init__.py, line 147)"
+            },
+            {
+                "comment": " // End test logic:                                                                                                     // ( From exception_management/__init__.py, line 147)"
+            },
+            {
+                "comment": " // core_1 reached end of test, waiting for Trickbox to be closed                                                       // ( From exception_management/__init__.py, line 147)"
+            },
+            {
+                "asm_string": " label_4889_core_1_end_of_test:                                                                                         // ( From exception_management/__init__.py, line 147)"
+            },
+            {
+                "asm_string": " wfi                                                                                                                    // ( From exception_management/__init__.py, line 147)"
+            },
+            {
+                "asm_string": " b label_4889_core_1_end_of_test                                                                                        // ( From exception_management/__init__.py, line 147)"
+            },
+            {
+                "asm_string": " label_4886_callback_label:                                                                                             // ( From exception_management/__init__.py, line 150)"
+            },
+            {
+                "comment": " // default callback handler                                                                                            // ( From exception_management/__init__.py, line 151)"
+            },
+            {
+                "asm_string": " nop                                                                                                                    // ( From exception_management/__init__.py, line 152)"
+            },
+            {
+                "asm_string": " ldr x0, =core_1_el3_root__exception_callback_LOWER_A64_SYNC_mem1982                                                    // ( From exception_management/__init__.py, line 166)"
+            },
+            {
+                "asm_string": " ldr x1, [x0]                                                                                                           // ( From exception_management/__init__.py, line 167)"
+            },
+            {
+                "asm_string": " br x1                                                                                                                  // ( From exception_management/__init__.py, line 168)"
+            },
+            {
+                "comment": " // ================ end of exception table for core_1 core_1_el3_root ===============                                  // ( From exception_management/__init__.py, line 171)"
+            }
+        ]
+    }
+]
