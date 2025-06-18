@@ -57,7 +57,7 @@ class PageTable:
         self.core_id = core_id
         self.execution_context = execution_context
 
-        self.va_memory_range_start_address = Configuration.ByteSize.SIZE_2G.in_bytes() + Configuration.ByteSize.SIZE_2M.in_bytes() # leaving 2MB for the MMU page table and constants
+        self.va_memory_range_start_address = Configuration.ByteSize.SIZE_2G.in_bytes() + 2 * Configuration.ByteSize.SIZE_2M.in_bytes() # leaving 4MB for the MMU page table and constants
         self.va_memory_range_size = 2 * Configuration.ByteSize.SIZE_4G.in_bytes()
 
         # VA space management - track unmapped, mapped, and allocated regions
@@ -507,7 +507,18 @@ class PageTable:
         elif VA_eq_PA:
             va_start, pa_start, overlapping_pages = self._find_va_eq_pa_addresses(size, page_type, alignment_bits, page_size)
         else:
-            va_start, pa_start, overlapping_pages = self._find_regular_addresses(size, page_type, alignment_bits, page_size)
+            # For cross-core pages, we may need to retry multiple times to find a VA that doesn't produce PA conflicts
+            max_retries = 10
+            for attempt in range(max_retries):
+                try:
+                    va_start, pa_start, overlapping_pages = self._find_regular_addresses(size, page_type, alignment_bits, page_size)
+                    break  # Success, exit retry loop
+                except ValueError as e:
+                    if "PA conflict in cross-core page" in str(e) and attempt < max_retries - 1:
+                        logger.info(f"Retry attempt {attempt + 1}/{max_retries} due to cross-core PA conflict")
+                        continue  # Try again with a different VA
+                    else:
+                        raise  # Re-raise the error if we've exhausted retries or it's a different error
             
         # From here on, the logic is the same for all allocation types
         # Mark as allocated (add to allocated, remove from non-allocated)
@@ -516,8 +527,58 @@ class PageTable:
         
         from Arrow.Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
         page_table_manager = get_page_table_manager()
-        page_table_manager.allocated_pa_intervals.add_region(pa_start, size, metadata={"page_type": page_type, "page_table": self.page_table_name})
-        pa_removed = page_table_manager.non_allocated_pa_intervals.remove_region(pa_start, size)
+        
+        # Check if we're allocating within a cross-core page
+        # If so, we need special handling to prevent cross-core PA conflicts
+        is_cross_core_allocation = False
+        if overlapping_pages:
+            for page in overlapping_pages:
+                if hasattr(page, 'is_cross_core') and page.is_cross_core:
+                    is_cross_core_allocation = True
+                    logger.info(f"Detected allocation within cross-core page: {page}")
+                    break
+        
+        if is_cross_core_allocation:
+            # For cross-core pages, we need to be more careful about PA allocation
+            # Check if this PA region overlaps with any existing cross-core allocations
+            
+            pa_has_conflict = False
+            existing_allocations = page_table_manager.allocated_pa_intervals.get_intervals()
+            conflicting_allocations = []
+            
+            for alloc in existing_allocations:
+                # Check for actual overlap (not just adjacency)
+                if (pa_start < alloc.start + alloc.size) and (pa_start + size > alloc.start):
+                    # Only consider it a conflict if it's marked as cross-core
+                    if alloc.metadata and alloc.metadata.get('cross_core', False):
+                        pa_has_conflict = True
+                        conflicting_allocations.append(alloc)
+                        logger.warning(f"PA region {hex(pa_start)}-{hex(pa_start+size-1)} overlaps with cross-core allocation: PA={hex(alloc.start)}-{hex(alloc.start+alloc.size-1)}, metadata={alloc.metadata}")
+            
+            if pa_has_conflict:
+                # This is a genuine cross-core conflict - reject it
+                logger.error(f"PA region {hex(pa_start)}-{hex(pa_start+size-1)} conflicts with {len(conflicting_allocations)} existing cross-core allocations!")
+                for alloc in conflicting_allocations:
+                    logger.error(f"  Conflict with: PA={hex(alloc.start)}-{hex(alloc.start+alloc.size-1)}, metadata={alloc.metadata}")
+                raise ValueError(f"Cannot allocate PA region {hex(pa_start)}-{hex(pa_start+size-1)} - conflicts with existing cross-core allocations (this prevents memory overlap)")
+            else:
+                # No cross-core conflicts detected, proceed with allocation
+                page_table_manager.allocated_pa_intervals.add_region(pa_start, size, metadata={"page_type": page_type, "page_table": self.page_table_name, "cross_core_aware": True})
+                pa_removed = page_table_manager.non_allocated_pa_intervals.remove_region(pa_start, size)
+                logger.info(f"Successfully allocated PA region in cross-core page (no conflicts): PA={hex(pa_start)}-{hex(pa_start+size-1)}")
+                logger.info(f"PA removed from non_allocated: {pa_removed}")
+                
+                # Debug: Log current state of allocated PA intervals
+                all_pa_allocations = page_table_manager.allocated_pa_intervals.get_intervals()
+                logger.info(f"Current PA allocations after this allocation: {len(all_pa_allocations)} regions")
+                for i, alloc in enumerate(all_pa_allocations):
+                    logger.info(f"  PA allocation {i}: {hex(alloc.start)}-{hex(alloc.start+alloc.size-1)}, metadata={alloc.metadata}")
+            
+            pa_removed = True  # We handled it above
+        else:
+            # Regular allocation for non-cross-core pages
+            page_table_manager.allocated_pa_intervals.add_region(pa_start, size, metadata={"page_type": page_type, "page_table": self.page_table_name})
+            pa_removed = page_table_manager.non_allocated_pa_intervals.remove_region(pa_start, size)
         
         # Check if removal failed (region not available) - this catches overlaps
         if not va_removed:
@@ -813,6 +874,30 @@ class PageTable:
                     # Apply the same offset to get the correct PA
                     pa_start = containing_page.pa + offset
                     logger.info(f"Found corresponding PA for VA:0x{va_start:x} -> PA:0x{pa_start:x} in page {containing_page}")
+                    
+                    # For cross-core pages, check if this PA is actually available
+                    # before proceeding. Multiple cores might calculate overlapping PAs.
+                    if containing_page.is_cross_core:
+                        from Arrow.Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
+                        page_table_manager = get_page_table_manager()
+                        
+                        # Check if this PA region would conflict with existing allocations
+                        existing_allocations = page_table_manager.allocated_pa_intervals.get_intervals()
+                        logger.info(f"Cross-core PA check: examining {len(existing_allocations)} existing PA allocations for conflicts with {hex(pa_start)}-{hex(pa_start+size-1)}")
+                        pa_conflict = False
+                        for alloc in existing_allocations:
+                            logger.info(f"  Checking against PA allocation: {hex(alloc.start)}-{hex(alloc.start+alloc.size-1)}, metadata={alloc.metadata}")
+                            if (pa_start < alloc.start + alloc.size) and (pa_start + size > alloc.start):
+                                pa_conflict = True
+                                logger.warning(f"Cross-core PA conflict detected: calculated PA {hex(pa_start)}-{hex(pa_start+size-1)} conflicts with existing allocation {hex(alloc.start)}-{hex(alloc.start+alloc.size-1)}")
+                                break
+                        
+                        if pa_conflict:
+                            # This VA would produce a conflicting PA, need to find a different VA
+                            logger.info(f"Rejecting VA {hex(va_start)} due to PA conflict in cross-core page, searching for alternative...")
+                            # This will cause the function to try again with a different VA
+                            # We'll let the calling function handle the retry logic
+                            raise ValueError(f"PA conflict in cross-core page: calculated PA {hex(pa_start)}-{hex(pa_start+size-1)} conflicts with existing allocation")
                     
                     # Verify PA alignment matches VA alignment
                     if alignment_bits is not None:
