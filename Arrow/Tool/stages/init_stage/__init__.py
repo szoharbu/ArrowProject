@@ -260,7 +260,8 @@ def init_scenarios():
     logger = get_logger()
     logger.info("============ init_scenarios")
     logger.info("================ import Internal_content")
-    import Arrow.Internal_content
+    print("Init stage:: WA WA WA - commenting out Arrow.Internal_content import for now - need to rename scenarios/ings to avoid conflict between internal and external content")
+    #import Arrow.Internal_content
 
     config_manager = get_config_manager()
     external_content_dir_path = config_manager.get_value('external_content_dir_path')
@@ -284,10 +285,26 @@ def init_scenarios():
             # return
 
         logger.info("================ import External content")
-        spec = importlib.util.spec_from_file_location("scenarios_path", normalized_path)
-        foo = importlib.util.module_from_spec(spec)
-        sys.modules["scenarios_path"] = foo
-        spec.loader.exec_module(foo)
+        try:
+            # Check if the __init__.py file exists
+            if not os.path.exists(normalized_path):
+                logger.error(f"External content __init__.py not found at: {normalized_path}")
+                return
+            
+            spec = importlib.util.spec_from_file_location("scenarios_path", normalized_path)
+            if spec is None:
+                logger.error(f"Failed to create spec from file location: {normalized_path}")
+                return
+                
+            foo = importlib.util.module_from_spec(spec)
+            sys.modules["scenarios_path"] = foo
+            spec.loader.exec_module(foo)
+            logger.info("================ External content import successful")
+            
+        except Exception as e:
+            logger.error(f"Failed to import external content: {e}")
+            logger.error(f"External content path: {normalized_path}")
+            raise
 
 
 def init_section():
@@ -303,7 +320,7 @@ def init_section():
     init_page_tables()
     init_segments()
     init_exception_tables()
-    print_memory_state(print_both=True)
+    print_memory_state(print_both=False)
 
     init_scenarios()
 
