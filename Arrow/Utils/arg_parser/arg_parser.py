@@ -99,8 +99,8 @@ def parse_arguments(input_args=None):
         logger.info(f"--------------- Output directory: {args.output}")
         config_manager.set_value('output_dir_path', args.output)
     else:
-        logger.info(f"--------------- Output directory: Output (default)")
-        config_manager.set_value('output_dir_path', 'Output')
+        logger.info(f"--------------- Output directory: Arrow_output (default)")
+        config_manager.set_value('output_dir_path', 'Arrow_output')
     setup_output_directory()
 
     if args.seed:

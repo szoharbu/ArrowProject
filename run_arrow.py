@@ -15,7 +15,7 @@ if __name__ == "__main__":
     
     # If no --output is specified, add it pointing to original directory
     if '--output' not in sys.argv:
-        default_output = os.path.join(original_cwd, 'Output')
+        default_output = os.path.join(original_cwd, 'Arrow_output')
         sys.argv.extend(['--output', default_output])
     
     # Set up required tool paths for Arrow's use only
