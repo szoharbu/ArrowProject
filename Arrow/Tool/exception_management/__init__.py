@@ -70,7 +70,7 @@ class ExceptionTable:
         if self.get_exception(exception) is not None:
             raise Exception(f"Exception already exists for {exception}")
         
-        if target_label is "callback_label":
+        if target_label == "callback_label":
             self.exception_entries[exception] = self.callback_label
 
         # if already populated, use assembly mode to add the exception
@@ -119,13 +119,13 @@ class ExceptionTable:
         AsmLogger.comment(f"default halting hander")
         AsmLogger.asm(f"nop")
 
-        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
-        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
-        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        print(f"Exception handling:: WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        # print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        # print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
 
-        print(f"WA WA WA - at the moment hard-coding support for UD case. need to generelize - remove after")
-        print(f"WA WA WA - at the moment hard-coding support for UD case. need to generelize - remove after")
-        print(f"WA WA WA - at the moment hard-coding support for UD case. need to generelize - remove after")
+        print(f"Exception handling:: WA WA WA - at the moment hard-coding support for UD case. need to generelize - remove after")
+        # print(f"WA WA WA - at the moment hard-coding support for UD case. need to generelize - remove after")
+        # print(f"WA WA WA - at the moment hard-coding support for UD case. need to generelize - remove after")
 
 
         halting_callback_memory = Memory(name=f"{self.page_table_name}__exception_callback_LOWER_A64_SYNC", byte_size=8, init_value=0x0)
@@ -151,13 +151,13 @@ class ExceptionTable:
         AsmLogger.comment(f"default callback handler ")
         AsmLogger.asm(f"nop")
 
-        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
-        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
-        print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        print(f"Exception handling:: WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        # print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
+        # print(f"WA WA WA - need to randomize and protect the register, at the moment hard-coding x0 - remove after")
 
-        print(f"WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
-        print(f"WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
-        print(f"WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
+        print(f"Exception handling:: WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
+        # print(f"WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
+        # print(f"WA WA WA - assume callback is hardcoded for LOWER_A64_SYNCHRONOUS - not accurate - remove after")
 
 
         skipping_callback_memory = Memory(name=f"{self.page_table_name}__exception_callback_LOWER_A64_SYNC", byte_size=8, init_value=0x0)

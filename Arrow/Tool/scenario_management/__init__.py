@@ -73,6 +73,7 @@ class ScenarioManager:
         Raises:
             ValueError: If a scenario with the same name already exists in the pool.
         """
+        #print(f"Adding scenario {scenario.name()}")
         # Check if a scenario with the same name already exists
         if any(existing_scenario.name() == scenario.name() for existing_scenario in self._scenarios_pool):
             raise ValueError(f"A scenario with the name '{scenario.name()}' already exists in the pool.")
