@@ -299,7 +299,11 @@ def create_automated_memory_mapping(PMM, EL3, EL1NS):
         chunk_va = createAddress(0x801c0000 + i * 0x1000)
         chunk_pa = createAddress(0x801c0000 + i * 0x1000)
         mapWithPA(EL3, chunk_va, chunk_pa, SIZE_4KB, constants_attr)
+        blockMemory(PMM, chunk_pa, chunk_pa + SIZE_4KB) # block the memory region from the PA region. 
+
     memory_logger.info(f"Mapped constants region at VA=PA=0x801c0000, size=16KB using 4KB pages")
+
+
 
     for page_table in core_page_tables:
         all_pages = page_table.get_pages()

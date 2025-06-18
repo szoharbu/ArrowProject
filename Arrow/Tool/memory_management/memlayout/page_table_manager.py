@@ -42,12 +42,8 @@ class PageTableManager:
         logger.info("")
         logger.info("======================== MemorySpaceManager - init")
 
-        pa_memory_range_start_address = Configuration.ByteSize.SIZE_2G.in_bytes() + Configuration.ByteSize.SIZE_2M.in_bytes() # leaving 2MB for the MMU page table and constants
+        pa_memory_range_start_address = Configuration.ByteSize.SIZE_2G.in_bytes() + 2 * Configuration.ByteSize.SIZE_2M.in_bytes() # leaving 4MB for the MMU page table and constants
         pa_memory_range_size = 2 * Configuration.ByteSize.SIZE_4G.in_bytes()
-
-        # va_memory_range_start_address = ByteSize.SIZE_2G.in_bytes() + ByteSize.SIZE_2M.in_bytes(), # leaving 2MB for the MMU page table and constants
-        # va_memory_range_size = 2 * ByteSize.SIZE_4G.in_bytes()
-
 
         # Initialize interval trackers for PA
         self.unmapped_pa_intervals = IntervalLib(

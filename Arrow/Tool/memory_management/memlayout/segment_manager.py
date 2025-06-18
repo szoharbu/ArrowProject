@@ -226,9 +226,12 @@ class SegmentManager:
         memory_logger.info(f"Chosen position in interval: VA:{hex(chosen_va_start)}:{hex(chosen_va_start+byte_size-1)}, size:{hex(byte_size)}, offset from page start: 0x{page_offset:x}")
         memory_logger.info(f"This corresponds to PA:{hex(shared_pa+page_offset)}:{hex(shared_pa+page_offset+byte_size-1)}")
         
-        # Mark as allocated (add to allocated, remove from non-allocated) - removing from PA only once. later we will remove from each of the VAs.
-        page_table_manager.allocated_pa_intervals.add_region(shared_pa_start, byte_size, metadata={"page_type": Configuration.Page_types.TYPE_DATA, "page_table_name": random_page_table.page_table_name})
+        # Pre-allocate the exact PA region to prevent overlaps across cores
+        # This ensures that when each core allocates within the shared page, they coordinate PA usage
+        page_table_manager.allocated_pa_intervals.add_region(shared_pa_start, byte_size, metadata={"page_type": Configuration.Page_types.TYPE_DATA, "cross_core": True, "page_table_name": "SHARED"})
         page_table_manager.non_allocated_pa_intervals.remove_region(shared_pa_start, byte_size)
+        
+        memory_logger.info(f"Pre-allocated shared PA region: {hex(shared_pa_start)}-{hex(shared_pa_start+byte_size-1)} to prevent overlaps")
 
         # Now allocate in each state using the corresponding VA mapping
         created_segments = []
@@ -240,8 +243,6 @@ class SegmentManager:
             
             segment_manager = page_table.segment_manager
             
-            # NOTE:: simplification logic - skipping page interval checking, assumming the above logic is correct for all pages and that all pages have this VA space available. 
-
             # Find the corresponding cross-core page in this state
             # It should have the same physical address as the first state's cross-core page
             all_pages = page_table.get_pages_by_type(Configuration.Page_types.TYPE_DATA)
@@ -263,7 +264,7 @@ class SegmentManager:
             segment_va_end = segment_va_start + shared_interval_size - 1
             memory_logger.info(f"Current page interval: VA={hex(segment_va_start)}:{hex(segment_va_end)}, size={hex(shared_interval_size)}")
 
-            # Mark as allocated (add to allocated, remove from non-allocated)
+            # Mark as allocated for this specific page table's VA space (add to allocated, remove from non-allocated)
             page_table.allocated_va_intervals.add_region(segment_va_start, byte_size, metadata={"page_type": Configuration.Page_types.TYPE_DATA, "page_table_name": page_table.page_table_name})
             page_table.non_allocated_va_intervals.remove_region(segment_va_start, byte_size)
     
@@ -273,9 +274,9 @@ class SegmentManager:
                 va_start=segment_va_start,
                 pa_start=segment_pa_start,
                 size=byte_size,
-                page_mappings=[page],
+                page_mappings=[matching_cross_core_page],
                 page_type=Configuration.Page_types.TYPE_DATA,
-                covered_pages=[page]
+                covered_pages=[matching_cross_core_page]
             )
             page_table.allocations.append(allocation)
 
