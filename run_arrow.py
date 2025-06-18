@@ -18,6 +18,20 @@ if __name__ == "__main__":
         default_output = os.path.join(original_cwd, 'Arrow_output')
         sys.argv.extend(['--output', default_output])
     
+    # Resolve relative paths in arguments before changing directories
+    # This ensures user-provided relative paths are resolved from their current directory
+    for i, arg in enumerate(sys.argv):
+        if arg == '--content' and i + 1 < len(sys.argv):
+            # Convert relative content path to absolute path from original directory
+            content_path = sys.argv[i + 1]
+            if not os.path.isabs(content_path):
+                sys.argv[i + 1] = os.path.abspath(os.path.join(original_cwd, content_path))
+        elif arg == '--output' and i + 1 < len(sys.argv):
+            # Convert relative output path to absolute path from original directory
+            output_path = sys.argv[i + 1]
+            if not os.path.isabs(output_path):
+                sys.argv[i + 1] = os.path.abspath(os.path.join(original_cwd, output_path))
+    
     # Set up required tool paths for Arrow's use only
     required_tool_paths = [
         '/home/utils/binutils-2.40-2/bin/',
