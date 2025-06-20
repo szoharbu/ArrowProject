@@ -234,12 +234,16 @@ class ArmBuildPipeline(BuildPipeline):
         memory_logger = get_memory_logger()
         memory_logger.log(f"\n extract_linker_file - creating linker file {linker_file}")
 
+
+        pgt_vma_base = 0xF00000000
+
         # Create linker script
         with open(linker_file, 'w') as f:
             # Write memory regions
             f.write("MEMORY\n{\n")
             f.write("  trickbox_mem : ORIGIN = 0x0, LENGTH = 0x200000\n")
             f.write("  memory_region_utilities : ORIGIN = 0x80000000, LENGTH = 0x200000000\n")
+            f.write(f"  pgt_vma_base_memory_region : ORIGIN = {pgt_vma_base}, LENGTH = 0x10000000\n")
 
             for page_table in page_table_manager.get_all_page_tables():
             ###for state_name in cores_states:
@@ -340,15 +344,23 @@ class ArmBuildPipeline(BuildPipeline):
             f.write("    *(.data.pgt_constants)\n")  # Match specific section, not all .data
             f.write("  } > memory_region_utilities\n\n")
 
-            # Add PGT sections
-            for section_name, address in pgt_sections:
-                memory_logger.log(f"Adding PGT section: {section_name} at {address}")
+            # Add PGT sections: Use unique VMA + AT() to avoid VMA conflicts
+            # ARM page tables are accessed by MMU hardware via physical addresses only.
+            # VMA=virtual address (can conflict), LMA=physical address (MMU requirement)
+            # Solution: High VMA (0xF00000000+) for conflict avoidance, AT() for correct physical placement
+            # Note: NOLOAD rejected - would cause MMU translation table walk failures
+            # pgt_vma_base = 0xF00000000  # High VMA base to avoid conflicts
+            for idx, (section_name, address) in enumerate(pgt_sections):
+                memory_logger.log(f"Adding PGT section: {section_name} at PA {address}")
                 section_name_clean = section_name.lower().replace("(", "_").replace(")", "_").replace(" ", "_")
-                f.write(f"  .data.{section_name_clean} {address} :\n")
+                
+                # Unique VMA per section, MMU accesses via physical address (AT clause)
+                vma_address = pgt_vma_base + (idx * 0x10000)  # 64KB spacing
+                f.write(f"  .data.{section_name_clean} {hex(vma_address)} : AT({address})\n")
                 f.write("  {\n")
                 f.write(f"    *(.data.{section_name_clean})\n")
                 f.write(f"    *(.{section_name})\n")  # Original section name from PGT
-                f.write("  } > memory_region_utilities\n\n")
+                f.write("  } > pgt_vma_base_memory_region\n\n")
             
             # Close sections
             f.write("}\n")
