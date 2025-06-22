@@ -59,7 +59,7 @@ def do_boot():
             Barrier(end_boot_barrier_label)
 
         # selecting random block to jump to for test body
-        available_blocks = curr_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
+        available_blocks = curr_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE, non_exclusive_only=True)
         selected_block = choice.choice(values=available_blocks)
         branch_to_segment.BranchToSegment(selected_block).one_way_branch()
 

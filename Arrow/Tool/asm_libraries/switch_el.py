@@ -62,7 +62,7 @@ def switch_EL_to_lower(target_el_level: int):
     stack_address = current_segment_manager.get_stack_data_start_address()
 
     el1_page_table = [pt for pt in current_state.enabled_page_tables if pt.execution_context == Configuration.Execution_context.EL1_NS][0]
-    available_blocks = el1_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE)
+    available_blocks = el1_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE, non_exclusive_only=True)
     selected_target_block = choice.choice(values=available_blocks)
 
     reg = register_manager.get_and_reserve(reg_type="gpr")
