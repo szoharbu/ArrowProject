@@ -58,9 +58,9 @@ def random_instructions():
 
 
     from Arrow.Tool.asm_libraries.exception.exception import Exception
-    from Arrow.Tool.exception_management import AArch64ExceptionVector
+    from Arrow.Tool.exception_management import AArch64ExceptionVector, AArch64ExceptionSyndrome
 
-    with Exception(exception_type=AArch64ExceptionVector.CURRENT_SPX_SYNCHRONOUS, exception_syndrome="undefined_instruction", handler="skipping_handler"):
+    with Exception(exception_type=AArch64ExceptionVector.CURRENT_SPX_SYNCHRONOUS, exception_syndrome=AArch64ExceptionSyndrome.ILLEGAL_EXECUTION_STATE, handler="skipping_handler"):
         AR.asm(".word 0xFFFFFFFF", comment="Invalid instruction that will trigger undefined exception")
 
     for _ in range(10):
