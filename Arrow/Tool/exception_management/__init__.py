@@ -103,59 +103,50 @@ class ExceptionTable:
         return self.vbar_label
     
     def populate_exception_table(self):
-        state_manager = get_state_manager()
-        orig_state = state_manager.get_active_state()
-        tmp_state = state_manager.set_active_state(self.state_name)
-        tmp_state_original_page_table = tmp_state.current_el_page_table
-        tmp_state.current_el_page_table = self.page_table
+        
+        with SwitchPageTable(self.page_table):
 
-        segment_manager = self.page_table.segment_manager
-        self.exception_table_segment = segment_manager.allocate_memory_segment(name=f"exception_table_{self.page_table_name}",
-                                                                        byte_size=0x800,
-                                                                        memory_type=Configuration.Memory_types.CODE, 
-                                                                        alignment_bits=11) # ensure 2KB alignment for VBAR_EL3
+            segment_manager = self.page_table.segment_manager
+            self.exception_table_segment = segment_manager.allocate_memory_segment(name=f"exception_table_{self.page_table_name}",
+                                                                            byte_size=0x800,
+                                                                            memory_type=Configuration.Memory_types.CODE, 
+                                                                            alignment_bits=11) # ensure 2KB alignment for VBAR_EL3
 
-        self.vbar_label = self.exception_table_segment.get_start_label()
+            self.vbar_label = self.exception_table_segment.get_start_label()
 
+            halting_handler_code, halting_callback_memory = populate_halting_handler(self.page_table)
+            # print(f"halting_handler_code: {halting_handler_code}")
+            # print(f"halting_callback_memory: {halting_callback_memory}")
 
+            callback_handler_code, skipping_callback_memory = populate_callback_handler(self.page_table)
+            # print(f"callback_handler_code: {callback_handler_code}")
+            # print(f"skipping_callback_memory: {skipping_callback_memory}")
 
-        halting_handler_code, halting_callback_memory = populate_halting_handler(self.page_table)
-        # print(f"halting_handler_code: {halting_handler_code}")
-        # print(f"halting_callback_memory: {halting_callback_memory}")
+            # set default target to each of the exceptions that don't have a target
+            for exception in AArch64ExceptionVector:
+                if exception not in self.exception_entries:
+                    #self.exception_entries[exception] = self.halting_label
+                    self.exception_entries[exception] = "halting_label"
+                    self.exception_entries_code[exception] = halting_handler_code.get_start_label()
+                    self.exception_callback_target[exception] = halting_callback_memory.get_label()
+                
+                if self.exception_entries[exception] == "callback_label":
+                    self.exception_entries_code[exception] = callback_handler_code.get_start_label()
+                    self.exception_callback_target[exception] = skipping_callback_memory.get_label()
 
-        callback_handler_code, skipping_callback_memory = populate_callback_handler(self.page_table)
-        # print(f"callback_handler_code: {callback_handler_code}")
-        # print(f"skipping_callback_memory: {skipping_callback_memory}")
+            with SwitchCode(self.exception_table_segment):
+            # orig_code_block = orig_state.current_code_block
+            # tmp_state.current_code_block = self.exception_table_segment
 
-        # set default target to each of the exceptions that don't have a target
-        for exception in AArch64ExceptionVector:
-            if exception not in self.exception_entries:
-                #self.exception_entries[exception] = self.halting_label
-                self.exception_entries[exception] = "halting_label"
-                self.exception_entries_code[exception] = halting_handler_code.get_start_label()
-                self.exception_callback_target[exception] = halting_callback_memory.get_label()
-            
-            if self.exception_entries[exception] == "callback_label":
-                self.exception_entries_code[exception] = callback_handler_code.get_start_label()
-                self.exception_callback_target[exception] = skipping_callback_memory.get_label()
+                AsmLogger.comment(f"================ exception table for {self.state_name} {self.page_table_name} =====================")
+                for exception in AArch64ExceptionVector:
+                    target_label = self.exception_entries_code[exception]
+                    AsmLogger.asm(f".org {hex(exception.value)}")
+                    AsmLogger.comment(f" exception {exception} - using {self.exception_entries[exception]} with target label {target_label} ")
+                    AsmLogger.asm(f"b {target_label}")
 
-        orig_code_block = orig_state.current_code_block
-        tmp_state.current_code_block = self.exception_table_segment
+                AsmLogger.comment(f"================ end of exception table for {self.state_name} {self.page_table_name} ===============")
 
-        AsmLogger.comment(f"================ exception table for {self.state_name} {self.page_table_name} =====================")
-        for exception in AArch64ExceptionVector:
-            target_label = self.exception_entries_code[exception]
-            AsmLogger.asm(f".org {hex(exception.value)}")
-            AsmLogger.comment(f" exception {exception} - using {self.exception_entries[exception]} with target label {target_label} ")
-            AsmLogger.asm(f"b {target_label}")
-
-       
-
-        AsmLogger.comment(f"================ end of exception table for {self.state_name} {self.page_table_name} ===============")
-
-        tmp_state.current_el_page_table = tmp_state_original_page_table
-        tmp_state.current_code_block = orig_code_block
-        state_manager.set_active_state(orig_state.state_name)
 
 class ExceptionManager:
     def __init__(self):

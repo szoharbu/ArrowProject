@@ -4,7 +4,7 @@ from Arrow.Utils.configuration_management import Configuration, get_config_manag
 from Arrow.Externals.binary_generation.arm_binary import ArmBuildPipeline
 from Arrow.Externals.binary_generation.riscv_binary import RiscvBuildPipeline
 from Arrow.Externals.binary_generation.x86_binary import x86BuildPipeline
-
+from Arrow.Externals.binary_generation.merge_asm_objdump import merge_files
 
 def generate_binary():
     logger = get_logger()
@@ -23,7 +23,9 @@ def generate_binary():
     cpp_asm_file = os.path.join(output_dir, f"{base_name}_cpp_asm.s")
     object_file = os.path.join(output_dir, f"{base_name}.o")
     executable_file = os.path.join(output_dir, f"{base_name}.elf")
+    objdump_file = os.path.join(output_dir, f"{base_name}.elf.objdump")
     iss_prerun_log_file = os.path.join(output_dir, f"iss_prerun.log")
+    lst_like_file = os.path.join(output_dir, f"{base_name}_merged.asm")
 
     pipeline = None
     if Configuration.Architecture.x86:
@@ -71,5 +73,33 @@ def generate_binary():
 
     # Step 5: Run the executable on ISS
     pipeline.golden_reference_simolator(executable_file, iss_prerun_log_file)
+
+
+    # Step 6: Merge the asm file with the objdump file
+    merge_files(assembly_file, objdump_file, lst_like_file)
+
+
+
+
+
+def main():
+    # File paths
+    asm_file = "Arrow_output/test.asm"
+    objdump_file = "Arrow_output/test.elf.objdump"
+    output_file = "Arrow_output/test_merged.asm"
+    
+    # Check if files exist
+    if not os.path.exists(asm_file):
+        print(f"Error: ASM file not found: {asm_file}")
+        sys.exit(1)
+        
+    if not os.path.exists(objdump_file):
+        print(f"Error: Objdump file not found: {objdump_file}")
+        sys.exit(1)
+    
+    print("Starting merge process...")
+    merge_files(asm_file, objdump_file, output_file)
+    print("Done!")
+
 
     logger.info("---- Build process completed successfully!")
