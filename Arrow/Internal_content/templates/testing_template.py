@@ -15,8 +15,8 @@ from Arrow.Arrow_API.resources.register_manager import RegisterManager_API as Re
 
 
 
-Configuration.Knobs.Config.core_count.set_value(1)
-Configuration.Knobs.Template.scenario_count.set_value(1)
+Configuration.Knobs.Config.core_count.set_value(2)
+Configuration.Knobs.Template.scenario_count.set_value(2)
 
 
 #Configuration.Knobs.Template.scenario_query.set_value({"simple_cache_scenario":100, "WFIT_CROSS_SPE_scenario": 0, Configuration.Tag.REST: 1})
