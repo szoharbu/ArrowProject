@@ -135,6 +135,7 @@ class SwitchPageTable:
         """
         state_manager = get_state_manager()
         self.initial_state = state_manager.get_active_state()
+        self.initial_page_table = self.initial_state.current_el_page_table
         self.requested_page_table = page_table
         self.requested_state_name = page_table.core_id
         self.new_state_initial_page_table = None
@@ -152,7 +153,8 @@ class SwitchPageTable:
         state_manager = get_state_manager()
         state = state_manager.get_active_state()
         state.current_el_page_table = self.new_state_initial_page_table
-        state_manager.set_active_state(self.initial_state.state_name)
+        orig_state = state_manager.set_active_state(self.initial_state.state_name)
+        orig_state.current_el_page_table = self.initial_page_table
         logger.debug(f"Switched back into state: {self.initial_state.state_name}")
 
 
