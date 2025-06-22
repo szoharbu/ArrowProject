@@ -25,7 +25,7 @@ def generate_binary():
     executable_file = os.path.join(output_dir, f"{base_name}.elf")
     objdump_file = os.path.join(output_dir, f"{base_name}.elf.objdump")
     iss_prerun_log_file = os.path.join(output_dir, f"iss_prerun.log")
-    lst_like_file = os.path.join(output_dir, f"{base_name}_merged.asm")
+    debug_aid_file = os.path.join(output_dir, f"{base_name}_debug_aid.asm")
 
     pipeline = None
     if Configuration.Architecture.x86:
@@ -76,7 +76,7 @@ def generate_binary():
 
 
     # Step 6: Merge the asm file with the objdump file
-    merge_files(assembly_file, objdump_file, lst_like_file)
+    merge_files(assembly_file, objdump_file, debug_aid_file)
 
 
 
