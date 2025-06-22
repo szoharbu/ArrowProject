@@ -144,8 +144,8 @@ class SwitchPageTable:
         logger = get_logger()
         state_manager = get_state_manager()
         state = state_manager.set_active_state(self.requested_state_name)
-        state.current_el_page_table = self.requested_page_table
         self.new_state_initial_page_table = state.current_el_page_table
+        state.current_el_page_table = self.requested_page_table
         logger.debug(f"Switched to {self.requested_state_name} and page table: {self.requested_page_table}")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
