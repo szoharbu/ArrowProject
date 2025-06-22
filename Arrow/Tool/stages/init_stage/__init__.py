@@ -5,6 +5,7 @@ import sys
 from Arrow.Utils.configuration_management import get_config_manager, Configuration
 from Arrow.Utils.logger_management import get_logger
 from Arrow.Tool.state_management import get_state_manager, get_current_state
+from Arrow.Tool.state_management.switch_state import SwitchPageTable
 from Arrow.Tool.state_management.state_manager import State
 from Arrow.Tool.register_management import register_manager
 from Arrow.Tool.memory_management.memlayout.interval_lib.interval_lib import IntervalLib
@@ -247,13 +248,14 @@ def init_exception_tables():
 
     from Arrow.Tool.exception_management import AArch64ExceptionVector
     for page_table in page_tables:
-        exception_table = exception_manager.add_exception_table(page_table.core_id, page_table.page_table_name)
+        with SwitchPageTable(page_table):
+            exception_table = exception_manager.add_exception_table(page_table.core_id, page_table.page_table_name)
+            exception_table.add_exception_callback(exception=AArch64ExceptionVector.LOWER_A64_SYNCHRONOUS, target_label="callback_label")
 
-        exception_table.add_exception_callback(exception=AArch64ExceptionVector.LOWER_A64_SYNCHRONOUS, target_label="callback_label")
-        exception_table.populate_exception_table()
+            exception_table.populate_exception_table()
 
-        vbar_label = exception_table.get_vbar_label()
-        logger.info(f"============ init_exception_tables: {page_table.page_table_name} vbar_label: {vbar_label}")
+            vbar_label = exception_table.get_vbar_label()
+            logger.info(f"============ init_exception_tables: {page_table.page_table_name} vbar_label: {vbar_label}")
 
 
 def init_scenarios():
