@@ -3,14 +3,14 @@ from typing import Optional
 from Arrow.Utils.APIs.choice import choice
 from Arrow.Tool.state_management import get_current_state
 from Arrow.Tool.asm_libraries.label import Label
-from Arrow.Tool.exception_management import get_exception_manager, AArch64ExceptionVector
+from Arrow.Tool.exception_management import get_exception_manager, AArch64ExceptionVector, AArch64ExceptionSyndrome
 
 
 class ExceptionBase(ABC):
     def __init__(
             self,
             exception: AArch64ExceptionVector,
-            exception_syndrome: Optional[str] = None,
+            exception_syndrome: Optional[AArch64ExceptionSyndrome] = None,
             handler: Optional[str] = None,
             callback: Optional[str] = None,
     ):

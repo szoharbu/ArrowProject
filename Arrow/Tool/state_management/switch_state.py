@@ -121,3 +121,79 @@ def switch_exception_level(new_el:int, new_code:CodeSegment, new_page_table:Page
     logger.debug(f"zzzzz after state: {current_state}")
 
     logger.debug(f"Switched to code block: {new_code.name} (start address: {hex(new_code.address)}, byte_size: {hex(new_code.byte_size)})")
+
+
+
+
+class SwitchPageTable:
+    def __init__(
+            self,
+            page_table: PageTable,
+    ):
+        """
+        Constructor for the SwitchPageTable class.
+        """
+        state_manager = get_state_manager()
+        self.initial_state = state_manager.get_active_state()
+        self.requested_page_table = page_table
+        self.requested_state_name = page_table.core_id
+        self.new_state_initial_page_table = None
+
+    def __enter__(self):
+        logger = get_logger()
+        state_manager = get_state_manager()
+        state = state_manager.set_active_state(self.requested_state_name)
+        state.current_el_page_table = self.requested_page_table
+        self.new_state_initial_page_table = state.current_el_page_table
+        logger.debug(f"Switched to {self.requested_state_name} and page table: {self.requested_page_table}")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        logger = get_logger()
+        state_manager = get_state_manager()
+        state = state_manager.get_active_state()
+        state.current_el_page_table = self.new_state_initial_page_table
+        state_manager.set_active_state(self.initial_state.state_name)
+        logger.debug(f"Switched back into state: {self.initial_state.state_name}")
+
+
+class SwitchCode:
+    def __init__(
+            self,
+            code_segment: CodeSegment,
+    ):
+        """
+        Constructor for the SwitchCode class.
+        """
+        state_manager = get_state_manager()
+        self.initial_state = state_manager.get_active_state()
+        self.initial_page_table = self.initial_state.current_el_page_table
+        self.requested_code_segment = code_segment
+        self.original_code_segment = self.initial_state.current_code_block
+
+    def __enter__(self):
+        state_manager = get_state_manager()
+        state = state_manager.get_active_state()
+        logger = get_logger()
+
+        if not isinstance(self.requested_code_segment, CodeSegment):
+            raise ValueError(f"Cannot switch to segment '{self.requested_code_segment}', not of CodeSegment type.")
+
+        all_code_blocks = self.initial_page_table.segment_manager.get_segments(
+            pool_type=[Configuration.Memory_types.BOOT_CODE,
+                    Configuration.Memory_types.BSP_BOOT_CODE,
+                    Configuration.Memory_types.CODE])
+        if not self.requested_code_segment in all_code_blocks:
+            raise ValueError(f"new code block {self.requested_code_segment} doesn't exist in the current state")
+
+        state.current_code_block = self.requested_code_segment
+
+        logger = get_logger()
+        logger.debug(f"Switched to code block: {self.requested_code_segment.name} (start address: {hex(self.requested_code_segment.address)}, byte_size: {hex(self.requested_code_segment.byte_size)})")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        logger = get_logger()
+        state_manager = get_state_manager()
+        state = state_manager.get_active_state()
+        state.current_code_block = self.original_code_segment
+        logger.debug(f"Switched back to code block: {self.original_code_segment.name if self.original_code_segment else 'None'} (start address: {hex(self.original_code_segment.address if self.original_code_segment else 0)}, byte_size: {hex(self.original_code_segment.byte_size if self.original_code_segment else 0)})")
+

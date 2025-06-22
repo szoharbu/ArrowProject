@@ -1,6 +1,6 @@
 from typing import Optional
 
-from Arrow.Tool.exception_management import get_exception_manager, AArch64ExceptionVector
+from Arrow.Tool.exception_management import get_exception_manager, AArch64ExceptionVector, AArch64ExceptionSyndrome
 from Arrow.Tool.asm_libraries.exception.exception_base import ExceptionBase
 #from Arrow.Tool.asm_libraries.exception.exception_x86 import Exception_x86
 #from Arrow.Tool.asm_libraries.exception.exception_riscv import Exception_riscv
@@ -9,7 +9,7 @@ from Arrow.Utils.configuration_management import Configuration
 
 def Exception(
         exception_type: AArch64ExceptionVector,
-        exception_syndrome: Optional[str] = None,
+        exception_syndrome: Optional[AArch64ExceptionSyndrome] = None,
         handler: Optional[str] = None,
         callback: Optional[str] = None,
 ) -> ExceptionBase:

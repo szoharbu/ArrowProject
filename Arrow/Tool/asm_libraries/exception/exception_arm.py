@@ -2,7 +2,7 @@
 from Arrow.Tool.asm_libraries.asm_logger import AsmLogger
 from Arrow.Tool.state_management import get_current_state
 
-from Arrow.Tool.exception_management import get_exception_manager, AArch64ExceptionVector
+from Arrow.Tool.exception_management import get_exception_manager, AArch64ExceptionVector, AArch64ExceptionSyndrome
 from Arrow.Tool.asm_libraries.exception.exception_base import ExceptionBase
 from Arrow.Utils.configuration_management import Configuration
 
@@ -29,9 +29,6 @@ class Exception_arm(ExceptionBase):
 
         reg1 = register_manager.get_and_reserve(reg_type="gpr")
         reg2 = register_manager.get_and_reserve(reg_type="gpr")
-
-
-
 
         AsmLogger.asm(f"ldr {reg1}, ={exception_table.exception_callback_target[self.exception]}")  
         AsmLogger.asm(f"ldr {reg2}, ={self.end_of_scope_label}")
