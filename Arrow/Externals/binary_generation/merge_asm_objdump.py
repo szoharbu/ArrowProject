@@ -141,20 +141,18 @@ def merge_files(asm_file, objdump_file, output_file):
     logger.debug(f"\nProcessing ASM file: {asm_file}")
     
     # Calculate prefix length for consistent formatting
-    # Find the longest address and opcode to ensure consistent spacing
+    # Find the longest address to ensure consistent spacing
     max_addr_len = 0
-    max_opcode_len = 0
     for section_instructions in objdump_sections.values():
         for addr, opcode, _ in section_instructions:
             max_addr_len = max(max_addr_len, len(addr))
-            max_opcode_len = max(max_opcode_len, len(opcode))
     
     # Create prefix with maximum lengths to ensure all lines align properly
-    # Format: "[max_addr] [max_opcode] "
-    prefix_length = 1 + max_addr_len + 2 + max_opcode_len + 2  # "[addr] [opcode] "
+    # Format: "[max_addr] "
+    prefix_length = 1 + max_addr_len + 2  # "[addr] "
     spacing_prefix = " " * prefix_length
     
-    logger.debug(f"Max address length: {max_addr_len}, Max opcode length: {max_opcode_len}")
+    logger.debug(f"Max address length: {max_addr_len}")
     logger.debug(f"Calculated prefix length: {prefix_length}")
     logger.debug(f"Spacing prefix: '{spacing_prefix}' (length: {len(spacing_prefix)})")
     
@@ -222,7 +220,7 @@ def merge_files(asm_file, objdump_file, output_file):
                     # Check if they match
                     if normalized_asm == normalized_obj:
                         # Perfect match
-                        prefix = f"[{addr}] [{opcode}] "
+                        prefix = f"[{addr}] "
                         merged_line = prefix + original_line
                         f_out.write(merged_line + '\n')
                         section_instruction_index += 1
@@ -230,7 +228,7 @@ def merge_files(asm_file, objdump_file, output_file):
                         # Mismatch - check if before and after instructions are aligned
                         if check_before_after_alignment(asm_instructions, objdump_instructions, section_instruction_index):
                             # Before and after are aligned - treat as equivalent instruction
-                            prefix = f"[{addr}] [{opcode}] "
+                            prefix = f"[{addr}] "
                             merged_line = prefix + original_line
                             f_out.write(merged_line + '\n')
                             logger.debug(f"Info: Equivalent instruction at line {line_num}: ASM='{asm_mnemonic}' ≈ OBJ='{objdump_mnemonic}' (before/after aligned)")
@@ -242,13 +240,13 @@ def merge_files(asm_file, objdump_file, output_file):
                             errors.append(error_msg)
                             
                             # Continue processing with error marker
-                            prefix = f"[ERROR: {addr}] [{opcode}] "
+                            prefix = f"[ERROR: {addr}] "
                             merged_line = prefix + original_line
                             f_out.write(merged_line + '\n')
                             section_instruction_index += 1
                 else:
                     # No more objdump instructions for this section
-                    prefix = "[NO_MORE_OBJ] [????????] "
+                    prefix = "[NO_MORE_OBJ] "
                     merged_line = prefix + original_line
                     f_out.write(merged_line + '\n')
             else:
