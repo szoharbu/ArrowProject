@@ -268,10 +268,6 @@ class ArmBuildPipeline(BuildPipeline):
             linked_data_segments_pa_addresses = []  # list of cross-core PA addresses that are already linked
 
             for page_table in page_table_manager.get_all_page_tables():
-            ###for state_name in cores_states:
-            ###    state_manager.set_active_state(state_name)
-            ###    curr_state = state_manager.get_active_state()
-            ###    segment_manager = curr_state.segment_manager
                 state_segments = page_table.segment_manager.get_segments(pool_type=[
                     Configuration.Memory_types.BSP_BOOT_CODE, 
                     Configuration.Memory_types.BOOT_CODE, 

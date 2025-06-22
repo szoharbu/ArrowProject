@@ -110,7 +110,8 @@ class ExceptionTable:
             self.exception_table_segment = segment_manager.allocate_memory_segment(name=f"exception_table_{self.page_table_name}",
                                                                             byte_size=0x800,
                                                                             memory_type=Configuration.Memory_types.CODE, 
-                                                                            alignment_bits=11) # ensure 2KB alignment for VBAR_EL3
+                                                                            alignment_bits=11,
+                                                                            exclusive_segment=True) # ensure 2KB alignment for VBAR_EL3
 
             self.vbar_label = self.exception_table_segment.get_start_label()
 
@@ -197,7 +198,8 @@ def populate_halting_handler(page_table:PageTable):
         halting_handler_code = segment_manager.allocate_memory_segment(name=f"halting_handler_code_{page_table.page_table_name}",
                                                                     byte_size=0x800,
                                                                     memory_type=Configuration.Memory_types.CODE, 
-                                                                    alignment_bits=8) 
+                                                                    alignment_bits=8,
+                                                                    exclusive_segment=True) 
 
         halting_label = Label(postfix="halting_label")
         with SwitchCode(halting_handler_code):
@@ -258,7 +260,8 @@ def populate_callback_handler(page_table:PageTable):
         callback_handler_code = segment_manager.allocate_memory_segment(name=f"callback_handler_code_{page_table.page_table_name}",
                                                                     byte_size=0x800,
                                                                     memory_type=Configuration.Memory_types.CODE, 
-                                                                    alignment_bits=8) 
+                                                                    alignment_bits=8,
+                                                                    exclusive_segment=True) 
 
         callback_label = Label(postfix="callback_label")
         with SwitchCode(callback_handler_code):

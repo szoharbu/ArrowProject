@@ -40,7 +40,7 @@ def allocate_data_memory(segment_manager: SegmentManager,
     if pool_type is Configuration.Memory_types.DATA_SHARED and init_value_byte_representation is not None:
         raise ValueError(f"Can't initialize value in a shared memory")
 
-    data_segments = segment_manager.get_segments(pool_type)
+    data_segments = segment_manager.get_segments(pool_type, non_exclusive_only=True)
 
     if cross_core:
         if pool_type is not Configuration.Memory_types.DATA_PRESERVE:
@@ -153,7 +153,7 @@ def allocate_data_memory(segment_manager: SegmentManager,
 
         for other_page_table in all_other_page_tables:
             #find matching cross-core segment, should have the same PA and size as the original segment
-            other_segments = other_page_table.segment_manager.get_segments(pool_type)
+            other_segments = other_page_table.segment_manager.get_segments(pool_type, non_exclusive_only=True)
             other_cross_core_segment = None
             for segment in other_segments:
                 if segment.pa_address == selected_segment.pa_address and segment.byte_size == selected_segment.byte_size:

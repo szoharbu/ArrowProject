@@ -185,7 +185,8 @@ def init_segments():
                                                                     memory_type=Configuration.Memory_types.BSP_BOOT_CODE, 
                                                                     alignment_bits=4, 
                                                                     VA_eq_PA=True,
-                                                                    force_address=bsp_boot_address)
+                                                                    force_address=bsp_boot_address,
+                                                                    exclusive_segment=True)
     memory_logger.info(f"============ init_segments: allocated BSP_boot_segment {bsp_boot_segment} at {hex(bsp_boot_address)}")
 
     # Allocating one cross-core segment, ensuring that all core and all MMUs will have one shared PA space
@@ -203,7 +204,8 @@ def init_segments():
                                                                         byte_size=0x200,
                                                                         memory_type=Configuration.Memory_types.BOOT_CODE, 
                                                                         alignment_bits=4, 
-                                                                        VA_eq_PA=True)
+                                                                        VA_eq_PA=True,
+                                                                        exclusive_segment=True)
             memory_logger.info(f"init_memory: allocating boot_segment {boot_segment} for {page_table.core_id}:{page_table.page_table_name}")
 
         code_segment_count = Configuration.Knobs.Memory.code_segment_count.get_value()
@@ -211,7 +213,8 @@ def init_segments():
             code_segment = page_table.segment_manager.allocate_memory_segment(name=f"{page_table.page_table_name}__code_segment_{i}",
                                                                         byte_size=0x1000,
                                                                         memory_type=Configuration.Memory_types.CODE, 
-                                                                        alignment_bits=4)
+                                                                        alignment_bits=4,
+                                                                        exclusive_segment=False)
             memory_logger.info(f"init_memory: allocating code_segment {code_segment} for {page_table.core_id}:{page_table.page_table_name}")
 
         data_segment_count = Configuration.Knobs.Memory.data_segment_count.get_value()
@@ -221,21 +224,24 @@ def init_segments():
             data_segment = page_table.segment_manager.allocate_memory_segment(name=f"{page_table.page_table_name}__data_shared_segment_{i}",
                                                                         byte_size=0x1000,
                                                                         alignment_bits=4,
-                                                                        memory_type=Configuration.Memory_types.DATA_SHARED)
+                                                                        memory_type=Configuration.Memory_types.DATA_SHARED,
+                                                                        exclusive_segment=False)
             memory_logger.info(f"init_memory: allocating data_shared_segment {data_segment} for {page_table.core_id}:{page_table.page_table_name}")
 
         for i in range(data_preserve_count):
             data_segment = page_table.segment_manager.allocate_memory_segment(name=f"{page_table.page_table_name}__data_preserve_segment_{i}", 
                                                                         byte_size=0x1000,
                                                                         alignment_bits=4,
-                                                                        memory_type=Configuration.Memory_types.DATA_PRESERVE)
+                                                                        memory_type=Configuration.Memory_types.DATA_PRESERVE,
+                                                                        exclusive_segment=False)
             memory_logger.info(f"init_memory: allocating data_preserve_segment {data_segment} for {page_table.core_id}:{page_table.page_table_name}")
 
         # Allocate stack space for each of the page tables
         stack_segment = page_table.segment_manager.allocate_memory_segment(name=f"{page_table.page_table_name}__stack_segment",
                                                                         byte_size=0x800,
                                                                         alignment_bits=4,
-                                                                        memory_type=Configuration.Memory_types.STACK)
+                                                                        memory_type=Configuration.Memory_types.STACK,
+                                                                        exclusive_segment=True)
         memory_logger.info(f"init_memory: allocating stack_segment {stack_segment} for {page_table.core_id}:{page_table.page_table_name}")
 
             
