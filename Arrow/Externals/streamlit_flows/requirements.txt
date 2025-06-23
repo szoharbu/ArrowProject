@@ -1,0 +1,5 @@
+streamlit-ace
+numpy
+peewee
+#pandas
+# add more pacakges if needed

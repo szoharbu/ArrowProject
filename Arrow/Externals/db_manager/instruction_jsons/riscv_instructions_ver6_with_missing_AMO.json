@@ -1,0 +1,2246 @@
+
+{
+    "mnemonic": "LR.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Load the value from the address in the source register and marks the address as reserved. The result is stored in the destination register.",
+    "syntax": "LR.W dest_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "SC.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Attempts to store the value from the source register into the memory address specified by the address register if the address is still reserved from a previous `LR.W`. The result is stored in the destination register.",
+    "syntax": "SC.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "AMOADD.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Atomically adds the value in the source register to the value in memory at the address specified by the address register, and stores the original memory value in the destination register.",
+    "syntax": "AMOADD.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "AMOSWAP.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Atomically swaps the value in the source register with the value in memory at the address specified by the address register, and stores the original value in the destination register.",
+    "syntax": "AMOSWAP.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "AMOXOR.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Atomically XORs the value in the source register with the value in memory at the address specified by the address register, and stores the original memory value in the destination register.",
+    "syntax": "AMOXOR.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "AMOOR.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Atomically ORs the value in the source register with the value in memory at the address specified by the address register, and stores the original memory value in the destination register.",
+    "syntax": "AMOOR.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "AMOMIN.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Atomically computes the minimum of the value in the source register and the value in memory at the address specified by the address register, and stores the result in the destination register.",
+    "syntax": "AMOMIN.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "AMOMAX.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Atomically computes the maximum of the value in the source register and the value in memory at the address specified by the address register, and stores the result in the destination register.",
+    "syntax": "AMOMAX.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "AMOMINU.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Atomically computes the minimum unsigned of the value in the source register and the value in memory at the address specified by the address register, and stores the result in the destination register.",
+    "syntax": "AMOMINU.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "AMOMAXU.W",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        },
+        {
+            "name": "addr_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "atomic",
+    "description": "Atomically computes the maximum unsigned of the value in the source register and the value in memory at the address specified by the address register, and stores the result in the destination register.",
+    "syntax": "AMOMAXU.W dest_reg, src_reg, addr_reg",
+    "architecture_modes": ["RV64"]
+}
+{
+    "mnemonic": "CLZ",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "bitcounting",
+    "description": "Counts the number of leading zeros in the source register value and stores the result in the destination register.",
+    "syntax": "CLZ dest_reg, src_reg",
+    "architecture_modes": ["RV32", "RV64"]
+}
+{
+    "mnemonic": "CTZ",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "bitcounting",
+    "description": "Counts the number of trailing zeros in the source register value and stores the result in the destination register.",
+    "syntax": "CTZ dest_reg, src_reg",
+    "architecture_modes": ["RV32", "RV64"]
+}
+{
+    "mnemonic": "POPCOUNT",
+    "operands": [
+        {
+            "name": "dest_reg",
+            "type": "reg",
+            "role": "dest",
+            "size": "32_bits"
+        },
+        {
+            "name": "src_reg",
+            "type": "reg",
+            "role": "src",
+            "size": "32_bits"
+        }
+    ],
+    "type": "R",
+    "group": "bitcounting",
+    "description": "Counts the number of set bits (1s) in the source register value and stores the result in the destination register.",
+    "syntax": "POPCOUNT dest_reg, src_reg",
+    "architecture_modes": ["RV32", "RV64"]
+}
+
+
+{
+    "instructions": [
+        {
+            "mnemonic": "add",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Adds two registers and stores the result in the destination register.",
+            "syntax": "ADD dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "addi",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "arithmetic",
+            "description": "Adds an immediate value to a register and stores the result in the destination register.",
+            "syntax": "ADDI dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "addiw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "arithmetic",
+            "description": "Adds a 12-bit signed immediate value to the lower 32 bits of a register, sign-extends the result, and stores it in the destination register.",
+            "syntax": "ADDIW dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "addw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Adds the lower 32 bits of two registers, sign-extends the result to 64 bits, and stores it in the destination register.",
+            "syntax": "ADDW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "and",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "logical",
+            "description": "Performs a bitwise AND operation on two registers and stores the result in the destination register.",
+            "syntax": "AND dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "andi",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "logical",
+            "description": "Performs a bitwise AND operation between a register and an immediate value, storing the result in the destination register.",
+            "syntax": "ANDI dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "auipc",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "20_bits_signed"
+                }
+            ],
+            "type": "U",
+            "group": "control",
+            "description": "Adds an immediate offset to the current PC and stores the result in the destination register.",
+            "syntax": "AUIPC dest_reg, offset",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "beq",
+            "operands": [
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "offset_imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "B",
+            "group": "branch",
+            "description": "Branches to the target if the registers are equal.",
+            "syntax": "BEQ src_reg1, src_reg2, offset",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "bge",
+            "operands": [
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "offset_imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "B",
+            "group": "branch",
+            "description": "Branches to the target label if the value in the first register is greater than or equal to the value in the second register (signed comparison).",
+            "syntax": "BGE src_reg1, src_reg2, label",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "bgeu",
+            "operands": [
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "offset_imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "B",
+            "group": "branch",
+            "description": "Branches to the target label if the value in the first register is greater than or equal to the value in the second register (unsigned comparison).",
+            "syntax": "BGEU src_reg1, src_reg2, label",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "blt",
+            "operands": [
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "offset_imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "B",
+            "group": "branch",
+            "description": "Branches to the target if the first register is less than the second.",
+            "syntax": "BLT src_reg1, src_reg2, offset",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "bltu",
+            "operands": [
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "offset_imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "B",
+            "group": "branch",
+            "description": "Branches to the target address (offset) if the value in the first register is less than the value in the second register (unsigned comparison). The assembler resolves symbolic labels into offsets.",
+            "syntax": "BLTU src_reg1, src_reg2, offset",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "bne",
+            "operands": [
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "offset_imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "B",
+            "group": "branch",
+            "description": "Branches to the target if the registers are not equal.",
+            "syntax": "BNE src_reg1, src_reg2, offset",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "csrrc",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "csr",
+                    "type": "csr",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "CSR",
+            "group": "control",
+            "description": "Performs a read-modify-write operation on the CSR. Clears bits in the CSR as specified by the source register and writes the previous CSR value to the destination register.",
+            "syntax": "CSRRC dest_reg, csr, src_reg",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "csrrci",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "csr",
+                    "type": "csr",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "CSR",
+            "group": "control",
+            "description": "Performs a read-modify-write operation on the CSR. Clears bits in the CSR as specified by the immediate value and writes the previous CSR value to the destination register.",
+            "syntax": "CSRRCI dest_reg, csr, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "csrrs",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "csr",
+                    "type": "csr",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "CSR",
+            "group": "control",
+            "description": "Performs a read-modify-write operation on the CSR. Sets bits in the CSR as specified by the source register and writes the previous CSR value to the destination register.",
+            "syntax": "CSRRS dest_reg, csr, src_reg",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "csrrsi",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "csr",
+                    "type": "csr",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "CSR",
+            "group": "control",
+            "description": "Performs a read-modify-write operation on the CSR. Sets bits in the CSR as specified by the immediate value and writes the previous CSR value to the destination register.",
+            "syntax": "CSRRSI dest_reg, csr, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "csrrw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "csr",
+                    "type": "csr",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "CSR",
+            "group": "control",
+            "description": "Reads the CSR and writes a new value to it.",
+            "syntax": "CSRRW dest_reg, csr, src_reg",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "csrrwi",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "csr",
+                    "type": "csr",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "CSR",
+            "group": "control",
+            "description": "Writes an immediate value directly to the CSR and writes the previous CSR value to the destination register.",
+            "syntax": "CSRRWI dest_reg, csr, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "div",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Performs signed integer division of the first source register by the second source register and stores the quotient in the destination register. Division by zero results in an undefined value.",
+            "syntax": "DIV dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "divu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Performs unsigned integer division of the first source register by the second source register and stores the quotient in the destination register. Division by zero results in an undefined value.",
+            "syntax": "DIVU dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "divuw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Performs unsigned integer division of the lower 32 bits of the first source register by the second source register and stores the quotient in the lower 32 bits of the destination register, with the result sign-extended to 64 bits.",
+            "syntax": "DIVUW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "divw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Performs signed integer division of the lower 32 bits of the first source register by the second source register and stores the quotient in the lower 32 bits of the destination register, with the result sign-extended to 64 bits.",
+            "syntax": "DIVW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "ecall",
+            "operands": [],
+            "type": "system",
+            "group": "system",
+            "description": "Generates a system call to invoke services provided by the execution environment. The behavior depends on the value in the a7 register (or equivalent, depending on the calling convention).",
+            "syntax": "ECALL",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "ebreak",
+            "operands": [],
+            "type": "system",
+            "group": "system",
+            "description": "Breakpoint for debugging.",
+            "syntax": "EBREAK",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "fence",
+            "operands": [
+                {
+                    "name": "pred",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "4_bits_unsigned"
+                },
+                {
+                    "name": "succ",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "4_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "memory",
+            "description": "Ensures ordering of memory operations as specified by the pred and succ fields. Pred defines prior memory operations, and succ defines subsequent memory operations affected by the fence.",
+            "syntax": "FENCE pred, succ",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "fence.i",
+            "operands": [],
+            "type": "I",
+            "group": "memory",
+            "description": "Flushes the instruction cache to ensure that all subsequent instruction fetches reflect memory updates made by prior stores.",
+            "syntax": "FENCE.I",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "jal",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "offset_imm",
+                    "role": "src",
+                    "size": "20_bits_signed"
+                }
+            ],
+            "type": "J",
+            "group": "branch",
+            "description": "Jumps to the address specified by the offset and stores the address of the next instruction (PC + 4) in the destination register.",
+            "syntax": "JAL dest_reg, offset",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "jalr",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset",
+                    "type": "offset_imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "branch",
+            "description": "Jumps to the address computed by adding the offset to the value in the base register, and stores the address of the next instruction (PC + 4) in the destination register. The least significant bit of the computed address is cleared.",
+            "syntax": "JALR dest_reg, src_reg, offset",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "lb",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "8-bit"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "load",
+            "description": "Loads an 8-bit byte from memory at the address computed by adding the offset to the value in the base register, sign-extends it, and stores it in the destination register.",
+            "syntax": "LB dest_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "lbu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "8-bit"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "load",
+            "description": "Loads a byte from memory at the address computed by adding the offset to the value in the base register, zero-extends it, and stores it in the destination register.",
+            "syntax": "LBU dest_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "ld",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "load",
+            "description": "Loads a double word (64 bits) from memory at the address computed by adding the offset to the value in the base register and stores it in the destination register.",
+            "syntax": "LD dest_reg, offset(base_reg)",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "lh",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "load",
+            "description": "Loads a half word (16 bits) from memory at the address computed by adding the offset to the value in the base register, sign-extends it, and stores it in the destination register.",
+            "syntax": "LH dest_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "lhu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "load",
+            "description": "Loads a half word (16 bits) from memory at the address computed by adding the offset to the value in the base register, zero-extends it, and stores it in the destination register.",
+            "syntax": "LHU dest_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "lui",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "20_bits_unsigned"
+                }
+            ],
+            "type": "U",
+            "group": "arithmetic",
+            "description": "Loads a 20-bit immediate into the upper 20 bits of the destination register, with the lower 12 bits set to zero.",
+            "syntax": "LUI dest_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "lw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "load",
+            "description": "Loads a word (32 bits) from memory at the address computed by adding the offset to the value in the base register, sign-extends it, and stores it in the destination register.",
+            "syntax": "LW dest_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "lwu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "load",
+            "description": "Loads a word (32 bits) from memory at the address computed by adding the offset to the value in the base register, zero-extends it, and stores it in the destination register.",
+            "syntax": "LWU dest_reg, offset(base_reg)",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "mul",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Multiplies the values in the two source registers and stores the lower bits of the result in the destination register.",
+            "syntax": "MUL dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "mulh",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Multiplies the values in the two source registers as signed integers and stores the upper bits of the result in the destination register.",
+            "syntax": "MULH dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "mulhsu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Multiplies the first source register as a signed integer and the second source register as an unsigned integer. The upper bits of the result are stored in the destination register.",
+            "syntax": "MULHSU dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "mulhu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Multiplies the values in the two source registers as unsigned integers and stores the upper bits of the result in the destination register.",
+            "syntax": "MULHU dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "mulw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Multiplies the lower 32 bits of the two source registers as signed integers and stores the lower 32 bits of the result in the destination register, sign-extended to 64 bits.",
+            "syntax": "MULW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "or",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "logical",
+            "description": "Performs a bitwise OR operation on the values in the two source registers and stores the result in the destination register.",
+            "syntax": "OR dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "ori",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "logical",
+            "description": "Performs a bitwise OR operation between the value in the source register and the sign-extended immediate value, storing the result in the destination register.",
+            "syntax": "ORI dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "rem",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Computes the remainder of the division of the value in the first source register by the value in the second source register (signed). Stores the result in the destination register.",
+            "syntax": "REM dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "remu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Computes the remainder of the division of the value in the first source register by the value in the second source register (unsigned). Stores the result in the destination register.",
+            "syntax": "REMU dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "remuw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Computes the remainder of the division of the lower 32 bits of the first source register by the lower 32 bits of the second source register (unsigned). Stores the result in the destination register, zero-extended to 64 bits.",
+            "syntax": "REMUW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "remw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Computes the remainder of the division of the lower 32 bits of the first source register by the lower 32 bits of the second source register (signed). Stores the result in the destination register, sign-extended to 64 bits.",
+            "syntax": "REMW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "sb",
+            "operands": [
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "8_bits"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "S",
+            "group": "store",
+            "description": "Stores the least significant byte (8 bits) of the value in the source register into the memory address computed by adding the offset to the base register.",
+            "syntax": "SB src_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "sd",
+            "operands": [
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "16_bits"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "S",
+            "group": "store",
+            "description": "Stores the least significant double word (64 bits) of the value in the source register into the memory address computed by adding the offset to the base register.",
+            "syntax": "SD src_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "sh",
+            "operands": [
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "16_bits"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "S",
+            "group": "store",
+            "description": "Stores the least significant half word (16 bits) of the value in the source register into the memory address computed by adding the offset to the base register.",
+            "syntax": "SH src_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "sw",
+            "operands": [
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32-bit"
+                },
+                {
+                    "name": "offset_plus_basereg",
+                    "type": "offset_plus_basereg",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "S",
+            "group": "store",
+            "description": "Stores the least significant word (32 bits) of the value in the source register into the memory address computed by adding the offset to the base register.",
+            "syntax": "SW src_reg, offset(base_reg)",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "sll",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "5_bits"
+                }
+            ],
+            "type": "R",
+            "group": "shift",
+            "description": "Performs a logical left shift of the value in the first source register by the number of bits specified in the lower 5 bits of the second source register and stores the result in the destination register.",
+            "syntax": "SLL dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "slli",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "shift",
+            "description": "Performs a logical left shift of the value in the source register by the immediate value and stores the result in the destination register.",
+            "syntax": "SLLI dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "slliw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "shift",
+            "description": "Performs a logical left shift of the lower 32 bits of the value in the source register by the immediate value and stores the result in the destination register, sign-extended to 64 bits.",
+            "syntax": "SLLIW dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "lssw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "5_bits"
+                }
+            ],
+            "type": "R",
+            "group": "shift",
+            "description": "Performs a logical left shift of the lower 32 bits of the value in the first source register by the number of bits specified in the lower 5 bits of the second source register and stores the result in the destination register, sign-extended to 64 bits.",
+            "syntax": "SLLW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "slt",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "comparison",
+            "description": "Sets the destination register to 1 if the value in the first source register is less than the value in the second source register (signed). Otherwise, sets it to 0.",
+            "syntax": "SLT dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "slti",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "12_bits_signed"
+                }
+            ],
+            "type": "I",
+            "group": "comparison",
+            "description": "Sets the destination register to 1 if the value in the source register is less than the immediate value (signed). Otherwise, sets it to 0.",
+            "syntax": "SLTI dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "sltiu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "12_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "comparison",
+            "description": "Sets the destination register to 1 if the value in the source register is less than the immediate value (unsigned). Otherwise, sets it to 0.",
+            "syntax": "SLTIU dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "sltu",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "comparison",
+            "description": "Sets the destination register to 1 if the value in the first source register is less than the value in the second source register (unsigned). Otherwise, sets it to 0.",
+            "syntax": "SLTU dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "sra",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "5_bits"
+                }
+            ],
+            "type": "R",
+            "group": "shift",
+            "description": "Performs an arithmetic right shift of the value in the first source register by the number of bits specified in the lower 5 bits of the second source register and stores the result in the destination register.",
+            "syntax": "SRA dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "srai",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "shift",
+            "description": "Performs an arithmetic right shift of the value in the source register by the immediate value and stores the result in the destination register.",
+            "syntax": "SRAI dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "sraiw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "shift",
+            "description": "Performs an arithmetic right shift of the lower 32 bits of the value in the source register by the immediate value and stores the result in the destination register, sign-extended to 64 bits.",
+            "syntax": "SRAIW dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "sraw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "5_bits"
+                }
+            ],
+            "type": "R",
+            "group": "shift",
+            "description": "Performs an arithmetic right shift of the lower 32 bits of the value in the first source register by the number of bits specified in the lower 5 bits of the second source register and stores the result in the destination register, sign-extended to 64 bits.",
+            "syntax": "SRAW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "srl",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "5_bits"
+                }
+            ],
+            "type": "R",
+            "group": "shift",
+            "description": "Performs a logical right shift of the value in the first source register by the number of bits specified in the lower 5 bits of the second source register and stores the result in the destination register.",
+            "syntax": "SRL dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "srli",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "shift",
+            "description": "Performs a logical right shift of the value in the source register by the immediate value and stores the result in the destination register.",
+            "syntax": "SRLI dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "srliw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "5_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "shift",
+            "description": "Performs a logical right shift of the lower 32 bits of the value in the source register by the immediate value and stores the result in the destination register.",
+            "syntax": "SRLIW dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "srlw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "5_bits"
+                }
+            ],
+            "type": "R",
+            "group": "shift",
+            "description": "Performs a logical right shift of the lower 32 bits of the value in the first source register by the number of bits specified in the lower 5 bits of the second source register and stores the result in the destination register.",
+            "syntax": "SRLW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "sub",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Subtracts the value in the second source register from the value in the first source register and stores the result in the destination register.",
+            "syntax": "SUB dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "subw",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "32_bits"
+                }
+            ],
+            "type": "R",
+            "group": "arithmetic",
+            "description": "Subtracts the value in the second source register from the value in the first source register, both treated as 32-bit signed integers, and stores the result in the destination register (32-bit).",
+            "syntax": "SUBW dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV64"]
+        },
+        {
+            "mnemonic": "uret",
+            "operands": [],
+            "type": "J",
+            "group": "control",
+            "description": "Returns from user-level interrupt handler and restores the user-level program counter and status.",
+            "syntax": "URET",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "wfi",
+            "operands": [],
+            "type": "I",
+            "group": "control",
+            "description": "Waits for an interrupt to occur. It puts the CPU in a low-power state until an interrupt is received.",
+            "syntax": "WFI",
+            "architecture_modes": ["RV32", "RV64"],
+            "random_generate": "False"
+        },
+        {
+            "mnemonic": "xor",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg1",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg2",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                }
+            ],
+            "type": "R",
+            "group": "logical",
+            "description": "Performs a bitwise XOR operation between the values in the two source registers and stores the result in the destination register.",
+            "syntax": "XOR dest_reg, src_reg1, src_reg2",
+            "architecture_modes": ["RV32", "RV64"]
+        },
+        {
+            "mnemonic": "xori",
+            "operands": [
+                {
+                    "name": "dest_reg",
+                    "type": "reg",
+                    "role": "dest",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "src_reg",
+                    "type": "reg",
+                    "role": "src",
+                    "size": "full_register_width"
+                },
+                {
+                    "name": "immediate",
+                    "type": "imm",
+                    "role": "src",
+                    "size": "12_bits_unsigned"
+                }
+            ],
+            "type": "I",
+            "group": "logical",
+            "description": "Performs a bitwise XOR operation between the value in the source register and the immediate value, and stores the result in the destination register.",
+            "syntax": "XORI dest_reg, src_reg, immediate",
+            "architecture_modes": ["RV32", "RV64"]
+        }
+    ]
+}

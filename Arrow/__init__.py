@@ -1,18 +1,6 @@
-# tool_name/__init__.py
+# Arrow Package
+"""
+Arrow - A comprehensive testing framework
+"""
 
-# Metadata
-__version__ = "0.1.0"
-__author__ = "Zohar Buchris"
-__description__ = "An Architecture Agnostic Test Generator."
-
-# # Expose key modules or functions
-# from .core import manager, config
-# from .flows import handler
-# from .io import reader, writer
-# from .utils import helper
-
-#
-# # Optional: Initialize logger
-# import logging
-# logging.basicConfig(level=logging.INFO)
-
+__version__ = "1.0.0" 
