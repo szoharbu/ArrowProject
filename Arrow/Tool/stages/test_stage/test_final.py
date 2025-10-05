@@ -13,19 +13,9 @@ def do_final():
     asm_logger.AsmLogger.comment(f"in do_final, ending test body")
     available_states = state_manager.states_dict
 
-    end_test_barrier_label = Label("end_test_barrier")
     for state_id in available_states:
         state_manager.set_active_state(state_id)
         curr_state = state_manager.get_active_state()
-
-        logger.debug("============ Test end barrier")
-        Barrier(end_test_barrier_label)
-
-        current_el_level = curr_state.current_el_level
-        if current_el_level != 3:
-            from Arrow.Tool.asm_libraries.switch_el import switch_EL
-            logger.info(f"================ Switching to EL3")
-            switch_EL(target_el_level=3)
 
         logger.debug("============ Test end convention")
         end_test.end_test_asm_convention(test_pass=True)

@@ -97,7 +97,7 @@ def set_basedir_path():
 
     try:
         # Determine the base directory
-        base_dir = Path(__file__).resolve().parent
+        base_dir = Path(__file__).resolve().parent.parent
         logger.debug(f"Base directory determined: {base_dir}")
         config_manager.set_value('base_dir_path', str(base_dir))
 

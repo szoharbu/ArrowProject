@@ -4,61 +4,94 @@ from typing import Optional
 from Arrow.Utils.configuration_management import get_config_manager
 from Arrow.Utils.logger_management import get_logger
 
-def normalize_path(path):
-    """Helper function to normalize paths to absolute, lowercase, and consistent separator format."""
-    return os.path.normpath(os.path.abspath(path)).lower()
-
+def get_function_from_frame(frame_info):
+    """Extract the function object from a FrameInfo object"""
+    # frame_info is a FrameInfo object from inspect.stack()
+    # We need to access the actual frame object
+    frame = frame_info.frame
+    code = frame.f_code
+    
+    # Try to find the function in locals/globals by name
+    name = code.co_name
+    
+    
+    # Check frame locals
+    if name in frame.f_locals:
+        obj = frame.f_locals[name]
+        if callable(obj) and hasattr(obj, '__code__') and obj.__code__ is code:
+            return obj
+    
+    # Check frame globals
+    if name in frame.f_globals:
+        obj = frame.f_globals[name]
+        if callable(obj) and hasattr(obj, '__code__') and obj.__code__ is code:
+            return obj
+    
+    # For methods, check if there's a 'self' or 'cls'
+    for var_name in ('self', 'cls'):
+        if var_name in frame.f_locals:
+            instance_or_class = frame.f_locals[var_name]
+            if hasattr(instance_or_class, name):
+                method = getattr(instance_or_class, name)
+                # For bound methods, get the underlying function
+                if hasattr(method, '__func__'):
+                    if method.__func__.__code__ is code:
+                        return method.__func__
+                elif hasattr(method, '__code__') and method.__code__ is code:
+                    return method
+    
+    return None
 
 def get_last_user_context():
-    # Get config values and normalize paths
-    config_manager = get_config_manager()
-
-    internal_content_dir_path = config_manager.get_value('internal_content_dir_path')
-    external_content_dir_path = config_manager.get_value('external_content_dir_path')
-    template_file = normalize_path(config_manager.get_value('template_path'))
-
-    test_stage_path = normalize_path('Arrow/Tool/stages/test_stage')
-    memory_segments_path = normalize_path('Arrow/Tool/memory_management/memlayout/segment_manager.py')  # initial code label is create there
-    exception_tables_path = normalize_path('Arrow/Tool/exception_management/__init__.py')
-    # Capture the stack once as the below code might go over it twice, and it has performance penalty
+    """
+    Find the location where AR.generate() or AR.asm() was called to attribute generated code.
+    This looks for Arrow API entry points in the call stack rather than user/Arrow boundaries.
+    """
+    # Lazy imports to avoid circular dependency
+    from Arrow.Tool.asm_blocks.asm_unit import AsmUnit
+    
+    # Capture the stack once for performance
     stack_snapshot = inspect.stack()
+    
+    # Search for AR API calls in the stack by checking file path and function name
+    # This is more reliable than trying to extract function objects from frames
+    for i, frame_info in enumerate(stack_snapshot):
+        
+        # Check if this is an AR API method by its location and name
+        # The AR API methods are in Arrow/Arrow_API/flows.py
+        if frame_info.filename.endswith("Arrow/Arrow_API/flows.py"):
+            if frame_info.function in ["generate", "asm", "comment"]:
+                # Found an AR API call! Now get the caller (one frame up)
+                if i + 1 < len(stack_snapshot):
+                    caller_frame = stack_snapshot[i + 1]
 
-    internal_content_dir_path = str(internal_content_dir_path).lower()
-    external_content_dir_path = str(external_content_dir_path).lower()
-    template_file = str(template_file).lower()
+                    # Create a shortened path for the comment
+                    shortened_path = "/".join(caller_frame.filename.split(os.sep)[-2:])
 
-    # Traverse the call stack and look for the first instance of user code
-    for frame_info in stack_snapshot:
+                    return caller_frame.filename, shortened_path, caller_frame.lineno
 
-        filename_abs = normalize_path(frame_info.filename)
+    constructors = {
+        AsmUnit.__init__,
+        DataUnit.__init__,
+    }
 
-        # Check for matches in Internal Content directory first
-        if str(internal_content_dir_path) in filename_abs:
-            # Create a relative path from content_directory
-            relative_path = os.path.relpath(filename_abs, internal_content_dir_path)
-            return filename_abs, relative_path.replace(os.sep, '/'), frame_info.lineno
+    # Search for AR API calls in the stack
+    for i, frame_info in enumerate(stack_snapshot):
+        
+        # Check if the function is one of our AR API methods
+        if get_function_from_frame(frame_info) in constructors:
+            # Found an AR API call! Now get the caller (one frame up)
+            if i + 2 < len(stack_snapshot):
+                caller_frame = stack_snapshot[i + 2]
 
-        # Check for matches in External Content directory
-        if str(external_content_dir_path) in filename_abs:
-            # Create a relative path from content_directory
-            relative_path = os.path.relpath(filename_abs, external_content_dir_path)
-            return filename_abs, relative_path.replace(os.sep, '/'), frame_info.lineno
+                # Create a shortened path for the comment
+                shortened_path = "/".join(caller_frame.filename.split(os.sep)[-2:])
 
-        # Check for matches in the template directory
-        if template_file in filename_abs:
-            filename_abs = normalize_path(frame_info.filename)
-            shortened_path = "/".join(filename_abs.split(os.sep)[-2:])
-            return filename_abs, shortened_path, frame_info.lineno
+                return caller_frame.filename, shortened_path, caller_frame.lineno
 
-    # Fallback: check for first instance of Tool code like boot, scenario wrapper and such (e.g., test_stage)
-    for frame_info in stack_snapshot:
-        filename_abs = normalize_path(frame_info.filename)
-        if (test_stage_path in filename_abs) or (memory_segments_path in filename_abs) or (exception_tables_path in filename_abs):
-            filename_abs = normalize_path(frame_info.filename)
-            shortened_path = "/".join(filename_abs.split(os.sep)[-2:])
-            return filename_abs, shortened_path, frame_info.lineno
-
-    raise ValueError("Inspect failed to find last_user_context")
+    # Hard error if we can't find any AR API entry point
+    raise ValueError("get_last_user_context failed: No AR API entry point found in call stack. "
+                    "Expected to find AR.generate(), AR.asm(), or other AR API methods.")
 
 
 class DataUnit:

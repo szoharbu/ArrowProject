@@ -1012,13 +1012,13 @@
             "operands": [
                 {
                     "name": "pred",
-                    "type": "imm",
+                    "type": "iorw",
                     "role": "src",
                     "size": "4_bits_unsigned"
                 },
                 {
                     "name": "succ",
-                    "type": "imm",
+                    "type": "iorw",
                     "role": "src",
                     "size": "4_bits_unsigned"
                 }

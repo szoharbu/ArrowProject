@@ -25,13 +25,13 @@ def get_output(location, segment_name=None):
         "data_segment_header": {
             "x86_NASM": f"section .data\nglobal {segment_name}\n{segment_name}:\n",
             "x86_GAS": f".section .data.{segment_name}\n.global {segment_name}\n{segment_name}:\n",
-            "riscv": f".section .data.{segment_name}\n.global {segment_name}\n.align 2\n{segment_name}:\n",
+            "riscv": f".section .data.{segment_name}\n.global {segment_name}\n.align 3\n{segment_name}:\n",
             "arm": f".section .data.{segment_name}\n.global {segment_name}\n{segment_name}:\n",
         },
         "bss_segment_header": {
             "x86_NASM": f"section .bss\nglobal {segment_name}_bss\n{segment_name}_bss:\n",
             "x86_GAS": f".section .bss.{segment_name}\n.global {segment_name}_bss\n{segment_name}_bss:\n",
-            "riscv": f".section .bss.{segment_name}\n.global {segment_name}_bss\n.align 2\n{segment_name}_bss:\n",
+            "riscv": f".section .bss.{segment_name}\n.global {segment_name}_bss\n.align 3\n{segment_name}_bss:\n",
             "arm": f".section .bss.{segment_name}\n.global {segment_name}_bss\n{segment_name}_bss:\n",
         },
     }
@@ -62,7 +62,7 @@ def generate_asm_from_AsmUnits(instruction_segments):
         tmp_asm_code += get_output(location="text_segment_header", segment_name=segment_name)
         tmp_asm_code += f".global {segment_name}\n"
         if Configuration.Architecture.riscv:
-            tmp_asm_code += f".align 2       {get_comment_mark()} Align to 4-byte boundary\n"
+            tmp_asm_code += f".align 3       {get_comment_mark()} Align to 4-byte boundary\n"
         tmp_asm_code += f"{segment_name}:\n"
 
         # Access or initialize the singleton variable
@@ -146,7 +146,10 @@ def generate_data_from_DataUnits(data_segments):
         # sort the data_unit_list by thier segment_offset, to avoid having a .org backward
         data_unit_list = sorted(data_unit_list, key=lambda x: x.segment_offset)
 
+        # Track current position in the segment to avoid backwards .org directives
+        current_position = 0
         first_data_unit = True
+        
         for data_unit in data_unit_list:
             name = data_unit.name if data_unit.name is not None else 'no-name'
             # unique_label = data_dict.get('unique_label', 'None')
@@ -171,7 +174,14 @@ def generate_data_from_DataUnits(data_segments):
                 break_lines_between_different_data_units = "" if first_data_unit else "\n"
                 first_data_unit = False
                 
-                tmp_data_code += f".org {hex(segment_offset)}\n"
+                # Only emit .org if we need to move forward
+                if segment_offset > current_position:
+                    tmp_data_code += f".org {hex(segment_offset)}\n"
+                    current_position = segment_offset
+                elif segment_offset < current_position:
+                    # Log a warning if we're trying to go backwards
+                    raise RuntimeError(f"Skipping backwards .org to {hex(segment_offset)} (current position: {hex(current_position)}) for {unique_label}")
+                # If segment_offset == current_position, no .org needed
                 if alignment is not None:
                     tmp_data_code += f".align {alignment}\n"
                 #tmp_data_code += f"{break_lines_between_different_data_units}{unique_label}:\n"
@@ -203,6 +213,9 @@ def generate_data_from_DataUnits(data_segments):
                             tmp_data_code += f"{break_lines_between_same_data_unit}    .byte 0x{value:02x}  {get_comment_mark()} 1 byte\n"
                 else:
                     raise ValueError('Unsupported Architecture')
+                
+                # Update current position after emitting data
+                current_position = segment_offset + byte_size
 
                 # # Initialize data with a value in the .data section
                 # if Configuration.Architecture.x86:
@@ -302,7 +315,6 @@ def generate_data_from_DataUnits(data_segments):
 
 def generate_assembly():
     logger = get_logger()
-    state_manager = get_state_manager()
 
     # need to fix this behavior, make sure there is only one boot, only one _start label.
     # make sure the segments are in order and not just core0 and then core1 ,...
@@ -313,17 +325,49 @@ def generate_assembly():
 
     page_table_manager = get_page_table_manager()
 
-    for page_table in page_table_manager.get_all_page_tables():
+    # Check if we're in paging mode
+    paging_enabled = Configuration.Knobs.Memory.paging_enabled.get_value()
+    logger.debug(f"Paging enabled: {paging_enabled}")
 
-        all_code_segments.extend(page_table.segment_manager.get_segments(
-            pool_type=[Configuration.Memory_types.BSP_BOOT_CODE,
-                       Configuration.Memory_types.BOOT_CODE,
-                       Configuration.Memory_types.CODE]))
+    if paging_enabled:
+        # In paging mode, collect segments from page tables
+        logger.debug("Collecting segments from page tables")
+        for page_table in page_table_manager.get_all_page_tables():
+
+            all_code_segments.extend(page_table.segment_manager.get_segments(
+                pool_type=[Configuration.Memory_types.BSP_BOOT_CODE,
+                           Configuration.Memory_types.BOOT_CODE,
+                           Configuration.Memory_types.CODE]))
+
+            all_data_segments.extend(page_table.segment_manager.get_segments(
+                pool_type=[Configuration.Memory_types.DATA_SHARED,
+                            Configuration.Memory_types.DATA_PRESERVE,
+                            Configuration.Memory_types.STACK]))
+    else:
+        # For non-paging mode, collect segments from state managers instead
+        from Arrow.Tool.state_management import get_state_manager
+        state_manager = get_state_manager()
+        logger.debug("Paging disabled - collecting segments from state managers only")
         
-        all_data_segments.extend(page_table.segment_manager.get_segments(
-            pool_type=[Configuration.Memory_types.DATA_SHARED, 
-                        Configuration.Memory_types.DATA_PRESERVE, 
-                        Configuration.Memory_types.STACK]))
+        # Collect segments from all states
+        for state_id in state_manager.get_all_states():
+            state = state_manager.states_dict[state_id]
+            segment_manager = getattr(state, 'segment_manager', None)
+            if segment_manager:
+                # Get code segments from this state's segment manager
+                code_segments = segment_manager.get_segments(
+                    pool_type=[Configuration.Memory_types.BSP_BOOT_CODE,
+                               Configuration.Memory_types.BOOT_CODE,
+                               Configuration.Memory_types.CODE])
+                all_code_segments.extend(code_segments)
+                logger.debug(f"Found {len(code_segments)} code segments from state {state_id}")
+                
+                # Get data segments from this state's segment manager  
+                data_segments = segment_manager.get_segments(
+                    pool_type=[Configuration.Memory_types.DATA_SHARED, 
+                               Configuration.Memory_types.DATA_PRESERVE, 
+                               Configuration.Memory_types.STACK])
+                all_data_segments.extend(data_segments)
 
     # Identify the BSP_BOOT_CODE in the all_code_segments list and move it to the start so it will be the first one in the asm file next to the _start label
     for i, code_segment in enumerate(all_code_segments):
@@ -355,7 +399,10 @@ def generate_assembly():
 
     # Output the result to a .s file
     with open(asm_file, "w") as f:
-        f.write(full_asm_code)
+        f.write(asm_code)
+        f.write("\n")
+        f.write(data_code)
+        f.write("\n")
 
     logger.info(f"---- Assembly code generated successfully. Check {asm_file}")
 
@@ -430,7 +477,7 @@ def generate_random_data_section(data_unit_list, segment_size):
         labels_at_current_offset = []
         
         while remaining_units and remaining_units[0].segment_offset == current_offset:
-            labels_at_current_offset.append(remaining_units.pop(0).name)
+            labels_at_current_offset.append(remaining_units.pop(0).memory_block_id)
         
         # Output any labels at this position
         for label in labels_at_current_offset:

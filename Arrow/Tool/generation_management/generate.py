@@ -11,6 +11,7 @@ from Arrow.Utils.configuration_management import Configuration, get_config_manag
 from Arrow.Externals.db_manager.models import get_instruction_db
 from Arrow.Tool.register_management.register import Register
 from Arrow.Tool.memory_management.memory_operand import Memory
+from Arrow.Utils.configuration_management.riscv_config import RiscvConfig
 
 from peewee import Expression, fn
 
@@ -22,6 +23,7 @@ def generate(
         src: Any = None,
         dest: Any = None,
         comment: Optional[str] = None,
+        require_random: bool = True,
 ) -> List[GeneratedInstruction]:
     """
     Generates an instruction with the given mnemonic and operands.
@@ -32,6 +34,7 @@ def generate(
     - mnemonic (str): The mnemonic of the instruction.
     - src,dest: optional operands for the instruction.
     - comment (str): postfix comment.
+    - require_random (bool): whether to filter for random_generate instructions.
 
     Returns:
     - Instruction: The generated instruction.
@@ -71,7 +74,28 @@ def generate(
     # exit()
 
     # Filter out all random_generate=False instructions
-    query_filter = query_filter.where(Instruction.random_generate == True)
+    if require_random:
+        query_filter = query_filter.where(Instruction.random_generate == True)
+
+    # Filter instructions based on supported extensions
+    if Configuration.Architecture.riscv:
+        isa_string = RiscvConfig.isa.get_value()
+        if not ('rv64gc' in isa_string or 'rv32gc' in isa_string):
+            query_filter = query_filter.where(Instruction.extension.contains('compressed') == False)
+        if not ('zba' in isa_string):
+            query_filter = query_filter.where(Instruction.extension.contains('zba') == False)
+        if not ('zbb' in isa_string):
+            query_filter = query_filter.where(Instruction.extension.contains('zbb') == False)
+        if not ('zbs' in isa_string):
+            query_filter = query_filter.where(Instruction.extension.contains('zbs') == False)
+        if not ('zicond' in isa_string):
+            query_filter = query_filter.where(Instruction.extension.contains('zicond') == False)
+        if not ('zihintntl' in isa_string):
+            query_filter = query_filter.where(Instruction.extension.contains('zihintntl') == False)
+        if not ('zchintntl' in isa_string):
+            query_filter = query_filter.where(Instruction.extension.contains('zchintntl') == False)
+        if not ('zicbop' in isa_string):
+            query_filter = query_filter.where(Instruction.extension.contains('zicbop') == False)
 
     # If query is an existing Expression or dict, add it to the query_filter
     if query:

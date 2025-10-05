@@ -378,3 +378,9 @@ def populate_fiq_handler(page_table:PageTable):
             register_manager.free(reg2)
 
     return fiq_handler_code, None
+
+
+__all__ = [
+    'ExceptionType',
+]
+

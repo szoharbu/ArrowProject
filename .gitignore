@@ -170,3 +170,7 @@ venv.bak/
 
 ## PyPI configuration file
 #.pypirc
+
+## uv lock file
+uv.lock
+

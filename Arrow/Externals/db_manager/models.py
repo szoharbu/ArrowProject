@@ -1,4 +1,5 @@
 import os
+import json
 from peewee import Model, CharField, TextField, SqliteDatabase, BooleanField
 from Arrow.Utils.configuration_management import Configuration
 from Arrow.Utils.logger_management import get_logger
@@ -9,14 +10,14 @@ File: models.py
 
 Description:
 This file defines the data models for the SQLite database using the `Peewee` ORM.
-The models represent the structure of the tables in the `instructions.db` database, 
+The models represent the structure of the tables in the `instructions.db` database,
 allowing the application to interact with the database using Python objects rather than raw SQL.
 
 Models:
-- `Instruction`: Represents a single instruction in the database, with fields for 
+- `Instruction`: Represents a single instruction in the database, with fields for
   mnemonic, operands, operand_size, type, group, description, architecture_modes, and syntax.
-  
-  architecture_modes differentiate between "RV32" and "RV64" 
+
+  architecture_modes differentiate between "RV32" and "RV64"
 
 Usage:
 Import these models into other scripts to interact with the database:
@@ -57,6 +58,29 @@ def get_db_path(architecture: str = None, check_exist=False):
     return db_path
 
 
+class SimpleOperand:
+    """
+    Lightweight operand class that mimics ARM Operand object interface.
+    Used for RISC-V/x86 to provide consistent operand interface across architectures.
+    """
+    def __init__(self, index, role=None, type=None, size=None, is_memory=False):
+        self.index = index
+        self.role = role
+        self.type = type
+        self.size = size
+        self.is_memory = is_memory
+        self.is_operand = True  # Always true for actual operands
+        self.memory_role = 'base' if is_memory and 'basereg' in (type or '') else None
+        # Additional attributes for compatibility
+        self.is_valid = True
+        self.is_optional = False
+        self.text = f"op{index}"
+        self.full_text = f"operand_{index}"
+        self.type_category = "register" if not is_memory else "memory"
+        self.width = None
+        self.extensions = None
+
+
 # Instruction Model
 class Instruction(Model):
     mnemonic = CharField()
@@ -65,9 +89,30 @@ class Instruction(Model):
     type_ = CharField()
     group = CharField()
     description = TextField()
-    architecture_modes = TextField()  # JSON string for operands
+    extension = TextField() # JSON string for extension
+    architecture_modes = TextField()  # JSON string for architecture modes
     syntax = TextField()
     random_generate = BooleanField(default=False)  # New boolean flag with a default
+    is_valid = BooleanField(default=True)  # Whether instruction is valid/parsed correctly
+    
+    # Denormalized operand fields for faster queries (avoiding joins)
+    # These duplicate info from the operands JSON for performance
+    op1_role = CharField(null=True)
+    op1_type = CharField(null=True)
+    op1_size = CharField(null=True)  # Keep as CharField to handle various size formats
+    op1_ismemory = BooleanField(default=False)
+    op2_role = CharField(null=True)
+    op2_type = CharField(null=True)
+    op2_size = CharField(null=True)
+    op2_ismemory = BooleanField(default=False)
+    op3_role = CharField(null=True)
+    op3_type = CharField(null=True)
+    op3_size = CharField(null=True)
+    op3_ismemory = BooleanField(default=False)
+    op4_role = CharField(null=True)
+    op4_type = CharField(null=True)
+    op4_size = CharField(null=True)
+    op4_ismemory = BooleanField(default=False)
 
     class Meta:
         database = None  # Placeholder; set dynamically using `bind_to_database`
@@ -76,6 +121,36 @@ class Instruction(Model):
     def bind_to_database(cls, database):
         """Bind the Instruction model to a specific database."""
         cls._meta.database = database
+    
+    def get_operands_as_objects(self):
+        """
+        Get operands as objects for consistent interface across architectures.
+        For RISC-V/x86, creates SimpleOperand objects from denormalized fields.
+        For ARM, this would return the actual Operand objects.
+        """
+        operands_list = []
+        
+        # Build operands from denormalized fields (up to 4 operands)
+        for i in range(1, 5):
+            role = getattr(self, f'op{i}_role', None)
+            if role is None:
+                # No more operands
+                break
+            
+            op_type = getattr(self, f'op{i}_type', None)
+            op_size = getattr(self, f'op{i}_size', None)
+            op_is_memory = getattr(self, f'op{i}_ismemory', False)
+            
+            operand = SimpleOperand(
+                index=i,
+                role=role,
+                type=op_type,
+                size=op_size,
+                is_memory=op_is_memory
+            )
+            operands_list.append(operand)
+        
+        return operands_list
 
 
 # Factory function to retrieve the InstructionDB instance

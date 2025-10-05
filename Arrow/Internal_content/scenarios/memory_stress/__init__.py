@@ -1,2 +1,2 @@
-from . import true_false_sharing
-from . import memory_dependencies
+from Arrow.Internal_content.scenarios.memory_stress import true_false_sharing
+from Arrow.Internal_content.scenarios.memory_stress import memory_dependencies

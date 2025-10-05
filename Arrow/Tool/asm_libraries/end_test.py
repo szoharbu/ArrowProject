@@ -4,6 +4,23 @@ from Arrow.Tool.state_management import get_current_state
 from Arrow.Tool.asm_libraries.asm_logger import AsmLogger
 from Arrow.Tool.asm_libraries.label import Label
 from Arrow.Tool.asm_libraries.barrier.barrier import Barrier
+from Arrow.Utils.logger_management import get_logger
+from Arrow.Tool.state_management import get_state_manager
+
+# Singleton/static variable for tohost memory
+_tohost_memory_instance = None
+end_test_barrier_label = None
+
+def get_tohost_memory():
+    """
+    Get the singleton tohost memory instance.
+    Creates it only once and returns the same instance on subsequent calls.
+    """
+    global _tohost_memory_instance
+    if _tohost_memory_instance is None:
+        # TODO control which state this gets associated with, doesn't matter for now
+        _tohost_memory_instance = Memory(name='tohost', _use_name_as_unique_label=True)
+    return _tohost_memory_instance
 
 def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
     """
@@ -19,7 +36,6 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
     """
 
     current_state = get_current_state()
-    current_page_table = current_state.current_el_page_table
     register_manager = current_state.register_manager
 
     if test_pass:
@@ -34,24 +50,35 @@ def end_test_asm_convention(test_pass: bool = True, status_code=0) -> None:
         AsmLogger.asm(f"hlt", comment="Halt the processor")
     elif Configuration.Architecture.riscv:
         # Calculate the value to write to `tohost`
-        zero_bit = 0 if test_pass else 1
-        data_value = (status_code << 1) | zero_bit  # Data[31:1] = status_code, Data[0] = 1 or 0
+        data_value = 1 if test_pass else -1
 
         # Generate the assembly code
-        tohost_memory = Memory(name='tohost')
+        tohost_memory = get_tohost_memory()
         end_label = Label(postfix="end_test_label")
-        AsmLogger.asm(f"li t0, {data_value}", comment="Load the value to write to tohost")
-        AsmLogger.asm(f"la t1, {tohost_memory.unique_label}", comment="Load address of tohost")
-        AsmLogger.asm(f"sw t0, 0(t1)", comment="Store the value to tohost")
         AsmLogger.asm(f"j {end_label}", comment="Jump to end label")
 
         AsmLogger.asm(f"{end_label}:")
-        AsmLogger.asm(f"ebreak", comment="Halt the processor")
+        AsmLogger.asm(f"li t0, {data_value}", comment="Load the value to write to tohost")
+        AsmLogger.asm(f"la t1, {tohost_memory.unique_label}", comment="Load address of tohost")
+        AsmLogger.asm(f"1: sw t0, 0(t1)", comment="Store the value to tohost")
+        AsmLogger.asm(f"j 1b", comment="Halt the processor")
 
     elif Configuration.Architecture.arm:
 
-        #TODO:: add barrier here, to ensure all cores are at the same point, and then only one core will write test pass
-        #Barrier("test_final")
+        logger = get_logger()
+        logger.debug("============ Test end barrier")
+        global end_test_barrier_label
+        if end_test_barrier_label is None:
+            end_test_barrier_label = Label("end_test_barrier")
+        Barrier(end_test_barrier_label)
+
+        current_el_level = current_state.current_el_level
+        current_page_table = current_state.current_el_page_table
+        if current_el_level != 3:
+            from Arrow.Tool.asm_libraries.switch_el import switch_EL
+            logger.info(f"================ Switching to EL3")
+            switch_EL(target_el_level=3)
+
 
         label = Label(postfix=f"{current_state.state_name}_end_of_test")
         print_str_loop_label = Label(postfix=f"{current_state.state_name}_print_str_loop")

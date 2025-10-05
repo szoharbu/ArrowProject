@@ -27,6 +27,7 @@ class Memory:
             memory_block_offset: int = None,
             cross_core: bool = False,
             alignment: Optional[int] = None,
+            _use_name_as_unique_label: bool = False, # needed for tohost
     ):
         """
         Initializes a Memory to be used as memory operand.
@@ -46,11 +47,14 @@ class Memory:
         config_manager = get_config_manager()
         state_manager = get_state_manager()
         curr_state = state_manager.get_active_state()
-        curr_page_table = curr_state.current_el_page_table
+        curr_segment_manager = curr_state.get_segment_manager()
 
         Memory._memory_initial_seed_id += 1
         self.name = name if name is not None else f"mem{Memory._memory_initial_seed_id}"
-        self.unique_label = self.name if name is None else f"{self.name}_mem{Memory._memory_initial_seed_id}"
+        if _use_name_as_unique_label:
+            self.unique_label = self.name
+        else:
+            self.unique_label = self.name if name is None else f"{self.name}_mem{Memory._memory_initial_seed_id}"
         self._address = address
         self.byte_size = byte_size
         self.shared = shared
@@ -117,7 +121,7 @@ class Memory:
 
         if memory_block is None:
             """
-            Need to allocate a MemoryBlock that will wrap this Memory instance. 
+            Need to allocate a MemoryBlock that will wrap this Memory instance.
             if Memory is shared, it might get reused memoryBlock
             """
             if shared:
@@ -129,7 +133,7 @@ class Memory:
                 if should_reuse and (name is None) and (self._address is None) and (self.init_value is None):
                     # reuse memory only applicable for DATA_SHARED memory, and when no explicit parameter were asked. Notice I'm checking name and not self.name for that usage
                     from Arrow.Tool.memory_management.memory_usage import get_used_memory_block
-                    self.memory_block = get_used_memory_block(curr_page_table.segment_manager, byte_size=byte_size, alignment=self.alignment)
+                    self.memory_block = get_used_memory_block(curr_segment_manager, byte_size=byte_size, alignment=self.alignment)
                     # check if such shared memory_block exist
                     if self.memory_block is not None:
                         self.reused_memory = True
@@ -234,14 +238,15 @@ class Memory:
             return self.unique_label
 
 
-    def format_reg_as_label(self, register:Register):
+    def format_reg_as_label(self, register:Register, memory_offset=None, offset_shift=None):
         '''
         print out the memory representation of label + offset, while assuming the register ALREADY holds the need label.
         This function is useful for dynamically formatting memory access instructions where the memory address is defined by a label and offset, rather than a raw address.
         '''
 
         config_manager = get_config_manager()
-        memory_offset = self.memory_block_offset
+        memory_offset = self.memory_block_offset if memory_offset is None else memory_offset
+        memory_offset = memory_offset >> offset_shift if offset_shift is not None else memory_offset
         execution_platform = config_manager.get_value('Execution_platform')
         # if execution_platform is 'baremetal':
         #     if Configuration.Architecture.x86:
@@ -271,7 +276,7 @@ class Memory:
             raise ValueError("Offset and size exceed the bounds of the original memory space.")
 
         # Calculate the new address for the partial memory
-        partial_address = self.address + offset
+        partial_address = self._address + offset
 
         # Create a new Memory instance for the partial memory
         partial_mem = Memory(address=partial_address, byte_size=byte_size, _parent_block=self)

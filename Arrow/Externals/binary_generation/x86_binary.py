@@ -73,7 +73,7 @@ def x86_assemble_and_link():
             "-o", cpp_asm_file,  # Output file
             cpp_file  # Input cpp file
         ]
-        print(f"---- CPP Assembling '{cpp_file}' into object file using '{" ".join(cpp_assemble_cmd)}'")
+        print(f"---- CPP Assembling '{cpp_file}' into object file using '{' '.join(cpp_assemble_cmd)}'")
         subprocess.run(cpp_assemble_cmd, check=True)
         print(f"---- CPP Assembly successful: Object file created: {cpp_asm_file}")
 

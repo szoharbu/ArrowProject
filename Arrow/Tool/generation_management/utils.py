@@ -4,6 +4,7 @@ from Arrow.Utils.configuration_management import Configuration, get_config_manag
 from Arrow.Tool.memory_management.memory_operand import Memory
 from Arrow.Tool.register_management.register import Register
 
+from Arrow.Tool.asm_libraries.label import LabelImm
 
 def print_instruction(selected_instruction):
     print(f"Mnemonic: {selected_instruction.mnemonic}, Operands: {selected_instruction.operands}, "
@@ -24,6 +25,8 @@ def get_operand_type(operand):
         return "reg"
     elif isinstance(operand, int):
         return "imm"
+    elif isinstance(operand, LabelImm):
+        return "offset_imm"
     else:
         raise ValueError(f"Invalid operand type {type(operand)}")
 
@@ -90,6 +93,7 @@ def map_inputs_to_operands(selected_instruction, src, dest):
     dest_location = None
     if src is not None:
         if isinstance(src, Memory): src.type = "mem"
+        if isinstance(src, LabelImm): src.type = "offset_imm"
         src_locations = find_possible_locations(selected_instruction.operands, role="src", type=src.type)
         src_location = random.choice(src_locations)
     if dest is not None:

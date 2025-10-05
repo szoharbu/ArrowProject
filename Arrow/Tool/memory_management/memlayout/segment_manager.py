@@ -19,6 +19,9 @@ class SegmentManager:
         self.pool_type_mapping: Dict[Configuration.Memory_types, List[MemorySegment]] = {}  # To map pool types to blocks
 
 
+    def get_name(self):
+        return self.page_table.page_table_name
+
     def allocate_memory_segment(self, name: str, byte_size:int, memory_type:Configuration.Memory_types, alignment_bits:int=None, VA_eq_PA:bool=False, force_address:int=None, exclusive_segment:bool=True)->MemorySegment:
         """
         Allocate a segment of memory for either code or data

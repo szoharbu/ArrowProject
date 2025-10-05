@@ -83,9 +83,9 @@ def switch_code(new_code:CodeSegment):
         raise ValueError(f"Cannot switch to segment '{new_code}', not of CodeSegment type.")
 
     curr_state = state_manager.get_active_state()
-    curr_page_table = curr_state.current_el_page_table
+    segment_manager = curr_state.get_segment_manager()
 
-    all_code_blocks = curr_page_table.segment_manager.get_segments(
+    all_code_blocks = segment_manager.get_segments(
         pool_type=[Configuration.Memory_types.BOOT_CODE,
                    Configuration.Memory_types.BSP_BOOT_CODE,
                    Configuration.Memory_types.CODE])

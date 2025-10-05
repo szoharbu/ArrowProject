@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 from Arrow.Utils.logger_management import get_logger
 from Arrow.Utils.configuration_management import get_config_manager
-from Arrow.Utils.configuration_management.enums import Architecture
+from Arrow.Utils.configuration_management.enums import Architecture, PrivilegeLevel
 
 def setup_chosen_architecture():
     config_manager = get_config_manager()
@@ -14,6 +14,12 @@ def setup_chosen_architecture():
     elif architecture == "riscv":
         Architecture.riscv = True
         Architecture.arch_str = "riscv"
+        from Arrow.Utils.configuration_management import Configuration
+        from Arrow.Utils.configuration_management.riscv_config import RiscvConfig
+        Configuration.RiscvConfig = RiscvConfig()
+        priv_level_int = Configuration.Knobs.Config.privilege_level.get_value()
+        Configuration.Knobs.Config.privilege_level.set_value(PrivilegeLevel.RISCV.from_int(priv_level_int))
+
     elif architecture == "arm":
         Architecture.arm = True
         Architecture.arch_str = "arm"
@@ -46,10 +52,10 @@ def setup_template_and_content(template_file_path, input_content_path=None):
 
     config_manager = get_config_manager()
     
-    # Always get base_dir since we need it for internal content
+    # Always get base_dir since we need it for content configuration
     base_dir = config_manager.get_value('base_dir_path')
 
-    # Step 1: Determine the content path
+    # Step 1: Set up content directory configuration (always needed)
     if input_content_path:
         # if provided as input by user
         external_content_base_path = Path(input_content_path).resolve()
@@ -60,7 +66,7 @@ def setup_template_and_content(template_file_path, input_content_path=None):
             raise FileNotFoundError(f"Content provided path '{external_content_base_path}' does not exist or is not a directory.")
     else:
         # Fallback to base_dir/submodules/content
-        external_content_base_path = Path(base_dir).resolve() / ".." / 'Submodules' / 'arrow_content'/ 'content_repo' / 'content'
+        external_content_base_path = Path(base_dir).resolve() / ".." / 'Submodules' / 'arrow_content'/ 'content_repo' / 'arrow_content'
         external_content_base_path = Path(external_content_base_path).resolve()
         logger.debug(f"Derived submodule content path from base_dir: {external_content_base_path}")
         # Ensure the content directory exists
@@ -68,11 +74,25 @@ def setup_template_and_content(template_file_path, input_content_path=None):
             external_content_base_path = f"External-content-not-available"
     config_manager.set_value('external_content_dir_path', external_content_base_path)
 
-    internal_content_base_path = Path(base_dir).resolve() / ".." / 'Internal_content'
+    internal_content_base_path = Path(base_dir).resolve() / 'Internal_content'
     internal_content_base_path = Path(internal_content_base_path).resolve()
+    logger.info(f"setting internal_content_dir_path: {internal_content_base_path}")
     config_manager.set_value('internal_content_dir_path', internal_content_base_path)
 
-    # Check for template in both internal and external content
+    # Step 2: Check if the file exists as an absolute path first
+    # This avoids ambiguity issues when user provides an explicit absolute path
+    template_path = Path(template_file_path)
+    if template_path.is_absolute():
+        full_template_path = template_path.resolve()
+        if full_template_path.exists() and full_template_path.is_file():
+            logger.debug(f"Template file found at absolute path: {full_template_path}")
+            config_manager.set_value('template_path', full_template_path)
+            return
+        else:
+            logger.error(f"Absolute template path '{template_file_path}' does not exist or is not a file.")
+            raise FileNotFoundError(f"Template file '{template_file_path}' not found at absolute path.")
+
+    # Step 3: Check for template in both internal and external content (relative paths only)
     internal_template_path = internal_content_base_path / template_file_path
     internal_template_path = Path(internal_template_path).resolve()
     internal_exists = internal_template_path.exists() and internal_template_path.is_file()
@@ -104,11 +124,11 @@ def setup_template_and_content(template_file_path, input_content_path=None):
         config_manager.set_value('template_path', external_template_path)
         return
 
-    # Step 4: Check if the file exists as a full path
+    # Step 4: Check if the file exists as a relative path treated as full path
     full_template_path = Path(template_file_path).resolve()
     if full_template_path.exists() and full_template_path.is_file():
-        logger.debug(f"Template file found at full path: {full_template_path}")
-        config_manager.set_value('template_path',full_template_path)
+        logger.debug(f"Template file found at resolved path: {full_template_path}")
+        config_manager.set_value('template_path', full_template_path)
         return
 
     # Log and raise an error if the file could not be located
@@ -116,7 +136,7 @@ def setup_template_and_content(template_file_path, input_content_path=None):
     error_msg += f"  - Internal content: {internal_content_base_path}\n"
     if external_content_base_path != "External-content-not-available":
         error_msg += f"  - External content: {external_content_base_path}\n"
-    error_msg += f"  - As full path: {template_file_path}"
+    error_msg += f"  - As resolved path: {Path(template_file_path).resolve()}"
     
     logger.error(error_msg)
     raise FileNotFoundError(f"Template file '{template_file_path}' could not be located.")

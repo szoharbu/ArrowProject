@@ -15,7 +15,7 @@ class EventTriggerBase(ABC):
         Constructor for the EventTrigger class.
 
         Parameters:
-        - frequancy (Frequency): Defines the pattern to use
+        - frequency (Frequency): Defines the pattern to use
 
         Initializes and validates the input parameters.
         """

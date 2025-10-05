@@ -8,9 +8,9 @@ import os
 Script: create_db.py
 
 Description:
-This script creates and populates an SQLite database (instructions.db) from JSON data 
-in the `data/instructions.json` file. It is intended to be run only when updates 
-are made to the JSON data, ensuring the database is up-to-date for application use. 
+This script creates and populates an SQLite database (instructions.db) from JSON data
+in the `data/instructions.json` file. It is intended to be run only when updates
+are made to the JSON data, ensuring the database is up-to-date for application use.
 
 Functionality:
 - Reads instruction data from `data/instructions.json`.
@@ -50,15 +50,37 @@ def create_db(architecture:str):
         # Load each instruction into the database
         for entry in data['instructions']:
             print(entry)
+            
+            # Extract denormalized operand fields for faster queries
+            operands = entry.get('operands', [])
+            op_fields = {}
+            
+            for i, operand in enumerate(operands[:4], 1):  # Process up to 4 operands
+                # Set role, type, and size for this operand
+                op_fields[f'op{i}_role'] = operand.get('role')
+                op_fields[f'op{i}_type'] = operand.get('type')
+                op_fields[f'op{i}_size'] = operand.get('size')
+                
+                # Determine if this is a memory operand
+                op_type = operand.get('type', '')
+                is_memory = (
+                    'memory' in op_type.lower() or 
+                    'offset_plus_basereg' in op_type or
+                    'offset' in op_type.lower() and 'basereg' in op_type.lower()
+                )
+                op_fields[f'op{i}_ismemory'] = is_memory
+            
             instruction = Instruction.create(
                 mnemonic=entry['mnemonic'],
                 operands=json.dumps(entry['operands']),  # Store as JSON string
                 #operand_size=entry['operand_size'],
                 type_=entry['type'],
                 group=entry['group'],
+                extension=json.dumps(entry.get('extension', '')),  # Store as JSON string
                 architecture_modes=json.dumps(entry['architecture_modes']),  # Store as JSON string
                 description=entry['description'],
                 syntax=entry['syntax'],
+                **op_fields  # Add denormalized operand fields
             )
             if entry.get('random_generate') == "False":
                 instruction.random_generate = False

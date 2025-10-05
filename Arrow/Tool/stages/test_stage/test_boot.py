@@ -10,6 +10,10 @@ from Arrow.Tool.asm_libraries.barrier.barrier import Barrier
 from Arrow.Tool.exception_management import get_exception_manager
 #from Arrow.Tool.generation_management.generate import generate
 
+from Arrow.Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
+from Arrow.Arrow_API.resources.register_manager import RegisterManager_API as RegisterManager
+from Arrow.Arrow_API import AR
+from Arrow.Utils.configuration_management.enums import PrivilegeLevel
 from Arrow.Utils.APIs import choice
 
 
@@ -22,15 +26,18 @@ def do_boot():
 
     # TODO:: refactor this logic!!!!
 
-    # bsp_code is the code that will be executed by all cores, and will jump to the boot code of the core
-    bsp_boot_blocks = do_bsp_boot()
+    if Configuration.Architecture.arm:
+        # bsp_code is the code that will be executed by all cores, and will jump to the boot code of the core
+        bsp_boot_blocks = do_bsp_boot()
 
-    end_boot_barrier_label = Label("end_boot_barrier")
+        end_boot_barrier_label = Label("end_boot_barrier")
+
     for state in state_manager.states_dict:
         curr_state = state_manager.set_active_state(state)
-        curr_page_table = curr_state.current_el_page_table
+        segment_manager = curr_state.get_segment_manager()
 
-        boot_blocks = curr_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.BOOT_CODE)
+        stack_block = MemoryManager.MemoryBlock(name="stack_block", byte_size=4*1024, _is_stack=True)
+        boot_blocks = segment_manager.get_segments(pool_type=Configuration.Memory_types.BOOT_CODE)
         if len(boot_blocks) != 1:
             raise ValueError(
                 "boot_blocks must contain exactly one element, but it contains: {}".format(len(boot_blocks)))
@@ -52,19 +59,62 @@ def do_boot():
 
         skip_boot = Configuration.Knobs.Config.skip_boot
         if not skip_boot:
-            enable_page_tables()
-            enable_exception_tables()
-            set_init_system_registers()
-            set_privilege_level()
-            #generate(instruction_count=10)
-            logger.debug("============ Boot end barrier")
-            Barrier(end_boot_barrier_label)
+            if Configuration.Architecture.arm:
+                enable_arm_page_tables()
+                enable_arm_exception_tables()
+                set_arm_init_system_registers()
+                set_arm_privilege_level()
+                #generate(instruction_count=10)
+                logger.debug("============ Boot end barrier")
+                Barrier(end_boot_barrier_label)
 
+
+        AsmLogger.comment(f"Stack segment generated at {stack_block.get_address()} with size {stack_block.byte_size}")
+
+        if Configuration.Architecture.x86:
+            AsmLogger.comment(f"TODO: stack initialization for x86")
+        elif Configuration.Architecture.riscv:
+            # TODO pick random stack pointer register instead of ABI sp
+            sp = RegisterManager.get(reg_name='sp')
+            sp.set_reserve()
+            #stack_mem = MemoryManager.Memory(name='stack_memory', memory_block=stack_block, byte_size=stack_block.byte_size, memory_block_offset=0)
+            Configuration.RiscvConfig.register_stack_memory(curr_state.privilege_level, stack_block)
+            if curr_state.privilege_level == PrivilegeLevel.RISCV.MACHINE:
+                AsmLogger.asm(f"la sp, {stack_block.unique_label} + {stack_block.byte_size - 8}", comment="Load the value of the stack")
+                tmp_reg = RegisterManager.get()
+                
+                # Set up PMP hole for access fault testing using NAPOT mode
+                # NAPOT is better for creating a specific hole without affecting other memory
+                pmp_hole_base = 0x80000000
+                pmp_hole_size = 0x1000  # 4KB hole
+                # For NAPOT: address = base | (size-1) >> 1, then >> 2 for PMP format
+                napot_addr = pmp_hole_base | ((pmp_hole_size - 1) >> 1)
+                AsmLogger.asm(f"li {tmp_reg}, 0x{napot_addr:08x}", comment="PMP hole NAPOT address")
+                AsmLogger.asm(f"srli {tmp_reg}, {tmp_reg}, 2", comment="Convert to PMP address format (>>2)")
+                AsmLogger.asm(f"csrw pmpaddr0, {tmp_reg}", comment="Set pmpaddr0 for access fault hole")
+                
+                # Configure PMP entry 0: NAPOT mode, locked, no permissions (R=W=X=0)
+                pmp_hole_cfg = 0x80 | (3 << 3)  # L=1 (locked), A=3 (NAPOT), R=W=X=0 (no access)
+                AsmLogger.asm(f"li {tmp_reg}, {pmp_hole_cfg}", comment="PMP hole config: NAPOT, locked, no RWX")
+                AsmLogger.asm(f"csrw pmpcfg0, {tmp_reg}", comment="Create PMP hole for access faults")
+                
+                # Initialize PMP15 for general protection (existing code)
+                AsmLogger.asm(f"li {tmp_reg}, 0x3fffffffffff", comment="Initialize PMP15")
+                AsmLogger.asm(f"csrw pmpaddr15, {tmp_reg}")
+                AsmLogger.asm(f"li {tmp_reg}, 0x1f00000000000000")
+                AsmLogger.asm(f"csrw pmpcfg2, {tmp_reg}")
+                AsmLogger.asm(f"sfence.vma x0, x0")
+
+        elif Configuration.Architecture.arm:
+            AsmLogger.comment(f"TODO: stack initialization for ARM")
+        else:
+            raise ValueError(f"Unsupported architecture")
+
+        # selecting random block to jump to for test body
         # requesting current_page again, as the set_privilege_level might have changed it
         curr_state = state_manager.get_active_state()
-        curr_page_table = curr_state.current_el_page_table
-        # selecting random block to jump to for test body
-        available_blocks = curr_page_table.segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE, non_exclusive_only=True)
+        segment_manager = curr_state.get_segment_manager()
+        available_blocks = segment_manager.get_segments(pool_type=Configuration.Memory_types.CODE, non_exclusive_only=True)
         selected_block = choice.choice(values=available_blocks)
         branch_to_segment.BranchToSegment(selected_block).one_way_branch()
 
@@ -82,7 +132,7 @@ def do_boot():
     # all_code_blocks.extend(available_blocks)  # Finally regular code blocks
 
 
-def set_init_system_registers():
+def set_arm_init_system_registers():
 
     AsmLogger.comment("Setting initial system registers")
     from Arrow.Tool.asm_libraries.sysreg import SysReg
@@ -95,7 +145,7 @@ def set_init_system_registers():
     SysReg.write_field(Configuration.SystemRegisterBitField.CPACR_EL1_FPEN, value=3)
 
 
-def set_privilege_level():
+def set_arm_privilege_level():
     logger = get_logger()
     if Configuration.Architecture.arm:
         exception_level = Configuration.Knobs.Config.exception_level.get_value()
@@ -112,7 +162,7 @@ def set_privilege_level():
         logger.warning(f"Setting privilege level to {privilege_level} is currently not supported for {Configuration.Architecture} architecture")
 
 
-def enable_page_tables():
+def enable_arm_page_tables():
     # TODO:: refactor this !!! 
     enable_EL3_page_table()
     enable_EL1_page_table()
@@ -202,7 +252,7 @@ def enable_EL1_page_table():
     
     register_manager.free(tmp_reg)
 
-def enable_exception_tables():
+def enable_arm_exception_tables():
     state_manager = get_state_manager()
     exception_manager = get_exception_manager()
     current_state = state_manager.get_active_state()

@@ -3,6 +3,7 @@ from Arrow.Tool.asm_libraries.asm_logger import AsmLogger
 from Arrow.Tool.asm_libraries.branch_to_segment.branch_to_segment import BranchToSegmentBase
 from Arrow.Tool.state_management import get_state_manager
 from Arrow.Tool.state_management.switch_state import switch_code
+from Arrow.Utils.configuration_management import Configuration
 
 class BranchToSegment_riscv(BranchToSegmentBase):
     def __enter__(self):
@@ -12,6 +13,11 @@ class BranchToSegment_riscv(BranchToSegmentBase):
         state_manager = get_state_manager()
         curr_state = state_manager.get_active_state()
         current_code_block = curr_state.current_code_block
+
+        # AsmLogger.comment(f"Storing current ra value on the stack at '{stack_block.address}' to '{stack_block.name}'")
+        AsmLogger.comment(f"Storing current ra value on the stack")
+        AsmLogger.asm(f"addi sp, sp, 8")    # Make space on the stack
+        AsmLogger.asm(f"sd ra, 0(sp)")      # Store the return address in the stack
 
         AsmLogger.comment(f"Call `label` by jumping from '{current_code_block.name}' to '{self.code_block.name}' code segment and storing the return address in `ra` (return_address) register")
         AsmLogger.asm(f"jal ra, {self.code_label}")
@@ -27,6 +33,10 @@ class BranchToSegment_riscv(BranchToSegmentBase):
         AsmLogger.comment(f"Return to the previous code segment {self.prev_code_block.name} using the address in `ra` (similar to `ret` in x86)")
         AsmLogger.asm(f"jr ra")
         switch_code(self.prev_code_block)
+
+        AsmLogger.comment(f"Restoring original ra value from the stack")
+        AsmLogger.asm(f"ld ra, 0(sp)")      # Load the return address from the stack
+        AsmLogger.asm(f"addi sp, sp, -8")   # Retreive space from the stack
 
         return False  # False means exceptions are not suppressed
 

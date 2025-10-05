@@ -67,7 +67,7 @@ def run_command(command, description, fail_on_error=True, output_file=None):
     """
     logger = get_logger()
     try:
-        logger.info(f"---- Running: '{" ".join(command)}'")
+        logger.info(f"---- Running: '{' '.join(command)}'")
         
         # Create local environment with Arrow tool paths
         env = os.environ.copy()

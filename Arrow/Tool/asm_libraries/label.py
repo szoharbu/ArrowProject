@@ -16,3 +16,11 @@ class Label(str):
         label = f"label_{Label._label_index}{postfix}"
         Label._label_index += 1
         return super().__new__(cls, label)
+
+class LabelImm(str):
+    """
+    :param label: The label string
+    :return: An assembly label that can be used as an immediate value
+    """
+    def __new__(cls, label: str) -> LabelImm:
+        return super().__new__(cls, label)

@@ -9,17 +9,25 @@ from Arrow.Tool.state_management.switch_state import SwitchPageTable
 from Arrow.Tool.state_management.state_manager import State
 from Arrow.Tool.register_management import register_manager
 from Arrow.Tool.memory_management.memlayout.interval_lib.interval_lib import IntervalLib
+from Arrow.Arrow_API.resources.memory_manager import MemoryManager_API as MemoryManager
 from Arrow.Utils.APIs.choice import choice
 
 from Arrow.Tool.memory_management.memlayout.page_table_manager import get_page_table_manager
 from Arrow.Tool.memory_management.memory_logger import get_memory_logger, print_memory_state
 from Arrow.Tool.exception_management import get_exception_manager
 
+from Arrow.Utils.configuration_management.enums import PrivilegeLevel
 
 def init_state():
     logger = get_logger()
     logger.info("============ init_state")
     state_manager = get_state_manager()
+
+    # Default state that will be set as active later
+    # Default state will be set during state creation
+
+    # Track if privilege mode is managed (only relevant for RISC-V)
+    privilege_mode_managed = False
 
     core_count = Configuration.Knobs.Config.core_count.get_value()
     thread_count = Configuration.Knobs.Config.thread_count.get_value()
@@ -31,7 +39,7 @@ def init_state():
 
     for i, state_id in enumerate(states):
         # create a state singleton for thread i, and set its values
-        logger.info(f'--------------- Creating state for {state_id}')
+        logger.info(f'--------------- Creating state(s) for {state_id}')
 
 
         if Configuration.Architecture.x86:
@@ -58,20 +66,72 @@ def init_state():
             )
 
         elif Configuration.Architecture.riscv:
-            base_register_value = core_memory_range.address + (core_memory_range.byte_size // 2)
+            # Check if managed mode is enabled for multi-privilege state creation
+            privilege_mode_managed = Configuration.Knobs.Config.privilege_mode_managed.get_value()
+            logger.info(f'Managed privilege mode: {privilege_mode_managed}')
+
+            # Validate that managed mode is only used with RISC-V
+            if privilege_mode_managed and not Configuration.Architecture.riscv:
+                raise ValueError("Managed privilege mode is only supported on RISC-V architecture. Use bare mode for other architectures.")
+
+            # Set a default base register value for RISC-V
+            # For non-paging mode, we'll use a simple fixed address
+            base_register_value = 0x80000000  # Default RISC-V memory base
             base_register_value = base_register_value & ~0b11  # Round Down (to the nearest multiple of 4) to make it 4-byte aligned
 
-            curr_state = State.create_state(
-                state_name=state_id,
-                state_id=i,
-                processor_mode=Configuration.Knobs.Config.processor_mode,
-                privilege_level=0,
-                register_manager=register_manager.RegisterManager(),
-                enabled_page_tables = [],
-                current_code_block=None,
-                base_register=None,
-                base_register_value=base_register_value,
-            )
+            if privilege_mode_managed:
+                # Managed mode: Create separate states for each privilege level on RISC-V
+                privilege_levels = [PrivilegeLevel.RISCV.MACHINE, PrivilegeLevel.RISCV.SUPERVISOR, PrivilegeLevel.RISCV.USER]
+
+                for priv_level in privilege_levels:
+                    priv_state_id = f'{state_id}_priv_{priv_level.name.lower()}'
+                    logger.info(f'    Creating managed privilege state {priv_state_id} (privilege level {priv_level})')
+
+                    new_register_manager = register_manager.RegisterManager()
+                    sp_reg = Configuration.RiscvConfig.get_privileged_stack_pointer(priv_level)
+                    sp_reg = new_register_manager.get(reg_name=sp_reg.name)
+                    new_register_manager.reserve(sp_reg)
+                    curr_state = State.create_state(
+                        state_name=priv_state_id,
+                        state_id=state_id,
+                        register_manager=new_register_manager,
+                        processor_mode=Configuration.Knobs.Config.processor_mode,
+                        privilege_level=priv_level,
+                        enabled_page_tables=[],
+                        current_code_block=None,
+                        base_register=None,
+                        base_register_value=base_register_value,
+                        stack_pointer=sp_reg,
+                    )
+                    state_manager.add_state(priv_state_id, curr_state)
+                    # Also reserve ecall_arg_reg for privilege management
+                    ecall_reg = new_register_manager.get(reg_name=Configuration.RiscvConfig.ecall_arg_reg.name)
+                    new_register_manager.reserve(ecall_reg)
+
+                # Override default state to use machine privilege level for core0_thread0
+                if state_id == 'core0_thread0':
+                    state_manager.set_default_state('core0_thread0_priv_machine')
+            else:
+                new_register_manager = register_manager.RegisterManager()
+                sp_reg = Configuration.RiscvConfig.get_privileged_stack_pointer(PrivilegeLevel.RISCV.MACHINE)
+                sp_reg = new_register_manager.get(reg_name=sp_reg.name)
+                new_register_manager.reserve(sp_reg)
+                curr_state = State.create_state(
+                    state_name=state_id,
+                    state_id=i,
+                    processor_mode=Configuration.Knobs.Config.processor_mode,
+                    privilege_level=PrivilegeLevel.RISCV.MACHINE,
+                    register_manager=new_register_manager,
+                    enabled_page_tables = [],
+                    current_code_block=None,
+                    base_register=None,
+                    base_register_value=base_register_value,
+                    stack_pointer=sp_reg,
+                )
+                state_manager.add_state(state_id, curr_state)
+                # If not in managed privilege mode and this is core0_thread0, set it as default
+                if state_id == 'core0_thread0':
+                    state_manager.set_default_state(state_id)
         elif Configuration.Architecture.arm:
             curr_state = State.create_state(
                 state_name=state_id,
@@ -83,10 +143,12 @@ def init_state():
                 current_code_block=None,
                 current_el_page_table=None,
             )
+            state_manager.add_state(state_id, curr_state)
+            # For ARM, set core0_thread0 as default if this is it
+            if state_id == 'core0_thread0':
+                state_manager.set_default_state(state_id)
         else:
             raise ValueError(f"Unknown Architecture requested")
-
-        state_manager.add_state(state_id, curr_state)
         #curr_state.page_table_manager = page_manager.PageTableManager()
 
 
@@ -98,8 +160,9 @@ def init_state():
         curr_state.base_register = curr_state.register_manager.get_and_reserve()
         # print(curr_state)
 
-    state_manager.set_active_state('core0_thread0')
-
+    # Set the active state to the default
+    logger.info(f"Setting active state to default: {state_manager.get_default_state_id()}")
+    state_manager.set_active_state_to_default()
 
 def init_registers():
     logger = get_logger()
@@ -113,7 +176,7 @@ def init_registers():
         # Preserving a register to be used as base_register
         curr_state.base_register = curr_state.register_manager.get_and_reserve()
 
-    state_manager.set_active_state("core0_thread0")
+    state_manager.set_active_state_to_default()
 
 
 def init_page_tables():
@@ -129,13 +192,16 @@ def init_page_tables():
 
     for state_name in state_manager.get_all_states():
         # NOTE: Must create the page tables first before allocating pages
-        el3r = page_table_manager.create_page_table(page_table_name=f"{state_name}_el3_root", core_id=state_name, execution_context=Configuration.Execution_context.EL3)
-        page_table_manager.create_page_table(page_table_name=f"{state_name}_el1_ns", core_id=state_name, execution_context=Configuration.Execution_context.EL1_NS)
+        if Configuration.Architecture.arm:
+            el3r = page_table_manager.create_page_table(page_table_name=f"{state_name}_el3_root", core_id=state_name, execution_context=Configuration.Execution_context.EL3)
+            page_table_manager.create_page_table(page_table_name=f"{state_name}_el1_ns", core_id=state_name, execution_context=Configuration.Execution_context.EL1_NS)
 
-        curr_state = state_manager.set_active_state(state_name)
-        curr_state.current_el_page_table = el3r
+            curr_state = state_manager.set_active_state(state_name)
+            curr_state.current_el_page_table = el3r
+        else:
+            raise ValueError(f"Unsupported architecture for page table initialization")
 
-    state_manager.set_active_state("core0_thread0")
+    state_manager.set_active_state_to_default()
     
     page_tables = page_table_manager.get_all_page_tables()
 
@@ -168,7 +234,7 @@ def init_page_tables():
                 page = page_table.allocate_page(size=size, page_type=type, sequential_page_count=sequential_page_count)
 
 
-    state_manager.set_active_state("core0_thread0")
+    state_manager.set_active_state_to_default()
 
 
 def init_segments():
@@ -180,24 +246,27 @@ def init_segments():
     page_table_manager = get_page_table_manager()
     page_tables = page_table_manager.get_all_page_tables()
 
-    # TODO:: make this configurable as a knob
-    bsp_boot_address = 0x82000000
+    if Configuration.Architecture.arm:
+        # TODO:: make this configurable as a knob
+        bsp_boot_address = 0x82000000
 
-    core_0_el3_page_table = next(page_table for page_table in page_tables if page_table.core_id == "core0_thread0" and page_table.execution_context == Configuration.Execution_context.EL3)
-    # Allocate BSP boot segment. a single segment that act as trampoline for all cores
-    bsp_boot_segment = core_0_el3_page_table.segment_manager.allocate_memory_segment(name=f"BSP__boot_segment", 
-                                                                    byte_size=0x200,
-                                                                    memory_type=Configuration.Memory_types.BSP_BOOT_CODE, 
-                                                                    alignment_bits=4, 
-                                                                    VA_eq_PA=True,
-                                                                    force_address=bsp_boot_address,
-                                                                    exclusive_segment=True)
-    memory_logger.info(f"============ init_segments: allocated BSP_boot_segment {bsp_boot_segment} at {hex(bsp_boot_address)}")
+        core_0_el3_page_table = next(page_table for page_table in page_tables if page_table.core_id == "core0_thread0" and page_table.execution_context == Configuration.Execution_context.EL3)
+        # Allocate BSP boot segment. a single segment that act as trampoline for all cores
+        bsp_boot_segment = core_0_el3_page_table.segment_manager.allocate_memory_segment(name=f"BSP__boot_segment", 
+                                                                        byte_size=0x200,
+                                                                        memory_type=Configuration.Memory_types.BSP_BOOT_CODE, 
+                                                                        alignment_bits=4, 
+                                                                        VA_eq_PA=True,
+                                                                        force_address=bsp_boot_address,
+                                                                        exclusive_segment=True)
+        memory_logger.info(f"============ init_segments: allocated BSP_boot_segment {bsp_boot_segment} at {hex(bsp_boot_address)}")
 
-    # Allocating one cross-core segment, ensuring that all core and all MMUs will have one shared PA space
-    # This allocation is done here, as it is needed for all cores, and should be done before any other allocation to avoid conflicts
-    cross_page_segment = core_0_el3_page_table.segment_manager.allocate_cross_core_data_memory_segment()
-    memory_logger.info(f"============ init_segments: allocated cross_page_segment {cross_page_segment}")
+        # Allocating one cross-core segment, ensuring that all core and all MMUs will have one shared PA space
+        # This allocation is done here, as it is needed for all cores, and should be done before any other allocation to avoid conflicts
+        cross_page_segment = core_0_el3_page_table.segment_manager.allocate_cross_core_data_memory_segment()
+        memory_logger.info(f"============ init_segments: allocated cross_page_segment {cross_page_segment}")
+    else:
+        raise ValueError(f"Unsupported architecture for page table initialization")
 
     for page_table in page_tables:
         memory_logger.info("")
@@ -329,8 +398,12 @@ def init_section():
 
     init_state()
     init_registers()
-    init_page_tables()
-    init_segments()
+    
+    # Only initialize page tables if paging is enabled
+    if Configuration.Knobs.Memory.paging_enabled.get_value():
+        init_page_tables()
+        init_segments()
+    
     init_exception_tables()
     print_memory_state(print_both=False)
 

@@ -24,6 +24,3 @@ class Configuration:
     SystemRegisterBitField = SystemRegisterBitField
 
     Knobs = Knobs()
-
-
-
