@@ -1,4 +1,5 @@
 import os
+import sys
 from Arrow.Utils.logger_management import get_logger
 from Arrow.Utils.configuration_management import Configuration, get_config_manager
 from Arrow.Externals.binary_generation.arm_binary import ArmBuildPipeline
@@ -66,17 +67,22 @@ def generate_binary():
         pipeline.assemble(constants_file, constants_object)
 
     # Step 4: Link the object file into an executable ELF file
+    objdump_generated = None
     if Configuration.Architecture.arm and PGT_enabled:
         pipeline.link_automated(object_file, page_table_object, constants_object, executable_file)
+        objdump_generated = f"{executable_file}.objdump"
+    elif Configuration.Architecture.riscv:
+        objdump_generated = pipeline.link(object_file, executable_file)
     else:
+        logger.info("Binary creation is currently enabled for the RISC-V pipeline.")
         return
-        #pipeline.link(object_file, executable_file)
 
     # Step 5: Merge the asm file with the objdump file
-    merge_files(assembly_file, objdump_file, debug_aid_file)
+    merge_files(assembly_file, objdump_generated or objdump_file, debug_aid_file)
 
     # Step 6: Run the executable on ISS
-    pipeline.golden_reference_simolator(executable_file, iss_prerun_log_file)
+    if Configuration.Architecture.riscv:
+        pipeline.golden_reference_simolator(executable_file, iss_prerun_log_file)
 
 
 
