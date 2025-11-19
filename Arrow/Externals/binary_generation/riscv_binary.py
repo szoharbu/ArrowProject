@@ -9,9 +9,10 @@ from Arrow.Externals.binary_generation.utils import run_command, check_file_exis
 
 class RiscvBuildPipeline(BuildPipeline):
     def __init__(self):
+        config_manager = get_config_manager()
         self.toolchain_prefix = "riscv64-unknown-elf"
         self._linker_template_name = "riscv_baremetal.ld"
-        self._load_address = 0x80000000
+        self._load_address = config_manager.get_value('riscv_load_address')
         self._memory_length = 0x10000000  # 256MB, matches QEMU virt default
         self._last_objdump = None
         self._qemu_trace_name = "qemu_trace.log"
