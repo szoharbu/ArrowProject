@@ -14,15 +14,19 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY . /app
+# Install Python dependencies first to leverage Docker layer caching
+COPY requirements.txt pyproject.toml /app/
 
 # Python deps
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Project files
+COPY . /app
+
 # Smoke-test: generate one RISC-V seed and run QEMU golden simulation
 # Uses internal content/templates and writes artifacts under /app/Arrow_output
-RUN python run_arrow.py random_template \
+RUN python run_arrow.py templates/random_template.py \
     --arch riscv \
     --output /app/Arrow_output \
     --seed 1 \
@@ -35,4 +39,4 @@ RUN python run_arrow.py random_template \
 
 # Default entrypoint: run Arrow; override CMD/args as needed
 ENTRYPOINT ["python", "run_arrow.py"]
-CMD ["random_template", "--arch", "riscv", "--output", "/app/Arrow_output", "--upload_statistics", "False", "--debug_mode", "False", "--instruction_debug_prints", "False", "--memory_debug_prints", "None", "--create_binary", "True", "--env", "sim"]
+CMD ["templates/random_template.py", "--arch", "riscv", "--output", "/app/Arrow_output", "--upload_statistics", "False", "--debug_mode", "False", "--instruction_debug_prints", "False", "--memory_debug_prints", "None", "--create_binary", "True", "--env", "sim"]
