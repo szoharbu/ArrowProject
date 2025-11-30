@@ -14,6 +14,8 @@ def setup_chosen_architecture():
     elif architecture == "riscv":
         Architecture.riscv = True
         Architecture.arch_str = "riscv"
+        if not config_manager.is_exist('riscv_load_address'):
+            config_manager.set_value('riscv_load_address', 0x80000000)
         from Arrow.Utils.configuration_management import Configuration
         from Arrow.Utils.configuration_management.riscv_config import RiscvConfig
         Configuration.RiscvConfig = RiscvConfig()
